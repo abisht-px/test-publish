@@ -1,0 +1,119 @@
+name: CI Test
+on:
+  push:
+    branches: [master]
+
+  pull_request:
+
+  repository_dispatch:
+    types: [ci_test]
+
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository to test against'
+        default: 'portworx/pds-infra'
+        required: false
+      branch:
+        description: 'Branch to test against'
+        default: 'ci'
+        required: false
+      environment:
+        description: 'Environment to test against'
+        default: 'dev'
+        required: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CI_REPOSITORY: ${{ github.event.inputs.repository || 'portworx/pds-infra' }}
+      CI_BRANCH: ${{ github.event.inputs.branch || 'ci' }}
+      CI_ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+      CLUSTER_NAME: test-control-plane
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.3.4
+
+    # The kube-proxy gets stuck in a CrashLoopBackoff without the following fix:
+    # https://github.com/kubernetes-sigs/kind/issues/2240
+    - name: Hack - fix cluster setup
+      run: sudo sysctl net/netfilter/nf_conntrack_max=131072
+
+    - name: Create control plane cluster
+      uses: engineerd/setup-kind@v0.5.0
+      with:
+          name: ${{ env.CLUSTER_NAME }}
+          # Kubernetes version
+          image: kindest/node:v1.20.0
+
+    - name: Set up Flux
+      run: |
+        curl -s https://fluxcd.io/install.sh | sudo bash
+        flux install
+
+    - name: Set up Flux secret
+      run: echo "${{ secrets.FLUX_SECRET }}" | kubectl apply -f -
+
+    - name: Set up SOPS GPG
+      run: echo "${{ secrets.SOPS_GPG_PRIVATE }}" | kubectl create secret generic sops-gpg --namespace=flux-system --from-file=sops.asc=/dev/stdin
+
+    - name: Set up basic auth
+      id: auth
+      run: |
+        BASIC_AUTH_USER=pds
+        BASIC_AUTH_PASSWORD=$(date +%s | sha256sum | base64 | head -c 16)
+        echo "::set-output name=USER::$BASIC_AUTH_USER"
+        echo "::set-output name=PASSWORD::$BASIC_AUTH_PASSWORD"
+        BASIC_AUTH=$(docker run --rm marcnuri/htpasswd -Bbn "${BASIC_AUTH_USER}" "${BASIC_AUTH_PASSWORD}")
+        
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: cluster-vars
+          namespace: flux-system
+        stringData:
+          cluster_name: kind-${{ env.CLUSTER_NAME }}
+          storage_class_override: standard
+          basic_auth: ${BASIC_AUTH}
+        EOF
+
+    # TODO: Move the CRD template outside the workflow
+    - name: Apply Git repository CRD
+      run: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: source.toolkit.fluxcd.io/v1beta1
+        kind: GitRepository
+        metadata:
+          name: flux-system
+          namespace: flux-system
+        spec:
+          interval: 1m0s
+          ref:
+            branch: ${{ env.CI_BRANCH }}
+          secretRef:
+            name: flux-system
+          url: ssh://git@github.com/${{ env.CI_REPOSITORY }}
+        ---
+        apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+        kind: Kustomization
+        metadata:
+          name: flux-system
+          namespace: flux-system
+        spec:
+          interval: 10m0s
+          path: ./clusters/${{ env.CI_ENVIRONMENT }}
+          prune: true
+          sourceRef:
+            kind: GitRepository
+            name: flux-system
+          validation: client
+        EOF
+
+    - name: Wait for PDS deployments
+      run: setup/check-deployments.sh
+
+    - name: Clean up control plane cluster
+      if: always()
+      run: kind delete cluster --name ${{ env.CLUSTER_NAME }}     
