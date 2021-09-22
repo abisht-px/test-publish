@@ -1,0 +1,46 @@
+# github.anim.dreamworks.com/DreamCloud/stella-api v0.0.0-00010101000000-000000000000 => github.com/portworx/DreamCloud_stella-api v0.0.0-20210920072852-d513913b6a53
+## explicit
+github.anim.dreamworks.com/DreamCloud/stella-api/api/models
+github.anim.dreamworks.com/DreamCloud/stella-api/db
+github.anim.dreamworks.com/DreamCloud/stella-api/db/migrations
+github.anim.dreamworks.com/DreamCloud/stella-api/db/seeding
+github.anim.dreamworks.com/DreamCloud/stella-api/utils
+# github.anim.dreamworks.com/golang/logging v1.0.0 => github.com/portworx/golang_logging v1.0.0
+github.anim.dreamworks.com/golang/logging
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/google/uuid v1.2.0
+## explicit
+github.com/google/uuid
+# github.com/jinzhu/gorm v1.9.8
+github.com/jinzhu/gorm
+github.com/jinzhu/gorm/dialects/postgres
+# github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
+github.com/jinzhu/inflection
+# github.com/lib/pq v1.10.2
+github.com/lib/pq
+github.com/lib/pq/hstore
+github.com/lib/pq/oid
+github.com/lib/pq/scram
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/sirupsen/logrus v1.8.1
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.7.0
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+github.com/stretchr/testify/suite
+# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/gormigrate.v1 v1.5.0
+gopkg.in/gormigrate.v1
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+gopkg.in/yaml.v3
+# github.anim.dreamworks.com/DreamCloud/stella-api => github.com/portworx/DreamCloud_stella-api v0.0.0-20210920072852-d513913b6a53
+# github.anim.dreamworks.com/golang/logging => github.com/portworx/golang_logging v1.0.0
+# github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
+# github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5
+# github.anim.dreamworks.com/golang/utils => github.com/portworx/golang_utils v0.0.0-20181008202924-011984e32408
