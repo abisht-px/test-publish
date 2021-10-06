@@ -27,6 +27,7 @@ type DatabaseType struct {
 	DeploymentCount      int        `json:"deployment_count" gorm:"-"` // Deployment Count is calculated by the API
 	Versions             []Version  `json:"-" gorm:"-"`
 	Templates            []Template `json:"-" gorm:"-"`
+	ComingSoon           bool       `json:"coming_soon"`
 
 	DomainID uuid.UUID `json:"domain_id"`
 }

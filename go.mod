@@ -9,7 +9,7 @@ require (
 )
 
 replace (
-	github.anim.dreamworks.com/DreamCloud/stella-api => github.com/portworx/DreamCloud_stella-api v0.0.0-20210920072852-d513913b6a53
+	github.anim.dreamworks.com/DreamCloud/stella-api => github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c
 	github.anim.dreamworks.com/golang/logging => github.com/portworx/golang_logging v1.0.0
 	github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 	github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5

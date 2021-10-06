@@ -7,10 +7,13 @@ import (
 )
 
 var (
-	dbTypes = []DatabaseType{
+	allowBackups = true
+	dbTypes      = []DatabaseType{
 		{
-			Name:      "Cassandra",
-			ShortName: "cas",
+			Name:                 "Cassandra",
+			ShortName:            "cas",
+			HasIncrementalBackup: &allowBackups,
+			HasFullBackup:        &allowBackups,
 			Templates: []Template{{
 				Name:      "Small",
 				SortOrder: 0,
@@ -35,6 +38,74 @@ var (
 					{
 						Name:         "maxHeapSize",
 						DefaultValue: "1G",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "heapNewSize",
+						DefaultValue: "400M",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Medium",
+				SortOrder: 1,
+				Resources: map[string]interface{}{
+					"cpu":    "1",
+					"memory": "3Gi",
+					"disk":   "2Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "authorizer",
+						DefaultValue: "AllowAllAuthorizer",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "authenticator",
+						DefaultValue: "AllowAllAuthenticator",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "maxHeapSize",
+						DefaultValue: "2G",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "heapNewSize",
+						DefaultValue: "400M",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Large",
+				SortOrder: 2,
+				Resources: map[string]interface{}{
+					"cpu":    "2",
+					"memory": "4Gi",
+					"disk":   "3Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "authorizer",
+						DefaultValue: "AllowAllAuthorizer",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "authenticator",
+						DefaultValue: "AllowAllAuthenticator",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "maxHeapSize",
+						DefaultValue: "3G",
 						Type:         "string",
 						Required:     true,
 					},
@@ -87,350 +158,27 @@ var (
 					},
 				},
 			},
+			ComingSoon: false,
 		},
 		{
-			Name:      "Elasticsearch",
-			ShortName: "ess",
-			Templates: []Template{{
-				Name:      "Small",
-				SortOrder: 0,
-				Resources: map[string]interface{}{
-					"cpu":    "0.5",
-					"memory": "1Gi",
-					"disk":   "1Gi",
-				},
-				Configurations: []Configuration{
-					{
-						Name:         "heapSize",
-						DefaultValue: "1G",
-						Type:         "string",
-						Required:     true,
-					},
-				},
-			}},
-			Versions: []Version{
-				{
-					Name: "5.4.3",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-elasticsearch",
-							Tag:          "5.4.3",
-							Build:        "5d1d0e6",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "6.3.2",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-elasticsearch",
-							Tag:          "6.3.2",
-							Build:        "5d1d0e6",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "6.7.1",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-elasticsearch",
-							Tag:          "6.7.1",
-							Build:        "5d1d0e6",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "7.12.1",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-elasticsearch",
-							Tag:          "7.12.1",
-							Build:        "5d1d0e6",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "7.6.1",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-elasticsearch",
-							Tag:          "7.6.1",
-							Build:        "5d1d0e6",
-							Environments: "develop",
-						},
-					},
-				},
-			},
+			Name:       "Elasticsearch",
+			ShortName:  "ess",
+			ComingSoon: true,
 		},
 		{
-			Name:      "Couchbase",
-			ShortName: "cbs",
-			Templates: []Template{{
-				Name:      "Small",
-				SortOrder: 0,
-				Resources: map[string]interface{}{
-					"cpu":    "1",
-					"memory": "4Gi",
-					"disk":   "1Gi",
-				},
-				Configurations: []Configuration{
-					{
-						Name:         "ftsRamsize",
-						DefaultValue: "256",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "indexRamsize",
-						DefaultValue: "256",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "ldapEnabled",
-						DefaultValue: true,
-						Type:         "boolean",
-						Required:     true,
-					},
-					{
-						Name:         "ramsize",
-						DefaultValue: "512",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "restPassword",
-						DefaultValue: "password",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "restUsername",
-						DefaultValue: "username",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "services",
-						DefaultValue: "data,index,query,fts",
-						Type:         "string",
-						Required:     true,
-					},
-				},
-			}},
-			Versions: []Version{
-				{
-					Name: "5.5.6",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-couchbase",
-							Tag:          "5.5.6",
-							Build:        "4a1ba8f",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "6.0.4",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-couchbase",
-							Tag:          "6.0.4",
-							Build:        "4a1ba8f",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "6.6.1",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-couchbase",
-							Tag:          "6.6.1",
-							Build:        "4a1ba8f",
-							Environments: "develop",
-						},
-					},
-				},
-			},
+			Name:       "Couchbase",
+			ShortName:  "cbs",
+			ComingSoon: true,
 		},
 		{
-			Name:      "Consul",
-			ShortName: "con",
-			Templates: []Template{{
-				Name:      "Small",
-				SortOrder: 0,
-				Resources: map[string]interface{}{
-					"cpu":    "0.5",
-					"memory": "1Gi",
-					"disk":   "1Gi",
-				},
-				Configurations: []Configuration{
-					{
-						Name:         "aclDefaultPolicy",
-						DefaultValue: "deny",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "aclMasterToken",
-						DefaultValue: "APPE0RDA2I8H",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "encryptionKey",
-						DefaultValue: "pUqJrVyVRj5jsiYEkM/tFQYfWyJIv4s3XkvDwy7Cu5s=",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "heapNewSize",
-						DefaultValue: "400M",
-						Type:         "string",
-						Required:     true,
-					},
-				},
-			}},
-			Versions: []Version{
-				{
-					Name: "1.1.0",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-consul",
-							Tag:          "1.1.0",
-							Build:        "24c6f02",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "1.4.0",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-consul",
-							Tag:          "1.4.0",
-							Build:        "24c6f02",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "1.7.2",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-consul",
-							Tag:          "1.7.2",
-							Build:        "24c6f02",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "1.8.0",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-consul",
-							Tag:          "1.8.0",
-							Build:        "24c6f02",
-							Environments: "develop",
-						},
-					},
-				},
-			},
+			Name:       "Consul",
+			ShortName:  "con",
+			ComingSoon: true,
 		},
 		{
-			Name:      "DatastaxEnterprise",
-			ShortName: "dse",
-			Templates: []Template{{
-				Name:      "Small",
-				SortOrder: 0,
-				Resources: map[string]interface{}{
-					"cpu":    "1",
-					"memory": "1Gi",
-					"disk":   "1Gi",
-				},
-				Configurations: []Configuration{
-					{
-						Name:         "CASSANDRA_AUTHENTICATOR",
-						DefaultValue: "AllowAllAuthenticator",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "CASSANDRA_AUTHORIZER",
-						DefaultValue: "AllowAllAuthorizer",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "graphEnabled",
-						DefaultValue: true,
-						Type:         "boolean",
-						Required:     true,
-					},
-					{
-						Name:         "heapNewSize",
-						DefaultValue: "200M",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "maxHeapSize",
-						DefaultValue: "2G",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "solrEnabled",
-						DefaultValue: true,
-						Type:         "boolean",
-						Required:     true,
-					},
-					{
-						Name:         "sparkEnabled",
-						DefaultValue: true,
-						Type:         "boolean",
-						Required:     true,
-					},
-				},
-			}},
-			Versions: []Version{
-				{
-					Name: "6.0.14",
-				},
-				{
-					Name: "6.8.11",
-				},
-			},
+			Name:       "DatastaxEnterprise",
+			ShortName:  "dse",
+			ComingSoon: true,
 		},
 		{
 			Name:      "Kafka",
@@ -457,34 +205,52 @@ var (
 						Required:     true,
 					},
 				},
+			}, {
+				Name:      "Medium",
+				SortOrder: 1,
+				Resources: map[string]interface{}{
+					"cpu":    "1",
+					"memory": "2Gi",
+					"disk":   "2Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "ZOOKEEPER_CONNECTION_STRING",
+						DefaultValue: "",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "heapSize",
+						DefaultValue: "600M",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Large",
+				SortOrder: 2,
+				Resources: map[string]interface{}{
+					"cpu":    "2",
+					"memory": "3Gi",
+					"disk":   "3Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "ZOOKEEPER_CONNECTION_STRING",
+						DefaultValue: "",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "heapSize",
+						DefaultValue: "800M",
+						Type:         "string",
+						Required:     true,
+					},
+				},
 			}},
 			Versions: []Version{
-				{
-					Name: "2.1.1",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-kafka",
-							Tag:          "2.1.1",
-							Build:        "d4a60bc",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "2.2.0",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-kafka",
-							Tag:          "2.2.0",
-							Build:        "d4a60bc",
-							Environments: "develop",
-						},
-					},
-				},
 				{
 					Name: "2.4.1",
 					Images: []Image{
@@ -512,97 +278,12 @@ var (
 					},
 				},
 			},
+			ComingSoon: false,
 		},
 		{
-			Name:      "Mongodb",
-			ShortName: "mdb",
-			Templates: []Template{{
-				Name:      "Small",
-				SortOrder: 0,
-				Resources: map[string]interface{}{
-					"cpu":    "0.5",
-					"memory": "1Gi",
-					"disk":   "1Gi",
-				},
-				Configurations: []Configuration{
-					{
-						Name:         "CONTAINER_PORT",
-						DefaultValue: "27017",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_ADMIN_PASSWORD",
-						DefaultValue: "admin",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_CLUSTER_ROLE",
-						DefaultValue: "shardsvr",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_DATABASE",
-						DefaultValue: "mongodb",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_PASSWORD",
-						DefaultValue: "password",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_REPLICA_NAME",
-						DefaultValue: "rs1",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODB_USER",
-						DefaultValue: "user",
-						Type:         "string",
-						Required:     true,
-					},
-					{
-						Name:         "MONGODBDATA_DIR",
-						DefaultValue: "/data",
-						Type:         "string",
-						Required:     true,
-					},
-				},
-			}},
-			Versions: []Version{
-				{
-					Name: "3.6.17",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-mongodb",
-							Tag:          "3.6.17",
-							Build:        "ba0773c",
-							Environments: "develop",
-						},
-					},
-				},
-				{
-					Name: "4.4.7",
-					Images: []Image{
-						{
-							Registry:     "docker.io",
-							Namespace:    "portworx",
-							Name:         "pds-mongodb",
-							Tag:          "4.4.7",
-							Build:        "ba0773c",
-							Environments: "develop",
-						},
-					},
-				},
-			},
+			Name:       "Mongodb",
+			ShortName:  "mdb",
+			ComingSoon: true,
 		},
 		{
 			Name:      "Rabbitmq",
@@ -614,6 +295,62 @@ var (
 					"cpu":    "0.5",
 					"memory": "1Gi",
 					"disk":   "1Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "datadogPass",
+						DefaultValue: "datadog",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "defaultPass",
+						DefaultValue: "defaultpass",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "defaultUser",
+						DefaultValue: "defaultuser",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Medium",
+				SortOrder: 1,
+				Resources: map[string]interface{}{
+					"cpu":    "1",
+					"memory": "2Gi",
+					"disk":   "2Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "datadogPass",
+						DefaultValue: "datadog",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "defaultPass",
+						DefaultValue: "defaultpass",
+						Type:         "string",
+						Required:     true,
+					},
+					{
+						Name:         "defaultUser",
+						DefaultValue: "defaultuser",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Large",
+				SortOrder: 2,
+				Resources: map[string]interface{}{
+					"cpu":    "2",
+					"memory": "3Gi",
+					"disk":   "3Gi",
 				},
 				Configurations: []Configuration{
 					{
@@ -651,10 +388,12 @@ var (
 					},
 				},
 			},
+			ComingSoon: false,
 		},
 		{
-			Name:      "Redis",
-			ShortName: "red",
+			Name:          "Redis",
+			ShortName:     "red",
+			HasFullBackup: &allowBackups,
 			Templates: []Template{{
 				Name:      "Small",
 				SortOrder: 0,
@@ -662,6 +401,38 @@ var (
 					"cpu":    "0.5",
 					"memory": "1Gi",
 					"disk":   "1Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "REDIS_DIR",
+						DefaultValue: "/data",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Medium",
+				SortOrder: 1,
+				Resources: map[string]interface{}{
+					"cpu":    "1",
+					"memory": "2Gi",
+					"disk":   "2Gi",
+				},
+				Configurations: []Configuration{
+					{
+						Name:         "REDIS_DIR",
+						DefaultValue: "/data",
+						Type:         "string",
+						Required:     true,
+					},
+				},
+			}, {
+				Name:      "Large",
+				SortOrder: 2,
+				Resources: map[string]interface{}{
+					"cpu":    "2",
+					"memory": "3Gi",
+					"disk":   "3Gi",
 				},
 				Configurations: []Configuration{
 					{
@@ -726,6 +497,7 @@ var (
 					},
 				},
 			},
+			ComingSoon: false,
 		},
 		{
 			Name:      "Zookeeper",
@@ -737,6 +509,22 @@ var (
 					"cpu":    "0.5",
 					"memory": "1Gi",
 					"disk":   "1Gi",
+				},
+			}, {
+				Name:      "Medium",
+				SortOrder: 1,
+				Resources: map[string]interface{}{
+					"cpu":    "1",
+					"memory": "2Gi",
+					"disk":   "2Gi",
+				},
+			}, {
+				Name:      "Large",
+				SortOrder: 2,
+				Resources: map[string]interface{}{
+					"cpu":    "2",
+					"memory": "3Gi",
+					"disk":   "3Gi",
 				},
 			}},
 			Versions: []Version{
@@ -754,6 +542,7 @@ var (
 					},
 				},
 			},
+			ComingSoon: false,
 		},
 	}
 )

@@ -32,7 +32,7 @@ func mustPostJSON(t *testing.T, url string, object interface{}) {
 			return http.Post(url, "application/json", bytes.NewReader(postContent))
 		},
 		http.StatusCreated,
-		fmt.Sprintf("Failed to POST data to endpoint %q.", url))
+		fmt.Sprintf("Failed to POST data to endpoint %q.\nData: %#v\n", url, object))
 
 	mustUnmarshalJSON(t, resp.Body, object, url)
 }
@@ -58,6 +58,8 @@ func mustProcessRequest(t *testing.T, request requestMethod, expectedCode int, e
 }
 
 func mustUnmarshalJSON(t *testing.T, input io.Reader, target interface{}, endpoint string) {
+	t.Helper()
+
 	content, err := io.ReadAll(input)
 	require.NoErrorf(t, err, "Failed to read response body from endpoint %q. %v", endpoint, err)
 

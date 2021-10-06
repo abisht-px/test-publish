@@ -242,6 +242,10 @@ func (version *Version) validateDatabaseType() error {
 			return errors.New(errMsg)
 		}
 
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a version")
+		}
+
 		version.DatabaseTypeName = databaseType.Name
 	} else if version.DatabaseTypeName != "" { // Try fetching by name
 		databaseType := FirstDatabaseType("name = ? AND domain_id = ?", version.DatabaseTypeName, version.DomainID)
@@ -249,6 +253,10 @@ func (version *Version) validateDatabaseType() error {
 		if databaseType == nil {
 			errMsg := fmt.Sprintf("No database type found with name: %v", version.DatabaseTypeName)
 			return errors.New(errMsg)
+		}
+
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a version")
 		}
 
 		version.DatabaseTypeID = databaseType.ID

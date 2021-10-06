@@ -371,17 +371,26 @@ func (image *Image) validateDatabaseType() error {
 			return errors.New(errMsg)
 		}
 
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have an image")
+		}
+
 		image.DatabaseType = databaseType
 		image.DatabaseTypeName = databaseType.Name
 	} else if image.DatabaseTypeName != "" { // Try fetching by name
 		databaseType := FirstDatabaseType("name = ? AND domain_id = ?", image.DatabaseTypeName, image.DomainID)
 
-		if databaseType != nil {
-			image.DatabaseType = databaseType
-			image.DatabaseTypeID = databaseType.ID
+		if databaseType == nil {
+			// If not found, we will create one in the BeforeCreate hook
+			return nil
 		}
 
-		// If not found, we will create one in the BeforeCreate hook
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have an image")
+		}
+
+		image.DatabaseType = databaseType
+		image.DatabaseTypeID = databaseType.ID
 	}
 
 	return nil

@@ -54,6 +54,7 @@ type Deployment struct {
 	DNSZone                   string                 `json:"dns_zone" mapstructure:"dns_zone"`
 	StorageClassProvisioner   string                 `json:"storage_class_provisioner" mapstructure:"storage_class_provisioner"`
 	StorageOptions            map[string]string      `json:"storage_options" mapstructure:"storage_options" gorm:"-"`
+	LoadBalancerSourceRanges  []string               `json:"load_balancer_source_ranges" mapstructure:"load_balancer_source_ranges" gorm:"-"`
 
 	DomainID  uuid.UUID `json:"domain_id" mapstructure:"-"`
 	ProjectID uuid.UUID `json:"project_id" mapstructure:"-"`
@@ -67,10 +68,11 @@ type Deployment struct {
 	DeploymentGroup *DeploymentGroup `json:"-" mapstructure:"-" gorm:"-"`
 	TargetCluster   *TargetCluster   `json:"-" mapstructure:"-" gorm:"-"`
 
-	ConfigurationJSON     postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:configuration"`      // Used for DB
-	ResourcesJSON         postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:resources"`          // Used for DB
-	ConnectionDetailsJSON postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:connection_details"` // Used for DB
-	StorageOptionsJSON    postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:storage_options"`    // Used for DB
+	ConfigurationJSON            postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:configuration"`               // Used for DB
+	ResourcesJSON                postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:resources"`                   // Used for DB
+	ConnectionDetailsJSON        postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:connection_details"`          // Used for DB
+	StorageOptionsJSON           postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:storage_options"`             // Used for DB
+	LoadBalancerSourceRangesJSON postgres.Jsonb `json:"-" mapstructure:"-" gorm:"column:load_balancer_source_ranges"` // Used for DB
 }
 
 type DeploymentResources struct {
@@ -549,6 +551,10 @@ func (deployment *Deployment) validateDatabaseType() error {
 			return errors.New(errMsg)
 		}
 
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a deployment")
+		}
+
 		deployment.DatabaseType = databaseType
 		deployment.DatabaseTypeName = databaseType.Name
 	} else if deployment.DatabaseTypeName != "" { // Try fetching by name
@@ -557,6 +563,10 @@ func (deployment *Deployment) validateDatabaseType() error {
 		if databaseType == nil {
 			errMsg := fmt.Sprintf("No database type found with name: %v", deployment.DatabaseTypeName)
 			return errors.New(errMsg)
+		}
+
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a deployment")
 		}
 
 		deployment.DatabaseType = databaseType
@@ -857,6 +867,14 @@ func (deployment *Deployment) marshalJSON() (err error) {
 	}
 	deployment.StorageOptionsJSON = postgres.Jsonb{storageOptions}
 
+	// LoadBalancerSourceRanges JSON
+	var loadBalancerSourceRanges []byte
+	loadBalancerSourceRanges, err = json.Marshal(deployment.LoadBalancerSourceRanges)
+	if err != nil {
+		return err
+	}
+	deployment.LoadBalancerSourceRangesJSON = postgres.Jsonb{loadBalancerSourceRanges}
+
 	return nil
 }
 
@@ -887,6 +905,16 @@ func (deployment *Deployment) unmarshalJSON() (err error) {
 	err = json.Unmarshal(deployment.StorageOptionsJSON.RawMessage, &deployment.StorageOptions)
 	if err != nil {
 		return err
+	}
+
+	// LoadBalancerSourceRanges JSON
+	if len(deployment.LoadBalancerSourceRangesJSON.RawMessage) == 0 {
+		deployment.LoadBalancerSourceRanges = nil
+	} else {
+		err = json.Unmarshal(deployment.LoadBalancerSourceRangesJSON.RawMessage, &deployment.LoadBalancerSourceRanges)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

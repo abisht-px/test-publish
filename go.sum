@@ -557,8 +557,8 @@ github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0/go.mod h1:iKH77
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/polyfloyd/go-errorlint v0.0.0-20210510181950-ab96adb96fea/go.mod h1:wi9BfjxjF/bwiZ701TzmfKu6UKC357IOAtNr0Td0Lvw=
-github.com/portworx/DreamCloud_stella-api v0.0.0-20210920072852-d513913b6a53 h1:0FoKIisxe54IPVBFuhOaBO/zv5y/idJdS019ilfezR0=
-github.com/portworx/DreamCloud_stella-api v0.0.0-20210920072852-d513913b6a53/go.mod h1:8xremx77o0pMzDwIVjagpx+G58anDguvL0wE7DIIr2A=
+github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c h1:ILxHq0yV8PpjBFhYpVHImAdKXFxJ+X3fzES8xWhDhZ4=
+github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c/go.mod h1:9NFpoD9gWO0pYOjGeA03w9akPoAuBF8tlyYbKUybG8M=
 github.com/portworx/golang_logging v1.0.0 h1:7e5Un6Vqn0N4/zmNn0xNPzPco/YhRVJV2GQQRiqysKE=
 github.com/portworx/golang_logging v1.0.0/go.mod h1:N1wmX82Cx7jVNGyM1pFgHMAqU48cJi62yy2qPfGGrVY=
 github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c/go.mod h1:ba4/ejd+0+uLKP2wP69pIdjYo1ryHAdn2faRKNvXEDc=

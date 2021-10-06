@@ -267,6 +267,10 @@ func (template *Template) validateDatabaseType() error {
 			return errors.New(errMsg)
 		}
 
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a template")
+		}
+
 		template.DatabaseTypeName = databaseType.Name
 	} else if template.DatabaseTypeName != "" { // Try fetching by name
 		databaseType := FirstDatabaseType("name = ? AND domain_id = ?", template.DatabaseTypeName, template.DomainID)
@@ -274,6 +278,10 @@ func (template *Template) validateDatabaseType() error {
 		if databaseType == nil {
 			errMsg := fmt.Sprintf("No database type found with name: %v", template.DatabaseTypeName)
 			return errors.New(errMsg)
+		}
+
+		if databaseType.ComingSoon {
+			return errors.New("database types with the flag 'Coming soon' cannot have a template")
 		}
 
 		template.DatabaseTypeID = databaseType.ID

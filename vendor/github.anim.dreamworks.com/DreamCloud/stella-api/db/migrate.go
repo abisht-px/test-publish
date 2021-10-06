@@ -200,6 +200,16 @@ func migrateSchema(db *gorm.DB) {
 	if err = migrations.AddServiceTypeParameterToDeployment(db); err != nil {
 		logging.Fatalf("Database migration (202109171540_add_servicetype_parameter_to_deployment) failed. %v", err)
 	}
+
+	// 202109200930_add_coming_soon_to_database_types.go
+	if err = migrations.AddComingSoonToDatabaseTypes(db); err != nil {
+		logging.Fatalf("Database migration (202109200930_add_coming_soon_to_database_types) failed. %v", err)
+	}
+
+	// 202109271730_add_loadbalancer_source_ranges_to_deployment.go
+	if err = migrations.AddLoadBalancerSourceRangesToDeployment(db); err != nil {
+		logging.Fatalf("Database migration (202109271730_add_loadbalancer_source_ranges_to_deployment.go) failed. %v", err)
+	}
 }
 
 func seedData(db *gorm.DB) {

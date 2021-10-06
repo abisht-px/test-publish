@@ -24,7 +24,8 @@ type DatabaseType struct {
 	DeploymentCount      int       `json:"deployment_count" gorm:"-"` // Deployment Count is calculated by the API
 	Versions             []Version `json:"-" gorm:"-"`
 
-	DomainID uuid.UUID `json:"domain_id"`
+	DomainID   uuid.UUID `json:"domain_id"`
+	ComingSoon bool      `json:"coming_soon"`
 }
 
 func NewDatabaseType() DatabaseType {
