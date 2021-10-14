@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.anim.dreamworks.com/DreamCloud/stella-api/api/models"
+
+	client "github.com/portworx/pds-integration-test/test/client"
 )
 
 var (
@@ -15,7 +17,7 @@ var (
 
 type PDSTestSuite struct {
 	suite.Suite
-	ControlPlane, TargetCluster api
+	ControlPlane, TargetCluster *client.API
 	targetClusterToken string
 }
 
@@ -32,28 +34,27 @@ func (suite *PDSTestSuite) SetupSuite() {
 
 func (s *PDSTestSuite) mustHaveEnvVariables() {
 	controlPlaneAPI := mustGetEnvVariable(s.T(), envControlPlaneAPI)
-	s.ControlPlane = api{baseURL: controlPlaneAPI}
+	s.ControlPlane = client.NewAPI(controlPlaneAPI)
 
 	targetClusterAPI := mustGetEnvVariable(s.T(), envTargetAPI)
-	s.TargetCluster = api{baseURL: targetClusterAPI}
+	s.TargetCluster = client.NewAPI(targetClusterAPI)
 	s.targetClusterToken = mustGetEnvVariable(s.T(), envTargetToken)
 }
 
 func (s *PDSTestSuite) mustReachClusters() {
-	mustReachAddress(s.T(), s.ControlPlane.endpoint("target-clusters"))
+	s.ControlPlane.MustReachEndpoint(s.T(), endpointTargetClusters)
 	// TODO: investigate if we can do a simple sanity check on the target cluster considering AWS authentication restrictions
-	// mustReachAddress(s.T(), s.targetClusterAPI)
+	// s.TargetCluster.MustReachEndpoint(s.T(), "")
 }
 
 func (s *PDSTestSuite) mustRegisterTargetCluster() *models.TargetCluster {
 	target := &models.TargetCluster{
 		Name:      "target-1",
-		APIServer: s.TargetCluster.baseURL,
+		APIServer: s.TargetCluster.BaseURL,
 		Token:     s.targetClusterToken,
 		DomainID:  domainID,
 	}
-	clustersEndpoint := s.ControlPlane.endpoint("target-clusters")
-	mustPostJSON(s.T(), clustersEndpoint, target)
+	s.ControlPlane.MustPostJSON(s.T(), endpointTargetClusters, target)
 	
 	return target
 }
@@ -65,29 +66,23 @@ func (s* PDSTestSuite) mustCreateEnvironment(targetCluster *models.TargetCluster
 		TargetClusterIDs: []uuid.UUID{targetCluster.ID},
 		DomainID:         domainID,
 	}
-	envEndpoint := s.ControlPlane.endpoint("environments")
-	mustPostJSON(s.T(), envEndpoint, environment)
+	s.ControlPlane.MustPostJSON(s.T(), endpointEnvironments, environment)
 
 	return environment
 }
 
 func (s* PDSTestSuite) mustPopulateDatabaseData(environment *models.Environment) {
-	dbTypesEndpoint := s.ControlPlane.endpoint("types")
-	dbVersionsEndpoint := s.ControlPlane.endpoint("versions")
-	imagesEndpoint := s.ControlPlane.endpoint("images")
-	targetClustersEndpoint := s.ControlPlane.endpoint("target-clusters")
-
 	for _, dbDefinition := range DBTypes {
 		dbType := dbDefinition.DatabaseType
 		dbType.DomainID = domainID
-		mustPostJSON(s.T(), dbTypesEndpoint, dbType)
+		s.ControlPlane.MustPostJSON(s.T(), endpointDatabaseTypes, dbType)
 
 		for _, versionedImage := range dbDefinition.versionedImages {
 			version := versionedImage.Version
 			version.DomainID = domainID
 			version.DatabaseTypeID = dbType.ID
 			version.DatabaseTypeName = dbType.Name
-			mustPostJSON(s.T(), dbVersionsEndpoint, &version)
+			s.ControlPlane.MustPostJSON(s.T(), endpointVersions, &version)
 
 			for _, image := range versionedImage.images {
 				image.DomainID = domainID
@@ -100,7 +95,7 @@ func (s* PDSTestSuite) mustPopulateDatabaseData(environment *models.Environment)
 				image.Version = version
 				image.VersionID = version.ID
 				image.VersionName = version.Name
-				mustPostJSON(s.T(), imagesEndpoint, image)
+				s.ControlPlane.MustPostJSON(s.T(), endpointImages, image)
 
 				// Add image to every target cluster of the test environment.
 				for _, targetCluster := range environment.TargetClusters {
@@ -113,7 +108,7 @@ func (s* PDSTestSuite) mustPopulateDatabaseData(environment *models.Environment)
 
 	// Save all target clusters with attached images.
 	for _, targetCluster := range environment.TargetClusters {
-		mustPostJSON(s.T(), targetClustersEndpoint, &targetCluster)
+		s.ControlPlane.MustPostJSON(s.T(), endpointTargetClusters, &targetCluster)
 	}
 }
 
