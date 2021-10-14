@@ -13,7 +13,10 @@ wait_for_resource() {
         count=$(($count + 1))
         if [[ ${count} -eq ${retries} ]]; then
             echo "No more retries left"
-            kubectl get pods -n $namespace
+            echo "## Pods in ${namespace}:"
+            kubectl get pods -n "$namespace"
+            echo "## Flux Kustomizations:"
+            kubectl get kustomizations -n flux-system
             exit 1
         fi
     done
