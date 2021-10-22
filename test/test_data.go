@@ -17,45 +17,33 @@ var (
 	}
 	Cassandra = &dbDefinition{
 		DatabaseType: &models.DatabaseType{
-			Name:                 "TestCassandra",
+			Name:                 "Cassandra",
 			ShortName:            "testcas",
 			HasIncrementalBackup: &allowBackups,
 			HasFullBackup:        &allowBackups,
 		},
-		versionedImages: []*versionedImages{
-			{
-				Version: &models.Version{
-					Name: "3.11.4",
-				},
-				images: []*models.Image{
-					{
+		versionedImages: map[string]*versionedImages{
+			"3.11.4": {
+				images: map[string]*models.Image{
+					"af42051": {
 						Registry:  imageRegistry,
 						Namespace: imageNamespace,
-						Build:     "af42051",
 					},
 				},
 			},
-			{
-				Version: &models.Version{
-					Name: "3.11.6",
-				},
-				images: []*models.Image{
-					{
+			"3.11.6": {
+				images: map[string]*models.Image{
+					"af42051": {
 						Registry:  imageRegistry,
 						Namespace: imageNamespace,
-						Build:     "af42051",
 					},
 				},
 			},
-			{
-				Version: &models.Version{
-					Name: "3.11.9",
-				},
-				images: []*models.Image{
-					{
+			"3.11.9": {
+				images: map[string]*models.Image{
+					"af42051": {
 						Registry:  imageRegistry,
 						Namespace: imageNamespace,
-						Build:     "af42051",
 					},
 				},
 			},
@@ -67,12 +55,14 @@ var (
 // This allows for easier definition of the hierarchy and setting up the reference fields.
 type dbDefinition struct {
 	*models.DatabaseType
-	versionedImages []*versionedImages
+	versionedImages map[string]*versionedImages
 }
 
 // versionedImages wraps the API Version model together with related images.
 // This allows for easier definition of the hierarchy and setting up the reference fields.
+// All of the version fields can be derived from context, so the setup takes care of
+// initializing the Version field.
 type versionedImages struct {
 	*models.Version
-	images []*models.Image
+	images map[string]*models.Image
 }

@@ -8,7 +8,7 @@ wait_for_resource() {
     count=0
     while :
     do
-        kubectl wait --for=condition=available --timeout=300s -n $namespace $resource_name && break
+        kubectl wait --for=condition=available --timeout=30s -n $namespace $resource_name && break
         sleep 30
         count=$(($count + 1))
         if [[ ${count} -eq ${retries} ]]; then

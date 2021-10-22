@@ -38,7 +38,9 @@ jobs:
       CI_ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
       TARGET_API: ${{ github.event.inputs.target-api || secrets.TARGET_API }}
       TARGET_TOKEN: ${{ github.event.inputs.target-token || secrets.TARGET_TOKEN }}
+      TARGET_KUBECONFIG_PATH: /home/runner/.kube/target-config
       CONTROL_PLANE_NAME: test-control-plane
+      CONTROL_PLANE_KUBECONFIG_PATH: /home/runner/.kube/config
     steps:
     - name: Checkout
       uses: actions/checkout@v2.3.4
@@ -132,10 +134,8 @@ jobs:
         API=http://localhost:${{ env.PORT }}/api
         echo "::set-output name=CONTROL_PLANE_API::${API}"
 
-    - name: Store AWS credentials locally
-      run: |
-        mkdir ~/.aws
-        echo "${{ secrets.AWS_CREDENTIALS }}" > ~/.aws/credentials
+    - name: Store Target cluster kubeconfig
+      run: echo "${{ secrets.TARGET_KUBECONFIG }}" > ${{ env.TARGET_KUBECONFIG_PATH }}
 
     # >>> Test
     - name: Test >>> Set up Go
@@ -148,23 +148,17 @@ jobs:
       # Tests rely on environment variables for connection parameters.
       run: |
         export CONTROL_PLANE_API=${{ steps.port-forward.outputs.CONTROL_PLANE_API }}
+        export CONTROL_PLANE_KUBECONFIG=${{ env.CONTROL_PLANE_KUBECONFIG_PATH }}
+        export TARGET_KUBECONFIG=${{ env.TARGET_KUBECONFIG_PATH }}
         export TARGET_API=${{ env.TARGET_API }}
         export TARGET_TOKEN=${{ env.TARGET_TOKEN }}
-        go test ./... -v -json > test.json
-
-    - name: Annotate Test
-      # Quirk of the step condition evaluations: 
-      # Not including `always()` is more restrictive and always evaluates to false.
-      if: ${{ always() && (steps.test.outcome != 'skipped') }}
-      uses: guyarb/golang-test-annotations@v0.5.0
-      with:
-        test-results: test.json
+        make test
 
     # >>> Cleanup
     - name: Cleanup >>> Control plane cluster
       if: always()
       run: kind delete cluster --name ${{ env.CONTROL_PLANE_NAME }}
-      
-    - name: Remove AWS credentials
+
+    - name: Remove Target kubeconfig
       if: always()
-      run: rm -rf ~/.aws
+      run: rm -f ${{ steps.kubeconfig.outputs.PATH }}

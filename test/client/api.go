@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,9 @@ type API struct {
 
 func NewAPI(baseURL string) *API {
 	return &API{
-		client:  http.DefaultClient,
+		client:  &http.Client{
+			Timeout: 1*time.Minute,
+		},
 		BaseURL: baseURL,
 	}
 }
@@ -52,7 +55,7 @@ func (a* API) MustPostJSON(t *testing.T, path string, object interface{}) {
 			return c.Post(target, "application/json", bytes.NewReader(postContent)) 
 		},
 		http.StatusCreated,
-		fmt.Sprintf("POST data to endpoint %q.\nData: %#v\n", target, object))
+		fmt.Sprintf("POST data to endpoint %q.\nData: %+v\n", target, object))
 
 	mustUnmarshalJSON(t, resp.Body, object, target)
 }
