@@ -5,4 +5,7 @@ vendor:
 	go mod tidy
 	go mod vendor
 
-.PHONY: test vendor
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint run 
+
+.PHONY: test vendor lint
