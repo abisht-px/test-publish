@@ -20,8 +20,8 @@ type API struct {
 
 func NewAPI(baseURL string) *API {
 	return &API{
-		client:  &http.Client{
-			Timeout: 1*time.Minute,
+		client: &http.Client{
+			Timeout: 1 * time.Minute,
 		},
 		BaseURL: baseURL,
 	}
@@ -36,14 +36,14 @@ func (a *API) MustReachEndpoint(t *testing.T, path string) {
 
 	target := a.endpoint(path)
 	a.mustProcessRequest(t,
-		func(c *http.Client) (*http.Response, error) { 
-			return c.Get(target) 
+		func(c *http.Client) (*http.Response, error) {
+			return c.Get(target)
 		},
 		http.StatusOK,
 		fmt.Sprintf("Checking reachability of %q.", target))
 }
 
-func (a* API) MustPostJSON(t *testing.T, path string, object interface{}) {
+func (a *API) MustPostJSON(t *testing.T, path string, object interface{}) {
 	t.Helper()
 
 	target := a.endpoint(path)
@@ -51,8 +51,8 @@ func (a* API) MustPostJSON(t *testing.T, path string, object interface{}) {
 	require.NoErrorf(t, err, "Serializing data before POSTing to %q.", target)
 
 	resp := a.mustProcessRequest(t,
-		func(c *http.Client) (*http.Response, error) { 
-			return c.Post(target, "application/json", bytes.NewReader(postContent)) 
+		func(c *http.Client) (*http.Response, error) {
+			return c.Post(target, "application/json", bytes.NewReader(postContent))
 		},
 		http.StatusCreated,
 		fmt.Sprintf("POST data to endpoint %q.\nData: %+v\n", target, object))
@@ -65,8 +65,8 @@ func (a *API) MustGetJSON(t *testing.T, path string, object interface{}) {
 
 	target := a.endpoint(path)
 	resp := a.mustProcessRequest(t,
-		func(c *http.Client) (*http.Response, error) { 
-			return c.Get(target) 
+		func(c *http.Client) (*http.Response, error) {
+			return c.Get(target)
 		},
 		http.StatusOK,
 		fmt.Sprintf("GET data from endpoint %q.", target))
@@ -88,8 +88,8 @@ func mustUnmarshalJSON(t *testing.T, input io.ReadCloser, targetObject interface
 	defer func() {
 		err := input.Close()
 		require.NoErrorf(t, err, "Closing response body from endpoint %q. %v", endpoint, err)
-	} ()
-	
+	}()
+
 	content, err := io.ReadAll(input)
 	require.NoErrorf(t, err, "Reading response body from endpoint %q. %v", endpoint, err)
 

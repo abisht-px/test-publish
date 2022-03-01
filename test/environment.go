@@ -9,30 +9,27 @@ import (
 
 const (
 	envControlPlaneAPI        = "CONTROL_PLANE_API"
+	envBearerToken            = "CONTROL_PLANE_BEARER_TOKEN"
 	envControlPlaneKubeconfig = "CONTROL_PLANE_KUBECONFIG"
-	envTargetAPI              = "TARGET_API"
-	envTargetToken            = "TARGET_TOKEN"
 	envTargetKubeconfig       = "TARGET_KUBECONFIG"
 )
 
 type environment struct {
-	controlPlaneAPI, controlPlaneKubeconfig, targetAPI, targetToken, targetKubeconfig string
+	controlPlaneAPI, bearerToken, controlPlaneKubeconfig, targetKubeconfig string
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
 	return environment{
 		controlPlaneAPI:        mustGetEnvVariable(t, envControlPlaneAPI),
+		bearerToken:            mustGetEnvVariable(t, envBearerToken),
 		controlPlaneKubeconfig: mustGetEnvVariable(t, envControlPlaneKubeconfig),
-		targetAPI:              mustGetEnvVariable(t, envTargetAPI),
-		targetToken:            mustGetEnvVariable(t, envTargetToken),
 		targetKubeconfig:       mustGetEnvVariable(t, envTargetKubeconfig),
 	}
 }
 
 func mustGetEnvVariable(t *testing.T, key string) string {
 	t.Helper()
-
 	value := os.Getenv(key)
 	require.NotEmptyf(t, value, "Env variable %q is empty.", key)
 	return value

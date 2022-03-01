@@ -20,7 +20,6 @@ var (
 
 func (c *cluster) MustKubectl(t *testing.T, args ...string) string {
 	t.Helper()
-	
 	kubectlArgs := append([]string{"--kubeconfig", c.kubeconfig}, args...)
 	cmd := command.Kubectl(kubectlArgs...)
 	return command.MustRun(t, cmd)

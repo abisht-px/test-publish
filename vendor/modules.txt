@@ -161,47 +161,12 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
 # github.com/google/uuid v1.2.0
-## explicit
 github.com/google/uuid
 # github.com/googleapis/gnostic v0.5.5
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/jsonschema
 github.com/googleapis/gnostic/openapiv2
-# github.com/gordonklaus/ineffassign v0.0.0-20210225214923-2e10b2664254
-github.com/gordonklaus/ineffassign/pkg/ineffassign
-# github.com/gostaticanalysis/analysisutil v0.4.1
-github.com/gostaticanalysis/analysisutil
-# github.com/gostaticanalysis/comment v1.4.1
-github.com/gostaticanalysis/comment
-github.com/gostaticanalysis/comment/passes/commentmap
-# github.com/gostaticanalysis/forcetypeassert v0.0.0-20200621232751-01d4955beaa5
-github.com/gostaticanalysis/forcetypeassert
-# github.com/gostaticanalysis/nilerr v0.1.1
-github.com/gostaticanalysis/nilerr
-# github.com/hashicorp/errwrap v1.0.0
-github.com/hashicorp/errwrap
-# github.com/hashicorp/go-multierror v1.1.1
-github.com/hashicorp/go-multierror
-# github.com/hashicorp/hcl v1.0.0
-github.com/hashicorp/hcl
-github.com/hashicorp/hcl/hcl/ast
-github.com/hashicorp/hcl/hcl/parser
-github.com/hashicorp/hcl/hcl/printer
-github.com/hashicorp/hcl/hcl/scanner
-github.com/hashicorp/hcl/hcl/strconv
-github.com/hashicorp/hcl/hcl/token
-github.com/hashicorp/hcl/json/parser
-github.com/hashicorp/hcl/json/scanner
-github.com/hashicorp/hcl/json/token
-# github.com/imdario/mergo v0.3.12
-github.com/imdario/mergo
-# github.com/inconshreveable/mousetrap v1.0.0
-github.com/inconshreveable/mousetrap
-# github.com/jgautheron/goconst v1.5.1
-github.com/jgautheron/goconst
-# github.com/jingyugao/rowserrcheck v1.1.0
-github.com/jingyugao/rowserrcheck/passes/rowserr
 # github.com/jinzhu/gorm v1.9.8
 github.com/jinzhu/gorm
 github.com/jinzhu/gorm/dialects/postgres
@@ -294,122 +259,37 @@ github.com/phayes/checkstyle
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/polyfloyd/go-errorlint v0.0.0-20210510181950-ab96adb96fea
-github.com/polyfloyd/go-errorlint/errorlint
-# github.com/prometheus/client_golang v1.7.1
-github.com/prometheus/client_golang/prometheus
-github.com/prometheus/client_golang/prometheus/internal
-github.com/prometheus/client_golang/prometheus/testutil/promlint
-# github.com/prometheus/client_model v0.2.0
-github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.10.0
-github.com/prometheus/common/expfmt
-github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.6.0
-github.com/prometheus/procfs
-github.com/prometheus/procfs/internal/fs
-github.com/prometheus/procfs/internal/util
-# github.com/quasilyte/go-ruleguard v0.3.4
-github.com/quasilyte/go-ruleguard/internal/gogrep
-github.com/quasilyte/go-ruleguard/internal/golist
-github.com/quasilyte/go-ruleguard/internal/xtypes
-github.com/quasilyte/go-ruleguard/nodetag
-github.com/quasilyte/go-ruleguard/ruleguard
-github.com/quasilyte/go-ruleguard/ruleguard/goutil
-github.com/quasilyte/go-ruleguard/ruleguard/quasigo
-github.com/quasilyte/go-ruleguard/ruleguard/typematch
-# github.com/quasilyte/regex/syntax v0.0.0-20200407221936-30656e2c4a95
-github.com/quasilyte/regex/syntax
-# github.com/ryancurrah/gomodguard v1.2.3
-github.com/ryancurrah/gomodguard
-# github.com/ryanrolds/sqlclosecheck v0.3.0
-github.com/ryanrolds/sqlclosecheck/pkg/analyzer
-# github.com/sanposhiho/wastedassign/v2 v2.0.6
-github.com/sanposhiho/wastedassign/v2
-# github.com/securego/gosec/v2 v2.8.1
-github.com/securego/gosec/v2
-github.com/securego/gosec/v2/cwe
-github.com/securego/gosec/v2/rules
-# github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c
-github.com/shazow/go-diff/difflib
+# github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81
+## explicit
+github.com/portworx/pds-api-go-client/pds/v1alpha1
 # github.com/sirupsen/logrus v1.8.1
 github.com/sirupsen/logrus
-# github.com/sonatard/noctx v0.0.1
-github.com/sonatard/noctx
-github.com/sonatard/noctx/ngfunc
-github.com/sonatard/noctx/reqwithoutctx
-# github.com/sourcegraph/go-diff v0.6.1
-github.com/sourcegraph/go-diff/diff
-# github.com/spf13/afero v1.6.0
-github.com/spf13/afero
-github.com/spf13/afero/mem
-# github.com/spf13/cast v1.3.1
-github.com/spf13/cast
-# github.com/spf13/cobra v1.2.1
-github.com/spf13/cobra
-# github.com/spf13/jwalterweatherman v1.1.0
-github.com/spf13/jwalterweatherman
-# github.com/spf13/pflag v1.0.5
-github.com/spf13/pflag
-# github.com/spf13/viper v1.8.1
-github.com/spf13/viper
-# github.com/ssgreg/nlreturn/v2 v2.1.0
-github.com/ssgreg/nlreturn/v2/pkg/nlreturn
-# github.com/stretchr/objx v0.1.1
-github.com/stretchr/objx
 # github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/subosito/gotenv v1.2.0
-github.com/subosito/gotenv
-# github.com/tdakkota/asciicheck v0.0.0-20200416200610-e657995f937b
-github.com/tdakkota/asciicheck
-# github.com/tetafro/godot v1.4.8
-github.com/tetafro/godot
-# github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94
-github.com/timakin/bodyclose/passes/bodyclose
-# github.com/tomarrell/wrapcheck/v2 v2.3.0
-github.com/tomarrell/wrapcheck/v2/wrapcheck
-# github.com/tommy-muehle/go-mnd/v2 v2.4.0
-github.com/tommy-muehle/go-mnd/v2
-github.com/tommy-muehle/go-mnd/v2/checks
-github.com/tommy-muehle/go-mnd/v2/config
-# github.com/ultraware/funlen v0.0.3
-github.com/ultraware/funlen
-# github.com/ultraware/whitespace v0.0.4
-github.com/ultraware/whitespace
-# github.com/uudashr/gocognit v1.0.5
-github.com/uudashr/gocognit
-# github.com/yeya24/promlinter v0.1.0
-github.com/yeya24/promlinter
-# golang.org/x/mod v0.4.2
-golang.org/x/mod/internal/lazyregexp
-golang.org/x/mod/modfile
-golang.org/x/mod/module
-golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
+# golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
+## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-# golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+# golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
-golang.org/x/sys/execabs
+# golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
+# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 golang.org/x/term
-# golang.org/x/text v0.3.6
+# golang.org/x/text v0.3.7
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -743,18 +623,13 @@ k8s.io/client-go/pkg/version
 k8s.io/client-go/plugin/pkg/client/auth/exec
 k8s.io/client-go/rest
 k8s.io/client-go/rest/watch
-k8s.io/client-go/tools/auth
-k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/tools/clientcmd/api
-k8s.io/client-go/tools/clientcmd/api/latest
-k8s.io/client-go/tools/clientcmd/api/v1
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/tools/reference
 k8s.io/client-go/transport
 k8s.io/client-go/util/cert
 k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/flowcontrol
-k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
 # k8s.io/klog/v2 v2.9.0

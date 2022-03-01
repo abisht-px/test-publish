@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.anim.dreamworks.com/DreamCloud/stella-api/api/models"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	client "github.com/portworx/pds-integration-test/test/client"
 	"github.com/portworx/pds-integration-test/test/color"
-	"github.com/stretchr/testify/require"
 )
 
 type Target struct {
