@@ -4,11 +4,10 @@ go 1.16
 
 require (
 	github.anim.dreamworks.com/DreamCloud/stella-api v0.0.0-00010101000000-000000000000
-	github.com/golangci/golangci-lint v1.42.0
+	github.com/golangci/golangci-lint v1.45.0
 	github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
 

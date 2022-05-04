@@ -6,14 +6,22 @@ on:
     branches:
     - master
 
+env:
+  GO_VERSION: '1.16'
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.4
+    - name: Checkout
+      uses: actions/checkout@v2.3.4
 
-      - name: Golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.42
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Golangci-lint
+      uses: golangci/golangci-lint-action@v3.1.0
+      with:
+        version: v1.45
