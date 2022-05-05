@@ -1,4 +1,4 @@
-# Build the proxy binary.
+# Build the test binary.
 FROM golang:1.16.14 as builder
 
 WORKDIR /workspace
@@ -11,7 +11,15 @@ COPY Makefile Makefile
 
 # Source.
 COPY test/ test/
-COPY setup/ setup/
 
-CMD go test ./test -v
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o pds-test ./test
 
+# Use distroless as minimal base image to package the test binary.
+# Refer to https://github.com/GoogleContainerTools/distroless for more details.
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /
+COPY --from=builder /workspace/pds-test .
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/pds-test"]
