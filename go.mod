@@ -3,18 +3,18 @@ module github.com/portworx/pds-integration-test
 go 1.16
 
 require (
-	github.anim.dreamworks.com/DreamCloud/stella-api v0.0.0-00010101000000-000000000000
 	github.com/golangci/golangci-lint v1.45.0
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
 
 )
 
 replace (
-	github.anim.dreamworks.com/DreamCloud/stella-api => github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c
 	github.anim.dreamworks.com/golang/logging => github.com/portworx/golang_logging v1.0.0
 	github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 	github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5

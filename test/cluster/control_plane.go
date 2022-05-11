@@ -1,54 +1,38 @@
 package cluster
 
 import (
-	"fmt"
+	"context"
 	"testing"
-
-	client "github.com/portworx/pds-integration-test/test/client"
-	"github.com/portworx/pds-integration-test/test/color"
+	"time"
 )
-
-type ControlPlane struct {
-	*cluster
-}
 
 const (
 	pdsSystemNamespace = "pds-system"
 )
 
-func NewControlPlane(api *client.API, context string) *ControlPlane {
-	return &ControlPlane{
-		cluster: &cluster{
-			API:        api,
-			kubeconfig: context,
-		},
+// ControlPlane wraps a PDS control plane.
+type ControlPlane struct {
+	*cluster
+}
+
+// NewControlPlane creates a ControlPlane instance using the specified kubeconfig path.
+// Fails if a kubernetes go-client cannot be configured based on the kubeconfig.
+func NewControlPlane(kubeconfig string) (*ControlPlane, error) {
+	cluster, err := newCluster(kubeconfig)
+	if err != nil {
+		return nil, err
 	}
+	return &ControlPlane{cluster}, nil
 }
 
-func (cp *ControlPlane) LogStatus(t *testing.T) {
+// LogComponents extracts the logs of all relevant PDS components, beginning at the specified time.
+func (cp *ControlPlane) LogComponents(t *testing.T, ctx context.Context, since time.Time) {
 	t.Helper()
-
-	t.Log(color.Blue("Control plane:"))
-
-	cp.describePods(t, pdsSystemNamespace)
-
-	t.Log(headerColor("API server logs:"))
-	cp.logComponent(t, pdsSystemNamespace, "api-server")
-
-	t.Log(headerColor("API worker logs:"))
-	cp.logComponent(t, pdsSystemNamespace, "api-worker")
-
-	t.Log(headerColor("faktory logs:"))
-	cp.logComponent(t, pdsSystemNamespace, "faktory")
-}
-
-func (cp *ControlPlane) logComponent(t *testing.T, namespace, name string) {
-	t.Helper()
-
-	selector := fmt.Sprintf("component=%s", name)
-	t.Log("\n" + cp.MustKubectl(t,
-		"logs",
-		"--namespace", namespace,
-		"--selector", selector,
-	))
+	components := []componentSelector{
+		{pdsSystemNamespace, "component=api-server"},
+		{pdsSystemNamespace, "component=api-worker"},
+		{pdsSystemNamespace, "component=faktory"},
+	}
+	t.Log("Control plane:")
+	cp.getLogsForComponents(t, ctx, components, since)
 }

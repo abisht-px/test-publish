@@ -8,23 +8,20 @@ import (
 )
 
 const (
-	envControlPlaneAPI        = "CONTROL_PLANE_API"
-	envBearerToken            = "CONTROL_PLANE_BEARER_TOKEN"
-	envControlPlaneKubeconfig = "CONTROL_PLANE_KUBECONFIG"
-	envTargetKubeconfig       = "TARGET_KUBECONFIG"
+	envControlPlaneAPI  = "CONTROL_PLANE_API"
+	envTargetKubeconfig = "TARGET_CLUSTER_KUBECONFIG"
 )
 
 type environment struct {
-	controlPlaneAPI, bearerToken, controlPlaneKubeconfig, targetKubeconfig string
+	controlPlaneAPI  string
+	targetKubeconfig string
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
 	return environment{
-		controlPlaneAPI:        mustGetEnvVariable(t, envControlPlaneAPI),
-		bearerToken:            mustGetEnvVariable(t, envBearerToken),
-		controlPlaneKubeconfig: mustGetEnvVariable(t, envControlPlaneKubeconfig),
-		targetKubeconfig:       mustGetEnvVariable(t, envTargetKubeconfig),
+		controlPlaneAPI:  mustGetEnvVariable(t, envControlPlaneAPI),
+		targetKubeconfig: mustGetEnvVariable(t, envTargetKubeconfig),
 	}
 }
 

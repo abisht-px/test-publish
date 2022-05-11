@@ -2,37 +2,18 @@
 
 End-to-end test definitions for PDS.
 
-## Control Plane cluster
+The test is intended to be run inside a Jenkins pipeline against a Docker image.
+Control plane and a target cluster is required, but not spawned by the test - these must be provisioned separately
+and their connection details injected via environment variables.
 
-The control plane is created from scratch on every test run using [kind](https://kind.sigs.k8s.io/).
-PDS components are then deployed based on the [pds-infra](https://github.com/portworx/pds-infra)
-definitions on a specified branch (`ci` by default).
+Running locally (`make test`) is also possible if:
 
-## Target cluster
+- your environment is authorized to talk to the control plane and target cluster.
+- you provide the required environment variables to the test.
 
-For now, we are using a long-lived target cluster, which gets merely injected into the tests. The connection parameters are stored in
-[vault](https://secret-service.inf-cloud-support.purestorage.com/ui/vault/secrets/secret/show/engineering/portworx/pds/integration-test).
+## Environment Configuration
 
-This means we have to be more attentive with cleaning up any stray resources after the tests and have to manually monitor and maintain the health of the cluster.
-
-## Manually triggering test on GitHub
-
-A test run can be manually requested via the
-[GitHub UI](https://github.com/portworx/pds-integration-test/actions/workflows/ci-test.yml)
-or [GitHub CLI](https://github.com/cli/cli) using the command:
-
-```shell
-gh workflow run ci-test.yml
-```
-
-This runs the workflow against `master` using the default parameters.
-
-To override the parameters, e.g. to run against the currently checked out branch
-(provided it's also present on remote), using a `test` environment on `master` of
-[pds-infra](https://github.com/portworx/pds-infra), run:
-
-```shell
-gh workflow run --ref $(git rev-parse --abbrev-ref HEAD) ci-test.yml -f branch=master -f environment=test
-```
-
-See [CI Test](./.github/workflows/ci-test.yml) inputs for possible overrides.
+| Key                       | Description                                                                           |
+|---------------------------|---------------------------------------------------------------------------------------|
+| CONTROL_PLANE_API         | URL of the publicly accessible control plane PDS API.                                 |
+| TARGET_CLUSTER_KUBECONFIG | Path to the kubeconfig file that allows the test to access the target cluster.        |

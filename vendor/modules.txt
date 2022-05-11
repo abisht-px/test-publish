@@ -1,14 +1,5 @@
 # 4d63.com/gochecknoglobals v0.1.0
 4d63.com/gochecknoglobals/checknoglobals
-# github.anim.dreamworks.com/DreamCloud/stella-api v0.0.0-00010101000000-000000000000 => github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c
-## explicit
-github.anim.dreamworks.com/DreamCloud/stella-api/api/models
-github.anim.dreamworks.com/DreamCloud/stella-api/db
-github.anim.dreamworks.com/DreamCloud/stella-api/db/migrations
-github.anim.dreamworks.com/DreamCloud/stella-api/db/seeding
-github.anim.dreamworks.com/DreamCloud/stella-api/utils
-# github.anim.dreamworks.com/golang/logging v1.0.0 => github.com/portworx/golang_logging v1.0.0
-github.anim.dreamworks.com/golang/logging
 # github.com/Antonboom/errname v0.1.5
 github.com/Antonboom/errname/pkg/analyzer
 # github.com/Antonboom/nilnil v0.1.0
@@ -180,8 +171,6 @@ github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
-# github.com/google/uuid v1.3.0
-github.com/google/uuid
 # github.com/googleapis/gnostic v0.5.5
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -219,17 +208,15 @@ github.com/hashicorp/hcl/json/token
 github.com/hexops/gotextdiff
 github.com/hexops/gotextdiff/myers
 github.com/hexops/gotextdiff/span
+# github.com/imdario/mergo v0.3.12
+## explicit
+github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
 # github.com/jgautheron/goconst v1.5.1
 github.com/jgautheron/goconst
 # github.com/jingyugao/rowserrcheck v1.1.1
 github.com/jingyugao/rowserrcheck/passes/rowserr
-# github.com/jinzhu/gorm v1.9.8
-github.com/jinzhu/gorm
-github.com/jinzhu/gorm/dialects/postgres
-# github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
-github.com/jinzhu/inflection
 # github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af
 github.com/jirfag/go-printf-func-name/pkg/analyzer
 # github.com/json-iterator/go v1.1.12
@@ -258,11 +245,6 @@ github.com/leonklingele/grouper/pkg/analyzer/globals
 github.com/leonklingele/grouper/pkg/analyzer/imports
 github.com/leonklingele/grouper/pkg/analyzer/types
 github.com/leonklingele/grouper/pkg/analyzer/vars
-# github.com/lib/pq v1.10.4
-github.com/lib/pq
-github.com/lib/pq/hstore
-github.com/lib/pq/oid
-github.com/lib/pq/scram
 # github.com/magiconair/properties v1.8.5
 github.com/magiconair/properties
 # github.com/maratori/testpackage v1.0.1
@@ -590,8 +572,6 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
-# gopkg.in/gormigrate.v1 v1.5.0
-gopkg.in/gormigrate.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/ini.v1 v1.66.2
@@ -627,6 +607,7 @@ honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/unused/typemap
 # k8s.io/api v0.22.2
+## explicit
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apiserverinternal/v1alpha1
@@ -806,13 +787,18 @@ k8s.io/client-go/pkg/version
 k8s.io/client-go/plugin/pkg/client/auth/exec
 k8s.io/client-go/rest
 k8s.io/client-go/rest/watch
+k8s.io/client-go/tools/auth
+k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/tools/clientcmd/api
+k8s.io/client-go/tools/clientcmd/api/latest
+k8s.io/client-go/tools/clientcmd/api/v1
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/tools/reference
 k8s.io/client-go/transport
 k8s.io/client-go/util/cert
 k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/flowcontrol
+k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
 # k8s.io/klog/v2 v2.9.0
@@ -835,7 +821,6 @@ sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
-# github.anim.dreamworks.com/DreamCloud/stella-api => github.com/portworx/DreamCloud_stella-api v0.0.0-20211001065015-f32adb49906c
 # github.anim.dreamworks.com/golang/logging => github.com/portworx/golang_logging v1.0.0
 # github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 # github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5

@@ -2,58 +2,61 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"testing"
+	"time"
 
-	"github.anim.dreamworks.com/DreamCloud/stella-api/api/models"
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 
-	client "github.com/portworx/pds-integration-test/test/client"
 	cluster "github.com/portworx/pds-integration-test/test/cluster"
-	"github.com/portworx/pds-integration-test/test/color"
 )
 
 type PDSTestSuite struct {
 	suite.Suite
-	ControlPlane    *cluster.ControlPlane
-	TargetCluster   *cluster.Target
-	TestEnvironment *models.Environment
-	ctx             context.Context
-	apiClient       *pds.APIClient
-}
+	ctx       context.Context
+	startTime time.Time
 
-func (s *PDSTestSuite) SetupSuite() {
-	// Perform basic setup with sanity checks.
-	env := mustHaveEnvVariables(s.T())
-	s.mustHaveControlPlane(env)
-	endpointUrl, err := url.Parse(env.controlPlaneAPI)
-	if err != nil {
-		s.T().Errorf("Unable to access the URL: %s", env.controlPlaneAPI)
-	}
-	apiConf := pds.NewConfiguration()
-	apiConf.Host = endpointUrl.Host
-	apiConf.Scheme = endpointUrl.Scheme
-	s.ctx = context.WithValue(context.Background(), pds.ContextAPIKeys, map[string]pds.APIKey{"ApiKeyAuth": {Key: env.bearerToken, Prefix: "Bearer"}})
-	s.apiClient = pds.NewAPIClient(apiConf)
-
-}
-
-func (s *PDSTestSuite) AfterTest(suiteName, testName string) {
-	if s.T().Failed() {
-		s.T().Log(color.Red(fmt.Sprintf("Failed test %s:", testName)))
-		s.ControlPlane.LogStatus(s.T())
-		s.TargetCluster.LogStatus(s.T(), s.TestEnvironment.Name)
-	}
-}
-
-func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
-	apiClient := client.NewAPI(env.controlPlaneAPI)
-	kubeContext := env.controlPlaneKubeconfig
-	s.ControlPlane = cluster.NewControlPlane(apiClient, kubeContext)
+	targetCluster *cluster.TargetCluster
+	apiClient     *pds.APIClient
 }
 
 func TestPDSSuite(t *testing.T) {
 	suite.Run(t, new(PDSTestSuite))
+}
+
+func (s *PDSTestSuite) SetupSuite() {
+	s.startTime = time.Now()
+
+	// Perform basic setup with sanity checks.
+	env := mustHaveEnvVariables(s.T())
+	s.mustHaveTargetCluster(env)
+	s.mustHaveAPIClient(env)
+}
+
+func (s *PDSTestSuite) TearDownSuite() {
+	if s.T().Failed() {
+		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
+	}
+}
+
+func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
+	endpointUrl, err := url.Parse(env.controlPlaneAPI)
+	s.Require().NoError(err, "Cannot parse control plane URL.")
+
+	apiConf := pds.NewConfiguration()
+	apiConf.Host = endpointUrl.Host
+	apiConf.Scheme = endpointUrl.Scheme
+	s.ctx = context.WithValue(context.Background(),
+		pds.ContextAPIKeys,
+		map[string]pds.APIKey{
+			"ApiKeyAuth": {Key: "TODO", Prefix: "Bearer"},
+		})
+	s.apiClient = pds.NewAPIClient(apiConf)
+}
+
+func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
+	tc, err := cluster.NewTargetCluster(env.targetKubeconfig)
+	s.Require().NoError(err, "Cannot create target cluster.")
+	s.targetCluster = tc
 }
