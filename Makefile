@@ -20,7 +20,10 @@ vendor:
 	go mod vendor
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint run 
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint run
+
+mdlint:
+	docker run --rm -v $$PWD:/workdir davidanson/markdownlint-cli2 "**/*.md" "#vendor"
 
 docker-build:
 	docker build . -t ${IMG}
