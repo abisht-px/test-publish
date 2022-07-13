@@ -9,6 +9,7 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/portworx/pds-integration-test/test/auth"
 	cluster "github.com/portworx/pds-integration-test/test/cluster"
 )
 
@@ -27,6 +28,7 @@ func TestPDSSuite(t *testing.T) {
 
 func (s *PDSTestSuite) SetupSuite() {
 	s.startTime = time.Now()
+	s.ctx = context.Background()
 
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
@@ -47,11 +49,21 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 	apiConf := pds.NewConfiguration()
 	apiConf.Host = endpointUrl.Host
 	apiConf.Scheme = endpointUrl.Scheme
-	s.ctx = context.WithValue(context.Background(),
+
+	bearerToken, err := auth.GetBearerToken(s.ctx,
+		env.secrets.tokenIssuerURL,
+		env.secrets.issuerClientID,
+		env.secrets.issuerClientSecret,
+		env.secrets.pdsUsername,
+		env.secrets.pdsPassword,
+	)
+	s.Require().NoError(err, "Cannot get bearer token.")
+	s.ctx = context.WithValue(s.ctx,
 		pds.ContextAPIKeys,
 		map[string]pds.APIKey{
-			"ApiKeyAuth": {Key: "TODO", Prefix: "Bearer"},
+			"ApiKeyAuth": {Key: bearerToken, Prefix: "Bearer"},
 		})
+
 	s.apiClient = pds.NewAPIClient(apiConf)
 }
 

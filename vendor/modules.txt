@@ -41,6 +41,9 @@ github.com/cespare/xxhash/v2
 github.com/charithe/durationcheck
 # github.com/chavacava/garif v0.0.0-20210405164556-e8a0a408d6af
 github.com/chavacava/garif
+# github.com/coreos/go-oidc/v3 v3.2.0
+## explicit
+github.com/coreos/go-oidc/v3/oidc
 # github.com/daixiang0/gci v0.3.3
 github.com/daixiang0/gci/pkg/analyzer
 github.com/daixiang0/gci/pkg/configuration
@@ -425,6 +428,9 @@ github.com/yagipy/maintidx/pkg/halstvol
 github.com/yeya24/promlinter
 # gitlab.com/bosi/decorder v0.2.1
 gitlab.com/bosi/decorder
+# golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/pbkdf2
 # golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
@@ -439,6 +445,7 @@ golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
@@ -576,6 +583,10 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/inf.v0
 # gopkg.in/ini.v1 v1.66.2
 gopkg.in/ini.v1
+# gopkg.in/square/go-jose.v2 v2.5.1
+gopkg.in/square/go-jose.v2
+gopkg.in/square/go-jose.v2/cipher
+gopkg.in/square/go-jose.v2/json
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
