@@ -11,6 +11,7 @@ COPY Makefile Makefile
 
 # Source.
 COPY test/ test/
+COPY internal/ internal/
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o pds-test ./test
 
