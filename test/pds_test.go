@@ -9,6 +9,7 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 
+	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
 	"github.com/portworx/pds-integration-test/test/auth"
 	cluster "github.com/portworx/pds-integration-test/test/cluster"
 )
@@ -20,6 +21,7 @@ type PDSTestSuite struct {
 
 	targetCluster           *cluster.TargetCluster
 	apiClient               *pds.APIClient
+	pdsAgentInstallable     agent_installer.Installable
 	testPDSAccountID        string
 	testPDSTenantID         string
 	testPDSServiceAccountID string
@@ -48,6 +50,7 @@ func (s *PDSTestSuite) SetupSuite() {
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
+	s.mustUninstallAgent()
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
 	}

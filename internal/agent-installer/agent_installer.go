@@ -1,15 +1,21 @@
 package agent_installer
 
-import "context"
+import (
+	"context"
+)
 
 type Provider interface {
-	// TODO (dbugrik): WIP make version handling through injections.
 	Versions() ([]string, error)
-	Installer(versions string) (Installable, error)
+	Installer(selector Selector) (Installable, error)
 }
 
 type Installable interface {
 	Version() string
-	// TODO (dbugrik): WIP make receiving arguments typed operation (maybe injected component should be used).
-	Install(ctx context.Context, kubeconfig string, args map[string]interface{}) error
+	Install(ctx context.Context) error
+	Uninstall(ctx context.Context) error
+}
+
+type Selector interface {
+	// TODO (dbugrik): WIP Decouple selection with receiving InstallValues.
+	ConstraintsString() string
 }

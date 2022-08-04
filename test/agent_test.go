@@ -6,25 +6,22 @@ import (
 	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
 )
 
-// mustInstallAgent installs latest agent with chart values
 func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	provider, err := agent_installer.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	versions, err := provider.Versions()
-	s.Require().NoError(err, "Cannot get agent installer versions.")
-	s.Require().NotEmpty(versions, "No agent installer versions found.")
+	helmSelectorAgent14, err := agent_installer.NewSelectorHelmPDS14(env.targetKubeconfig, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI)
+	s.Require().NoError(err, "Cannot create agent installer selector.")
 
-	pdsAgentVersion := versions[0]
-	installer, err := provider.Installer(pdsAgentVersion)
-	s.Require().NoError(err, "Cannot get agent installer for version %s.", pdsAgentVersion)
+	installer, err := provider.Installer(helmSelectorAgent14)
+	s.Require().NoError(err, "Cannot get agent installer for version selector %s.", helmSelectorAgent14.ConstraintsString())
 
-	installArgs := map[string]interface{}{
-		"tenantId":    s.testPDSTenantID,
-		"bearerToken": s.testPDSAgentToken,
-		// TODO: Get controlPlaneURL from apiClient.
-		"apiEndpoint": env.controlPlaneAPI,
-	}
-	err = installer.Install(s.ctx, env.targetKubeconfig, installArgs)
-	s.Require().NoError(err, "Cannot install agent for version %s.", pdsAgentVersion)
+	err = installer.Install(s.ctx)
+	s.Require().NoError(err, "Cannot install agent for version %s selector.", helmSelectorAgent14.ConstraintsString())
+	s.pdsAgentInstallable = installer
+}
+
+func (s *PDSTestSuite) mustUninstallAgent() {
+	err := s.pdsAgentInstallable.Uninstall(s.ctx)
+	s.Require().NoError(err)
 }

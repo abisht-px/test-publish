@@ -31,6 +31,7 @@ type Client interface {
 	HasRepoWithNameAndURL(repoName, url string) bool
 	GetChartVersions(repoName, chartName string) ([]string, error)
 	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, ChartVersion, chartVals string, logger DebugLog) error
+	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger DebugLog) error
 }
 
 // miniHelm is a partial implementation of HelmCmd, w/o Helm storage mutating features (Add Chart, Add Repo etc.).
@@ -100,6 +101,12 @@ func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericcl
 	return err
 }
 
+func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger DebugLog) error {
+	// TODO (dbugrik): Add Context handling, Context is not naturally supported by helm v3 action yet
+	_, err := uninstallPDSChartWithContext(m.settings, restGetter, chartName, action.DebugLog(logger))
+	return err
+}
+
 func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
 	// When KUBECONFIG fails fallback to HELM namespace.
 	namespace := settings.Namespace()
@@ -163,4 +170,20 @@ func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSet
 
 	client.Namespace = settings.Namespace()
 	return client.RunWithContext(ctx, chartRequested, vals)
+}
+
+func uninstallPDSChartWithContext(settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, releaseName string, logger action.DebugLog) (*release.UninstallReleaseResponse, error) {
+	// When KUBECONFIG fails fallback to HELM namespace.
+	namespace := settings.Namespace()
+	if config, err := restGetter.ToRawKubeConfigLoader().RawConfig(); err == nil {
+		namespace = config.Contexts[config.CurrentContext].Namespace
+	}
+
+	var actionConfig action.Configuration
+	if err := actionConfig.Init(restGetter, namespace, os.Getenv("HELM_DRIVER"), logger); err != nil {
+		return nil, err
+	}
+
+	client := action.NewUninstall(&actionConfig)
+	return client.Run(releaseName)
 }

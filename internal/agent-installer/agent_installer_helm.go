@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	pdsRepoName  = "pds"
-	pdsChartName = "pds-target"
-	pdsRepoURL   = "https://portworx.github.io/pds-charts"
+	pdsRepoName    = "pds"
+	pdsReleaseName = "pds"
+	pdsChartName   = "pds-target"
+	pdsRepoURL     = "https://portworx.github.io/pds-charts"
 )
 
 type ArtifactProviderHelmPDS struct {
@@ -22,10 +23,19 @@ type ArtifactProviderHelmPDS struct {
 }
 
 type InstallableHelmPDS struct {
-	client          minihelm.Client
-	pdsRepoName     string
-	pdsChartName    string
-	pdsChartVersion string
+	helmClient          minihelm.Client
+	restGetter          genericclioptions.RESTClientGetter
+	helmChartValsString string
+	pdsRepoName         string
+	pdsReleaseName      string
+	pdsChartName        string
+	pdsChartVersion     string
+}
+
+type selectorHelmPDS struct {
+	restGetter        genericclioptions.RESTClientGetter
+	versionContraints string
+	helmChartVals     map[string]string
 }
 
 func nullWriter(format string, v ...interface{}) {}
@@ -64,30 +74,54 @@ func (p *ArtifactProviderHelmPDS) Versions() ([]string, error) {
 	return p.versions, nil
 }
 
-func (p *ArtifactProviderHelmPDS) Installer(version string) (Installable, error) {
+func (p *ArtifactProviderHelmPDS) Installer(selector Selector) (Installable, error) {
+	helmSelector, ok := selector.(*selectorHelmPDS)
+	if !ok {
+		return nil, fmt.Errorf("PDS Helm provider can only receive Helm installable artefact, received not supported type %T", selector)
+	}
+
+	versions, err := p.Versions()
+	if err != nil {
+		return nil, err
+	}
+
+	selectedVersions, err := selectHelmChartVersions(selector.ConstraintsString(), versions)
+	if err != nil {
+		return nil, err
+	}
+
 	return &InstallableHelmPDS{
-		pdsRepoName:     pdsRepoName,
-		pdsChartName:    pdsChartName,
-		pdsChartVersion: version,
-		client:          p.client,
+		pdsRepoName:         pdsRepoName,
+		pdsReleaseName:      pdsReleaseName,
+		pdsChartName:        pdsChartName,
+		pdsChartVersion:     selectedVersions[0],
+		helmClient:          p.client,
+		restGetter:          helmSelector.restGetter,
+		helmChartValsString: helmSelector.ChartVals(),
 	}, nil
 }
 
-func (i *InstallableHelmPDS) Install(ctx context.Context, kubeconfig string, args map[string]interface{}) error {
-	var kv string
-	if args != nil {
-		for k, v := range args {
-			kv += fmt.Sprintf("%s=%v,", k, v)
-		}
-		kv = strings.TrimSuffix(kv, ",")
-	}
-
-	cf := genericclioptions.NewConfigFlags(true)
-	cf.KubeConfig = &kubeconfig
-
-	return i.client.InstallChartVersion(ctx, cf, i.pdsRepoName, i.pdsChartName, i.pdsChartVersion, kv, nullWriter)
+func (i *InstallableHelmPDS) Install(ctx context.Context) error {
+	return i.helmClient.InstallChartVersion(ctx, i.restGetter, i.pdsRepoName, i.pdsChartName, i.pdsChartVersion, i.helmChartValsString, nullWriter)
 }
 
 func (i *InstallableHelmPDS) Version() string {
 	return i.pdsChartVersion
+}
+
+func (i *InstallableHelmPDS) Uninstall(ctx context.Context) error {
+	return i.helmClient.UninstallChartVersion(ctx, i.restGetter, i.pdsChartName, nullWriter)
+}
+
+func (s *selectorHelmPDS) ChartVals() string {
+	var b strings.Builder
+
+	for keyString, valueString := range s.helmChartVals {
+		fmt.Fprintf(&b, "%s=%s,", keyString, valueString)
+	}
+	return strings.TrimSuffix(b.String(), ",")
+}
+
+func (s *selectorHelmPDS) ConstraintsString() string {
+	return s.versionContraints
 }

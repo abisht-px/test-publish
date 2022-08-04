@@ -3,9 +3,9 @@ module github.com/portworx/pds-integration-test
 go 1.16
 
 require (
+	github.com/Masterminds/semver v1.5.0
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.45.0
-	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
@@ -14,7 +14,7 @@ require (
 	helm.sh/helm/v3 v3.7.1
 	k8s.io/api v0.22.1
 	k8s.io/apimachinery v0.22.1
-	k8s.io/cli-runtime v0.22.1 // indirect
+	k8s.io/cli-runtime v0.22.1
 	k8s.io/client-go v0.22.1
 )
 
