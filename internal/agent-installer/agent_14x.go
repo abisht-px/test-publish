@@ -17,3 +17,12 @@ func NewSelectorHelmPDS14(kubeconfig, tenantID, bearerToken, APIEndpoint string)
 		},
 	}, nil
 }
+
+func NewSelectorHelmPDS14WithName(kubeconfig, tenantID, bearerToken, APIEndpoint, clusterName string) (*selectorHelmPDS, error) {
+	selector, error := NewSelectorHelmPDS14(kubeconfig, tenantID, bearerToken, APIEndpoint)
+	if error != nil {
+		return nil, error
+	}
+	selector.helmChartVals["clusterName"] = clusterName
+	return selector, nil
+}

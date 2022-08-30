@@ -33,3 +33,8 @@ func (tc *TargetCluster) LogComponents(t *testing.T, ctx context.Context, since 
 	t.Log("Target cluster:")
 	tc.getLogsForComponents(t, ctx, components, since)
 }
+
+func (tc *TargetCluster) EnsureNamespaces(t *testing.T, ctx context.Context, namespaces []string) {
+	t.Helper()
+	tc.ensurePDSNamespaceLabels(t, ctx, namespaces)
+}

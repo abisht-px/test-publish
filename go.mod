@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.45.0
-	github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81
+	github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8

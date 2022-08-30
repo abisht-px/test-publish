@@ -17,6 +17,7 @@ import (
 // ControllersUpdateApplicationConfigurationTemplateRequest struct for ControllersUpdateApplicationConfigurationTemplateRequest
 type ControllersUpdateApplicationConfigurationTemplateRequest struct {
 	ConfigItems []ModelsConfigItem `json:"config_items,omitempty"`
+	// See models.ApplicationConfigurationTemplate for more information.
 	Name *string `json:"name,omitempty"`
 }
 

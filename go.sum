@@ -1161,6 +1161,8 @@ github.com/polyfloyd/go-errorlint v0.0.0-20211125173453-6d6d39c5bb8b h1:/BDyEJWL
 github.com/polyfloyd/go-errorlint v0.0.0-20211125173453-6d6d39c5bb8b/go.mod h1:wi9BfjxjF/bwiZ701TzmfKu6UKC357IOAtNr0Td0Lvw=
 github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81 h1:T0CsvLxUvVwiq3DKl1Pdh3VBGPFpOoEBLFVOtDl6Y88=
 github.com/portworx/pds-api-go-client v0.0.0-20220224153951-f33532c56f81/go.mod h1:yn0abd9g4Q3fBpY720Eb+hwRV1OnTjROUaSb9mOlzBk=
+github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0 h1:d/J/Pvvse/BVpnY/98aK4WMhiqcPkYQizulAUQ5M5iQ=
+github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0/go.mod h1:yn0abd9g4Q3fBpY720Eb+hwRV1OnTjROUaSb9mOlzBk=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSgv7Sy7s/s=
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=

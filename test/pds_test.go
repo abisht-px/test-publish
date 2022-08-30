@@ -14,18 +14,33 @@ import (
 	cluster "github.com/portworx/pds-integration-test/test/cluster"
 )
 
+const (
+	waiterRetryInterval                          = time.Second * 10
+	waiterDeploymentTargetNameExistsTimeout      = time.Second * 30
+	waiterNamespaceExistsTimeout                 = time.Second * 30
+	waiterDeploymentTargetStatusHealthyTimeout   = time.Second * 120
+	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
+	waiterDeploymentStatusHealthyTimeout         = time.Second * 300
+	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
+)
+
 type PDSTestSuite struct {
 	suite.Suite
 	ctx       context.Context
 	startTime time.Time
 
-	targetCluster           *cluster.TargetCluster
-	apiClient               *pds.APIClient
-	pdsAgentInstallable     agent_installer.Installable
-	testPDSAccountID        string
-	testPDSTenantID         string
-	testPDSServiceAccountID string
-	testPDSAgentToken       string
+	targetCluster             *cluster.TargetCluster
+	apiClient                 *pds.APIClient
+	pdsAgentInstallable       agent_installer.Installable
+	testPDSAccountID          string
+	testPDSTenantID           string
+	testPDSProjectID          string
+	testPDSNamespaceID        string
+	testPDSDeploymentTargetID string
+	testPDSServiceAccountID   string
+	testPDSAgentToken         string
+	shortDeploymentSpecMap    map[PDSDeploymentSpecID]ShortDeploymentSpec
+	imageVersionSpecList      []PDSImageReferenceSpec
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -38,19 +53,25 @@ func (s *PDSTestSuite) SetupSuite() {
 
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
+	s.shortDeploymentSpecMap = mustLoadShortDeploymentSpecMap(s.T())
 	s.mustHaveTargetCluster(env)
+	s.mustHaveTargetClusterNamespaces(env)
 	s.mustHaveAPIClient(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
+	s.mustHavePDStestProject(env)
 	s.mustHavePDStestServiceAccount(env)
 	s.mustHavePDStestAgentToken(env)
 
-	//TODO: Pass agent install values from external configuration source.
+	s.mustLoadImageVersions()
 	s.mustInstallAgent(env)
+	s.mustHavePDStestDeploymentTarget(env)
+	s.mustHavePDStestNamespace(env)
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
 	s.mustUninstallAgent()
+	s.mustDeletePDStestDeploymentTarget()
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
 	}
@@ -92,6 +113,66 @@ func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 	}
 	s.Require().NotEmpty(testPDSTenantID, "PDS tenant %s not found.", env.pdsTenantName)
 	s.testPDSTenantID = testPDSTenantID
+}
+
+// mustHavePDStestProject finds PDS project in Test PDS Tenant with name set in environment and stores its ID as "Test PDS Project".
+func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
+	// TODO: Use project name query filters
+	projects, resp, err := s.apiClient.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.testPDSTenantID).Execute()
+	s.Require().NoError(err, "Error calling PDS API TenantsIdProjectsGet.")
+	s.Require().Equal(200, resp.StatusCode, "PDS API must return HTTP 200")
+	s.Require().NotEmpty(projects, "PDS API must return at least one project.")
+
+	var testPDSProjectID string
+	for _, project := range projects.GetData() {
+		if project.GetName() == env.pdsProjectName {
+			testPDSProjectID = project.GetId()
+			break
+		}
+	}
+	s.Require().NotEmpty(testPDSProjectID, "PDS project %s not found.", env.pdsProjectName)
+	s.testPDSProjectID = testPDSProjectID
+}
+
+func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
+	s.Eventually(
+		func() bool {
+			var err error
+			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
+			return err == nil
+		},
+		waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval,
+		"PDS deployment target %s does not exist.", env.pdsDeploymentTargetName,
+	)
+
+	s.Eventually(
+		func() bool { return isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
+		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
+		"PDS deployment target %s is not healthy.", s.testPDSDeploymentTargetID,
+	)
+}
+
+func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
+	s.Eventually(
+		func() bool { return !isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
+		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
+		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
+	)
+	httRes, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
+	s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdDelete.")
+	s.Require().Equal(204, httRes.StatusCode, "PDS API must return HTTP 204")
+}
+
+func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
+	s.Eventually(
+		func() bool {
+			var err error
+			s.testPDSNamespaceID, err = getNamespaceIDByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
+			return err == nil
+		},
+		waiterNamespaceExistsTimeout, waiterRetryInterval,
+		"PDS Namespace %s does not exist.", env.pdsNamespaceName,
+	)
 }
 
 // mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".
@@ -151,4 +232,73 @@ func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
 	tc, err := cluster.NewTargetCluster(env.targetKubeconfig)
 	s.Require().NoError(err, "Cannot create target cluster.")
 	s.targetCluster = tc
+}
+
+func (s *PDSTestSuite) mustInstallAgent(env environment) {
+	provider, err := agent_installer.NewHelmProvider()
+	s.Require().NoError(err, "Cannot create agent installer provider.")
+
+	helmSelectorAgent14, err := agent_installer.NewSelectorHelmPDS14WithName(env.targetKubeconfig, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
+	s.Require().NoError(err, "Cannot create agent installer selector.")
+
+	installer, err := provider.Installer(helmSelectorAgent14)
+	s.Require().NoError(err, "Cannot get agent installer for version selector %s.", helmSelectorAgent14.ConstraintsString())
+
+	err = installer.Install(s.ctx)
+	s.Require().NoError(err, "Cannot install agent for version %s selector.", helmSelectorAgent14.ConstraintsString())
+	s.pdsAgentInstallable = installer
+}
+
+func (s *PDSTestSuite) mustUninstallAgent() {
+	err := s.pdsAgentInstallable.Uninstall(s.ctx)
+	s.Require().NoError(err)
+}
+
+func (s *PDSTestSuite) mustLoadImageVersions() {
+	imageVersions, err := getAllImageVersions(s.ctx, s.apiClient)
+	s.Require().NoError(err, "Error while reading image versions.")
+	s.Require().NotEmpty(imageVersions, "No image versions found.")
+	s.imageVersionSpecList = imageVersions
+}
+
+func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) string {
+	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
+	s.Require().NotNil(image, "No image found for deployment %s.", deployment.ServiceName)
+
+	deploymentID, err := createPDSDeployment(s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	s.Require().NoError(err, "Error while creating deployment %s.", deployment.ServiceName)
+	s.Require().NotEmpty(deploymentID, "Deployment ID is empty.")
+
+	return deploymentID
+}
+
+func (s *PDSTestSuite) mustEnsureDeploymentHealty(deploymentID string) {
+	s.Eventually(
+		func() bool {
+			return isDeploymentHealthy(s.ctx, s.apiClient, deploymentID)
+		},
+		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		"Deployment %s is not healthy.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
+	_, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err, "Error while removing deployment %s.", deploymentID)
+}
+
+func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
+	s.Eventually(
+		func() bool {
+			_, httpResp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+			return httpResp.StatusCode == 404 && err != nil
+		},
+		waiterDeploymentStatusRemovedTimeout, waiterRetryInterval,
+		"Deployment %s is not removed.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(env environment) {
+	nss := []string{env.pdsNamespaceName}
+	s.targetCluster.EnsureNamespaces(s.T(), s.ctx, nss)
 }

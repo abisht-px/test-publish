@@ -55,8 +55,12 @@ func newArtifactProviderHelmPDS(pdsRepoName, pdsChartName string) (*ArtifactProv
 		return nil, fmt.Errorf("repo %s not found", pdsRepoName)
 	}
 
-	var versions []string
-	versions, err = client.GetChartVersions(pdsRepoName, pdsChartName)
+	err = client.UpdateRepo(pdsRepoName)
+	if err != nil {
+		return nil, err
+	}
+
+	versions, err := client.GetChartVersions(pdsRepoName, pdsChartName)
 	if err != nil {
 		return nil, err
 	}

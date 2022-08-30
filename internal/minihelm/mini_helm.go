@@ -29,6 +29,7 @@ type DebugLog func(format string, v ...interface{})
 type Client interface {
 	HasRepoWithName(repoName string) bool
 	HasRepoWithNameAndURL(repoName, url string) bool
+	UpdateRepo(repoName string) error
 	GetChartVersions(repoName, chartName string) ([]string, error)
 	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, ChartVersion, chartVals string, logger DebugLog) error
 	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger DebugLog) error
@@ -75,6 +76,16 @@ func (m *miniHelm) HasRepoWithNameAndURL(repoName, url string) bool {
 	return entry != nil && entry.URL == url
 }
 
+func (m *miniHelm) UpdateRepo(repoName string) error {
+	entry := m.storage.Get(repoName)
+	repo, err := repo.NewChartRepository(entry, getter.All(m.settings))
+	if err != nil {
+		return err
+	}
+	_, err = repo.DownloadIndexFile()
+	return err
+}
+
 func (m *miniHelm) GetChartVersions(repoName, chartName string) ([]string, error) {
 	f := path.Join(m.settings.RepositoryCache, helmpath.CacheIndexFile(repoName))
 	ind, err := repo.LoadIndexFile(f)
@@ -108,11 +119,7 @@ func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter generic
 }
 
 func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
-	// When KUBECONFIG fails fallback to HELM namespace.
-	namespace := settings.Namespace()
-	if config, err := restGetter.ToRawKubeConfigLoader().RawConfig(); err == nil {
-		namespace = config.Contexts[config.CurrentContext].Namespace
-	}
+	namespace := setGetterNamespace(settings, restGetter)
 
 	var actionConfig action.Configuration
 	if err := actionConfig.Init(restGetter, namespace, os.Getenv("HELM_DRIVER"), logger); err != nil {
@@ -173,11 +180,7 @@ func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSet
 }
 
 func uninstallPDSChartWithContext(settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, releaseName string, logger action.DebugLog) (*release.UninstallReleaseResponse, error) {
-	// When KUBECONFIG fails fallback to HELM namespace.
-	namespace := settings.Namespace()
-	if config, err := restGetter.ToRawKubeConfigLoader().RawConfig(); err == nil {
-		namespace = config.Contexts[config.CurrentContext].Namespace
-	}
+	namespace := setGetterNamespace(settings, restGetter)
 
 	var actionConfig action.Configuration
 	if err := actionConfig.Init(restGetter, namespace, os.Getenv("HELM_DRIVER"), logger); err != nil {
@@ -186,4 +189,13 @@ func uninstallPDSChartWithContext(settings *cli.EnvSettings, restGetter genericc
 
 	client := action.NewUninstall(&actionConfig)
 	return client.Run(releaseName)
+}
+
+func setGetterNamespace(settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter) string {
+	// HACK: Update getter's (a.k.a. client from KUBECONFIG) namespace.
+	namespace := settings.Namespace()
+	if config, err := restGetter.ToRawKubeConfigLoader().RawConfig(); err == nil {
+		config.Contexts[config.CurrentContext].Namespace = namespace
+	}
+	return namespace
 }

@@ -149,40 +149,10 @@ type ApiApiBackupsIdJobsGetRequest struct {
 	ctx context.Context
 	ApiService *BackupJobsApiService
 	id string
-	sortBy *string
-	limit *string
-	continuation *string
-	id2 *string
-	state *string
 }
 
-// A given BackupJob attribute to sort results by (one of: id, created_at, file_size, start_time, completion_time, state)
-func (r ApiApiBackupsIdJobsGetRequest) SortBy(sortBy string) ApiApiBackupsIdJobsGetRequest {
-	r.sortBy = &sortBy
-	return r
-}
-// Maximum number of rows to return (could be less)
-func (r ApiApiBackupsIdJobsGetRequest) Limit(limit string) ApiApiBackupsIdJobsGetRequest {
-	r.limit = &limit
-	return r
-}
-// Use a token returned by a previous query to continue listing with the next batch of rows
-func (r ApiApiBackupsIdJobsGetRequest) Continuation(continuation string) ApiApiBackupsIdJobsGetRequest {
-	r.continuation = &continuation
-	return r
-}
-// Filter results by BackupJob id
-func (r ApiApiBackupsIdJobsGetRequest) Id2(id2 string) ApiApiBackupsIdJobsGetRequest {
-	r.id2 = &id2
-	return r
-}
-// Filter results by BackupJob state
-func (r ApiApiBackupsIdJobsGetRequest) State(state string) ApiApiBackupsIdJobsGetRequest {
-	r.state = &state
-	return r
-}
 
-func (r ApiApiBackupsIdJobsGetRequest) Execute() (*ControllersPaginatedBackupJobs, *http.Response, error) {
+func (r ApiApiBackupsIdJobsGetRequest) Execute() (*ControllersBackupJobsResponse, *http.Response, error) {
 	return r.ApiService.ApiBackupsIdJobsGetExecute(r)
 }
 
@@ -204,13 +174,13 @@ func (a *BackupJobsApiService) ApiBackupsIdJobsGet(ctx context.Context, id strin
 }
 
 // Execute executes the request
-//  @return ControllersPaginatedBackupJobs
-func (a *BackupJobsApiService) ApiBackupsIdJobsGetExecute(r ApiApiBackupsIdJobsGetRequest) (*ControllersPaginatedBackupJobs, *http.Response, error) {
+//  @return ControllersBackupJobsResponse
+func (a *BackupJobsApiService) ApiBackupsIdJobsGetExecute(r ApiApiBackupsIdJobsGetRequest) (*ControllersBackupJobsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *ControllersPaginatedBackupJobs
+		localVarReturnValue  *ControllersBackupJobsResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "BackupJobsApiService.ApiBackupsIdJobsGet")
@@ -225,21 +195,6 @@ func (a *BackupJobsApiService) ApiBackupsIdJobsGetExecute(r ApiApiBackupsIdJobsG
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
-	if r.sortBy != nil {
-		localVarQueryParams.Add("sort_by", parameterToString(*r.sortBy, ""))
-	}
-	if r.limit != nil {
-		localVarQueryParams.Add("limit", parameterToString(*r.limit, ""))
-	}
-	if r.continuation != nil {
-		localVarQueryParams.Add("continuation", parameterToString(*r.continuation, ""))
-	}
-	if r.id2 != nil {
-		localVarQueryParams.Add("id", parameterToString(*r.id2, ""))
-	}
-	if r.state != nil {
-		localVarQueryParams.Add("state", parameterToString(*r.state, ""))
-	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 

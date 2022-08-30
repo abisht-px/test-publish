@@ -16,7 +16,9 @@ import (
 
 // ControllersUpdateBackupPolicyRequest struct for ControllersUpdateBackupPolicyRequest
 type ControllersUpdateBackupPolicyRequest struct {
+	// Name of the backup policy. Must be unique for the given tenant.
 	Name *string `json:"name,omitempty"`
+	// An array of the backup schedules. Must be non-empty.
 	Schedules []ModelsBackupSchedule `json:"schedules,omitempty"`
 }
 

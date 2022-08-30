@@ -79,3 +79,35 @@ func (c *cluster) getPodLogs(t *testing.T, ctx context.Context, pod corev1.Pod, 
 	require.NoError(t, err, "Copying logs buffer.")
 	return buf.String()
 }
+
+func (c *cluster) ensurePDSNamespaceLabels(t *testing.T, ctx context.Context, namespaces []string) {
+	t.Helper()
+	for _, ns := range namespaces {
+		k8sns, err := c.clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+		if err != nil {
+			k8sns := &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   ns,
+					Labels: k8sRequiredNamespaceLabels,
+				},
+			}
+			_, err := c.clientset.CoreV1().Namespaces().Create(ctx, k8sns, metav1.CreateOptions{})
+			require.NoError(t, err, "Creating namespace %s", k8sns.Name)
+			continue
+		}
+
+		updateRequired := false
+		for key, requiredValue := range k8sRequiredNamespaceLabels {
+			if actualValue, ok := k8sns.Labels[key]; !ok || actualValue != requiredValue {
+				k8sns.Labels[key] = requiredValue
+				updateRequired = true
+			}
+		}
+		if !updateRequired {
+			continue
+		}
+
+		_, err = c.clientset.CoreV1().Namespaces().Update(ctx, k8sns, metav1.UpdateOptions{})
+		require.NoError(t, err, "Updating namespace %s", k8sns.Name)
+	}
+}

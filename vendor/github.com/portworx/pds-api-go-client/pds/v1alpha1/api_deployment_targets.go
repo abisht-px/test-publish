@@ -27,6 +27,124 @@ var (
 // DeploymentTargetsApiService DeploymentTargetsApi service
 type DeploymentTargetsApiService service
 
+type ApiApiDeploymentTargetsIdConfigGetRequest struct {
+	ctx context.Context
+	ApiService *DeploymentTargetsApiService
+	id string
+}
+
+
+func (r ApiApiDeploymentTargetsIdConfigGetRequest) Execute() (*ControllersTargetClusterConfigResponse, *http.Response, error) {
+	return r.ApiService.ApiDeploymentTargetsIdConfigGetExecute(r)
+}
+
+/*
+ApiDeploymentTargetsIdConfigGet Get configuration values for a DeploymentTarget
+
+Fetches the config values for a DeploymentTarget
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @param id DeploymentTarget ID (must be valid UUID)
+ @return ApiApiDeploymentTargetsIdConfigGetRequest
+*/
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdConfigGet(ctx context.Context, id string) ApiApiDeploymentTargetsIdConfigGetRequest {
+	return ApiApiDeploymentTargetsIdConfigGetRequest{
+		ApiService: a,
+		ctx: ctx,
+		id: id,
+	}
+}
+
+// Execute executes the request
+//  @return ControllersTargetClusterConfigResponse
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdConfigGetExecute(r ApiApiDeploymentTargetsIdConfigGetRequest) (*ControllersTargetClusterConfigResponse, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodGet
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *ControllersTargetClusterConfigResponse
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DeploymentTargetsApiService.ApiDeploymentTargetsIdConfigGet")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/deployment-targets/{id}/config"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["ApiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiApiDeploymentTargetsIdCredentialsGetRequest struct {
 	ctx context.Context
 	ApiService *DeploymentTargetsApiService
@@ -41,11 +159,13 @@ func (r ApiApiDeploymentTargetsIdCredentialsGetRequest) Execute() (*ControllersD
 /*
 ApiDeploymentTargetsIdCredentialsGet Get join credentials of a DeploymentTarget
 
-Fetches the join credentials of a DeploymentTarget
+Deprecated, use GET /api/deployment-targets/{id}/config instead
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id DeploymentTarget ID (must be valid UUID)
  @return ApiApiDeploymentTargetsIdCredentialsGetRequest
+
+Deprecated
 */
 func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdCredentialsGet(ctx context.Context, id string) ApiApiDeploymentTargetsIdCredentialsGetRequest {
 	return ApiApiDeploymentTargetsIdCredentialsGetRequest{
@@ -57,6 +177,7 @@ func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdCredentialsGet(ctx c
 
 // Execute executes the request
 //  @return ControllersDeploymentTargetCredentialsResponse
+// Deprecated
 func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdCredentialsGetExecute(r ApiApiDeploymentTargetsIdCredentialsGetRequest) (*ControllersDeploymentTargetCredentialsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
@@ -143,6 +264,113 @@ func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdCredentialsGetExecut
 	}
 
 	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiApiDeploymentTargetsIdDeleteRequest struct {
+	ctx context.Context
+	ApiService *DeploymentTargetsApiService
+	id string
+}
+
+
+func (r ApiApiDeploymentTargetsIdDeleteRequest) Execute() (*http.Response, error) {
+	return r.ApiService.ApiDeploymentTargetsIdDeleteExecute(r)
+}
+
+/*
+ApiDeploymentTargetsIdDelete Delete DeploymentTarget
+
+Deletes a single DeploymentTarget.
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @param id DeploymentTarget ID (must be valid UUID)
+ @return ApiApiDeploymentTargetsIdDeleteRequest
+*/
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdDelete(ctx context.Context, id string) ApiApiDeploymentTargetsIdDeleteRequest {
+	return ApiApiDeploymentTargetsIdDeleteRequest{
+		ApiService: a,
+		ctx: ctx,
+		id: id,
+	}
+}
+
+// Execute executes the request
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdDeleteExecute(r ApiApiDeploymentTargetsIdDeleteRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodDelete
+		localVarPostBody     interface{}
+		formFiles            []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DeploymentTargetsApiService.ApiDeploymentTargetsIdDelete")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/deployment-targets/{id}"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["ApiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
 }
 
 type ApiApiDeploymentTargetsIdGetRequest struct {
@@ -390,6 +618,124 @@ func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdHeartbeatPostExecute
 	}
 
 	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiApiDeploymentTargetsIdMetadataPostRequest struct {
+	ctx context.Context
+	ApiService *DeploymentTargetsApiService
+	id string
+	body *ControllersDeploymentTargetMetadataRequest
+}
+
+// Object with target cluster ID
+func (r ApiApiDeploymentTargetsIdMetadataPostRequest) Body(body ControllersDeploymentTargetMetadataRequest) ApiApiDeploymentTargetsIdMetadataPostRequest {
+	r.body = &body
+	return r
+}
+
+func (r ApiApiDeploymentTargetsIdMetadataPostRequest) Execute() (*http.Response, error) {
+	return r.ApiService.ApiDeploymentTargetsIdMetadataPostExecute(r)
+}
+
+/*
+ApiDeploymentTargetsIdMetadataPost Update DeploymentTarget metadata
+
+Handles DeploymentTarget metadata by updating relevant tables in DB
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @param id DeploymentTarget ID (must be valid UUID)
+ @return ApiApiDeploymentTargetsIdMetadataPostRequest
+*/
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdMetadataPost(ctx context.Context, id string) ApiApiDeploymentTargetsIdMetadataPostRequest {
+	return ApiApiDeploymentTargetsIdMetadataPostRequest{
+		ApiService: a,
+		ctx: ctx,
+		id: id,
+	}
+}
+
+// Execute executes the request
+func (a *DeploymentTargetsApiService) ApiDeploymentTargetsIdMetadataPostExecute(r ApiApiDeploymentTargetsIdMetadataPostRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodPost
+		localVarPostBody     interface{}
+		formFiles            []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DeploymentTargetsApiService.ApiDeploymentTargetsIdMetadataPost")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/deployment-targets/{id}/metadata"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.body == nil {
+		return nil, reportError("body is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.body
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["ApiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
 }
 
 type ApiApiDeploymentTargetsIdPutRequest struct {

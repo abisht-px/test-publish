@@ -18,6 +18,7 @@ import (
 type ControllersCreateApplicationConfigurationTemplatesRequest struct {
 	ConfigItems []ModelsConfigItem `json:"config_items,omitempty"`
 	DataServiceId *string `json:"data_service_id,omitempty"`
+	// See models.ApplicationConfigurationTemplate for more information.
 	Name *string `json:"name,omitempty"`
 }
 
