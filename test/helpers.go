@@ -3,8 +3,10 @@ package test
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
 const (
@@ -192,4 +194,28 @@ func createPDSDeployment(ctx context.Context, apiClient *pds.APIClient, deployme
 	}
 
 	return res.GetId(), nil
+}
+
+func isJobSucceeded(job *batchv1.Job) bool {
+	return *job.Spec.Completions == job.Status.Succeeded
+}
+
+func getDeploymentPodName(deploymentName string) string {
+	return fmt.Sprintf("%s-0", deploymentName)
+}
+
+type TestLogger struct {
+	t *testing.T
+}
+
+func newTestLogger(t *testing.T) *TestLogger {
+	return &TestLogger{t}
+}
+
+func (l *TestLogger) Print(v ...interface{}) {
+	l.t.Log(v...)
+}
+
+func (l *TestLogger) Printf(format string, v ...interface{}) {
+	l.t.Logf(format, v...)
 }

@@ -30,7 +30,7 @@ func (s *PDSTestSuite) TestDeploymentCreateDelete() {
 				s.mustRemoveDeployment(deploymentID)
 				s.mustEnsureDeploymentRemoved(deploymentID)
 			})
-			s.mustEnsureDeploymentHealty(deploymentID)
+			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.T().Logf("Good deployment %s for spec %d", deploymentID, tt.specID)
 		})
 	}

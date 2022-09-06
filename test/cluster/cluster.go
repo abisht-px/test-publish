@@ -8,7 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/portworx/pds-integration-test/internal/portforward"
+
+	"k8s.io/client-go/rest"
+
 	"github.com/stretchr/testify/require"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,6 +21,7 @@ import (
 )
 
 type cluster struct {
+	config    *rest.Config
 	clientset kubernetes.Interface
 }
 
@@ -38,8 +44,21 @@ func newCluster(kubeconfig string) (*cluster, error) {
 		return nil, err
 	}
 	return &cluster{
+		config:    config,
 		clientset: clientset,
 	}, nil
+}
+
+func (c *cluster) PortforwardPod(namespace, name string, port int) (*portforward.Tunnel, error) {
+	return portforward.New(c.clientset, c.config, namespace, name, port)
+}
+
+func (c *cluster) GetSecret(ctx context.Context, namespace, name string) (*corev1.Secret, error) {
+	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+func (c *cluster) GetJob(ctx context.Context, namespace, name string) (*batchv1.Job, error) {
+	return c.clientset.BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 func (c *cluster) getLogsForComponents(t *testing.T, ctx context.Context, components []componentSelector, since time.Time) {

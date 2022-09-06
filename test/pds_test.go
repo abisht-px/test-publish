@@ -2,7 +2,10 @@ package test
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -10,6 +13,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
+	"github.com/portworx/pds-integration-test/internal/loadgen"
+	"github.com/portworx/pds-integration-test/internal/loadgen/postgresql"
 	"github.com/portworx/pds-integration-test/test/auth"
 	cluster "github.com/portworx/pds-integration-test/test/cluster"
 )
@@ -30,6 +35,7 @@ type PDSTestSuite struct {
 	startTime time.Time
 
 	targetCluster             *cluster.TargetCluster
+	targetClusterKubeconfig   string
 	apiClient                 *pds.APIClient
 	pdsAgentInstallable       agent_installer.Installable
 	testPDSAccountID          string
@@ -53,6 +59,7 @@ func (s *PDSTestSuite) SetupSuite() {
 
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
+	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.shortDeploymentSpecMap = mustLoadShortDeploymentSpecMap(s.T())
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env)
@@ -159,7 +166,11 @@ func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
 	)
 	httRes, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
-	s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdDelete.")
+	if err != nil {
+		rawbody, parseErr := ioutil.ReadAll(httRes.Body)
+		s.Require().NoError(parseErr, "Parse api error")
+		s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdDelete: %s", rawbody)
+	}
 	s.Require().Equal(204, httRes.StatusCode, "PDS API must return HTTP 204")
 }
 
@@ -272,7 +283,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 	return deploymentID
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentHealty(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
 	s.Eventually(
 		func() bool {
 			return isDeploymentHealthy(s.ctx, s.apiClient, deploymentID)
@@ -280,6 +291,64 @@ func (s *PDSTestSuite) mustEnsureDeploymentHealty(deploymentID string) {
 		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
 		"Deployment %s is not healthy.", deploymentID,
 	)
+}
+
+func (s *PDSTestSuite) mustEnsureDeploymentReady(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
+	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
+
+	s.Eventually(
+		func() bool {
+			clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
+			if err != nil {
+				return false
+			}
+			if !isJobSucceeded(clusterInitJob) {
+				return false
+			}
+
+			nodeInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, nodeInitJobName)
+			if err != nil {
+				return false
+			}
+			return isJobSucceeded(nodeInitJob)
+		},
+		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		"Deployment %s is not ready.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespace, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	dataService, _, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	s.Require().NoError(err)
+
+	port, err := getDefaultDBPort(dataService.GetName())
+	s.Require().NoError(err)
+
+	podName := getDeploymentPodName(deployment.GetClusterResourceName())
+	pf, err := s.targetCluster.PortforwardPod(namespace.GetName(), podName, port)
+	s.Require().NoError(err)
+
+	dbPassword := s.mustGetDBPassword(namespace.GetName(), deployment.GetClusterResourceName())
+
+	loadtest, err := s.mustGetLoadgenFor(dataService.GetName(), "localhost", strconv.Itoa(pf.Local), dbPassword)
+	s.Require().NoError(err)
+
+	err = loadtest.Run(s.ctx)
+	s.Require().NoError(err)
 }
 
 func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
@@ -301,4 +370,43 @@ func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
 func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(env environment) {
 	nss := []string{env.pdsNamespaceName}
 	s.targetCluster.EnsureNamespaces(s.T(), s.ctx, nss)
+}
+
+func (s *PDSTestSuite) mustGetDBPassword(namespace, deploymentName string) string {
+	secretName := fmt.Sprintf("%s-creds", deploymentName)
+	secret, err := s.targetCluster.GetSecret(s.ctx, namespace, secretName)
+	s.Require().NoError(err)
+
+	return string(secret.Data["password"])
+}
+
+func (s *PDSTestSuite) mustGetLoadgenFor(dataServiceType, host, port, dbPassword string) (loadgen.Interface, error) {
+	switch dataServiceType {
+	case dbPostgres:
+		return s.newPostgresLoadgen(host, port, "pds", dbPassword), nil
+	}
+
+	return nil, fmt.Errorf("loadgen for the %s database is not found", dataServiceType)
+}
+
+func (s *PDSTestSuite) newPostgresLoadgen(host, port, dbUser, dbPassword string) loadgen.Interface {
+	postgresLoader, err := postgresql.New(postgresql.Config{
+		User:     dbUser,
+		Password: dbPassword,
+		Host:     host,
+		Port:     port,
+		Count:    5,
+		Logger:   newTestLogger(s.T()),
+	})
+	s.Require().NoError(err)
+
+	return postgresLoader
+}
+
+func getDefaultDBPort(deploymentType string) (int, error) {
+	switch deploymentType {
+	case dbPostgres:
+		return 5432, nil
+	}
+	return -1, fmt.Errorf("has no default port for the %s database", deploymentType)
 }
