@@ -17,12 +17,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 type cluster struct {
-	config    *rest.Config
-	clientset kubernetes.Interface
+	config     *rest.Config
+	clientset  kubernetes.Interface
+	metaClient metadata.Interface
 }
 
 type componentSelector struct {
@@ -43,9 +45,14 @@ func newCluster(kubeconfig string) (*cluster, error) {
 	if err != nil {
 		return nil, err
 	}
+	metaClient, err := metadata.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
 	return &cluster{
-		config:    config,
-		clientset: clientset,
+		config:     config,
+		clientset:  clientset,
+		metaClient: metaClient,
 	}, nil
 }
 

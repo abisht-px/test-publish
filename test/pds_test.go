@@ -12,11 +12,12 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/portworx/pds-integration-test/test/auth"
+
 	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
 	"github.com/portworx/pds-integration-test/internal/loadgen"
 	"github.com/portworx/pds-integration-test/internal/loadgen/postgresql"
-	"github.com/portworx/pds-integration-test/test/auth"
-	cluster "github.com/portworx/pds-integration-test/test/cluster"
+	"github.com/portworx/pds-integration-test/test/cluster"
 )
 
 const (
@@ -77,7 +78,8 @@ func (s *PDSTestSuite) SetupSuite() {
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
-	s.mustUninstallAgent()
+	env := mustHaveEnvVariables(s.T())
+	s.mustUninstallAgent(env)
 	s.mustDeletePDStestDeploymentTarget()
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
@@ -260,9 +262,24 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	s.pdsAgentInstallable = installer
 }
 
-func (s *PDSTestSuite) mustUninstallAgent() {
-	err := s.pdsAgentInstallable.Uninstall(s.ctx)
-	s.Require().NoError(err)
+func (s *PDSTestSuite) mustUninstallAgent(env environment) {
+	err := s.targetCluster.DeleteCRDs(s.ctx)
+	s.NoError(err, "Cannot delete CRDs.")
+	err = s.pdsAgentInstallable.Uninstall(s.ctx)
+	s.NoError(err, "Cannot uninstall agent.")
+	err = s.targetCluster.DeleteClusterRoles(s.ctx)
+	s.NoError(err, "Cannot delete cluster roles.")
+	err = s.targetCluster.DeletePVCs(s.ctx, env.pdsNamespaceName)
+	s.NoError(err, "Cannot delete PVCs.")
+	err = s.targetCluster.DeleteStorageClasses(s.ctx)
+	s.NoError(err, "Cannot delete storage classes.")
+	err = s.targetCluster.DeleteReleasedPVs(s.ctx)
+	s.NoError(err, "Cannot delete released PVs.")
+	err = s.targetCluster.DeleteDetachedPXVolumes(s.ctx, env.pxNamespaceName)
+	s.NoError(err, "Cannot delete detached PX volumes.")
+	err = s.targetCluster.DeletePXCredentials(s.ctx, env.pxNamespaceName)
+	s.NoError(err, "Cannot delete detached PX volumes.")
+
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {

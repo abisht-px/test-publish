@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.45.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0
 	github.com/stretchr/testify v1.8.0

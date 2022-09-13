@@ -15,6 +15,7 @@ const (
 	envPDSProjectName            = "PDS_PROJECT_NAME"
 	envPDSDeploymentTargetName   = "PDS_DEPTARGET_NAME"
 	envPDSNamespaceName          = "PDS_NAMESPACE_NAME"
+	envPXNamespaceName           = "PX_NAMESPACE_NAME"
 	envPDSServiceAccountName     = "PDS_SERVICE_ACCOUNT_NAME"
 	envTargetKubeconfig          = "TARGET_CLUSTER_KUBECONFIG"
 	envSecretTokenIssuerURL      = "SECRET_TOKEN_ISSUER_URL"
@@ -30,6 +31,7 @@ const (
 	defaultPDSTenantName           = "Default"
 	defaultPDSProjectName          = "Default"
 	defaultPDSNamespaceName        = "dev"
+	defaultPXNamespaceName         = "kube-system"
 	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster"
 	defaultPDSAccountName          = "PDS Integration Test"
 )
@@ -49,6 +51,7 @@ type environment struct {
 	pdsTenantName           string
 	pdsProjectName          string
 	pdsNamespaceName        string
+	pxNamespaceName         string
 	pdsDeploymentTargetName string
 	pdsServiceAccountName   string
 	secrets                 secrets
@@ -63,6 +66,7 @@ func mustHaveEnvVariables(t *testing.T) environment {
 		pdsTenantName:           getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
 		pdsProjectName:          getEnvVariableWithDefault(envPDSProjectName, defaultPDSProjectName),
 		pdsNamespaceName:        getEnvVariableWithDefault(envPDSNamespaceName, defaultPDSNamespaceName),
+		pxNamespaceName:         getEnvVariableWithDefault(envPXNamespaceName, defaultPXNamespaceName),
 		pdsDeploymentTargetName: getEnvVariableWithDefault(envPDSDeploymentTargetName, defaultPDSDeploymentTargetName),
 		pdsServiceAccountName:   getEnvVariableWithDefault(envPDSServiceAccountName, defaultPDSServiceAccountName),
 		secrets: secrets{

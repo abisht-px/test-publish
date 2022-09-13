@@ -13,16 +13,17 @@ Running locally (`make test`) is also possible if:
 
 ## Environment Configuration
 
-| Key                         | Default value                | Description                                                                    |
-|-----------------------------|------------------------------|--------------------------------------------------------------------------------|
-| CONTROL_PLANE_API           |                              | URL of the publicly accessible control plane PDS API.                          |
-| TARGET_CLUSTER_KUBECONFIG   |                              | Path to the kubeconfig file that allows the test to access the target cluster. |
-| PDS_ACCOUNT_NAME            | PDS Integration Test         | Name of the PDS account to be used for the test.                               |
-| PDS_TENANT_NAME             | Default                      | Name of the PDS tenant to be used for the test.                                |
-| PDS_DEPTARGET_NAME          | PDS Integration Test Cluster | Name of the PDS deployment target to be used for the test.                     |
-| PDS_SERVICE_ACCOUNT_NAME    | Default-AgentWriter          | Name of the PDS service account to be used for agent installation.             |
-| PDS_PROJECT_NAME            | Default                      | Name of the PDS project to be used for the test.                               |
-| PDS_NAMESPACE_NAME          | dev                          | Name of the PDS namespace to be used for the test.                             |
+| Key                       | Default value                | Description                                                                    |
+|---------------------------|------------------------------|--------------------------------------------------------------------------------|
+| CONTROL_PLANE_API         |                              | URL of the publicly accessible control plane PDS API.                          |
+| TARGET_CLUSTER_KUBECONFIG |                              | Path to the kubeconfig file that allows the test to access the target cluster. |
+| PDS_ACCOUNT_NAME          | PDS Integration Test         | Name of the PDS account to be used for the test.                               |
+| PDS_TENANT_NAME           | Default                      | Name of the PDS tenant to be used for the test.                                |
+| PDS_DEPTARGET_NAME        | PDS Integration Test Cluster | Name of the PDS deployment target to be used for the test.                     |
+| PDS_SERVICE_ACCOUNT_NAME  | Default-AgentWriter          | Name of the PDS service account to be used for agent installation.             |
+| PDS_PROJECT_NAME          | Default                      | Name of the PDS project to be used for the test.                               |
+| PDS_NAMESPACE_NAME        | dev                          | Name of the PDS namespace to be used for the test.                             |
+| PX_NAMESPACE_NAME         | kube-system                  | Name of the PX namespace to be used for the test.                              |
 
 ### Secrets
 
@@ -48,6 +49,6 @@ HELM_NAMESPACE='pds-system' \
   SECRET_PDS_USERNAME='...' \
   SECRET_PDS_PASSWORD='...' \
   PDS_ACCOUNT_NAME='Portworx' \
-  PDS_DEPLOYMENT_SPEC0='{spec_id:0, service_name: PostgreSQL, image_version_build: 81c330f, app_config_template_name: QaDefault, storage_option_name: QaDefault, resource_settings_template_name: Medium, service_type: LoadBalancer, name_prefix: autotest-81c330f-, node_count: 1}' \
+  PDS_DEPLOYMENT_SPEC0='{spec_id:0, service_name: PostgreSQL, image_version_build: 802315d, app_config_template_name: QaDefault, storage_option_name: QaDefault, resource_settings_template_name: Medium, service_type: LoadBalancer, name_prefix: autotest-81c330f-, node_count: 1}' \
   go test -test.v -test.run=Test ./...
 ```
