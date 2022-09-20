@@ -28,8 +28,56 @@ func (s *PDSTestSuite) TestPostgreSQL_WriteData() {
 				s.mustEnsureDeploymentRemoved(deploymentID)
 			})
 			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentReady(deploymentID)
+			s.mustEnsureDeploymentInitialized(deploymentID)
+			s.mustEnsureStatefulSetReady(deploymentID)
 			s.mustReadWriteData(deploymentID)
 		})
+	}
+}
+
+func (s *PDSTestSuite) TestPostgreSQL_UpdateImage() {
+	testCases := []struct {
+		spec           ShortDeploymentSpec
+		targetVersions []string
+	}{
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbPostgres,
+				ImageVersionTag:              "14.2",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "autotest-81c330f-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"14.4"},
+		},
+	}
+
+	for _, tt := range testCases {
+		for _, targetVersionTag := range tt.targetVersions {
+			s.Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.ServiceName, tt.spec.ImageVersionTag, targetVersionTag), func() {
+				deploymentID := s.mustDeployDeploymentSpec(tt.spec)
+				s.T().Cleanup(func() {
+					s.mustRemoveDeployment(deploymentID)
+					s.mustEnsureDeploymentRemoved(deploymentID)
+				})
+
+				// Create.
+				s.mustEnsureDeploymentHealthy(deploymentID)
+				s.mustEnsureDeploymentInitialized(deploymentID)
+				s.mustEnsureStatefulSetReady(deploymentID)
+				s.mustReadWriteData(deploymentID)
+
+				// Update.
+				newSpec := tt.spec
+				newSpec.ImageVersionTag = targetVersionTag
+				s.mustUpdateDeployment(deploymentID, &newSpec)
+				s.mustEnsureStatefulSetReady(deploymentID)
+				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
+				s.mustReadWriteData(deploymentID)
+			})
+		}
 	}
 }

@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"io"
 	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
@@ -103,7 +104,14 @@ func getAllImageVersions(ctx context.Context, apiClient *pds.APIClient) ([]PDSIm
 
 func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImageReferenceSpec) *PDSImageReferenceSpec {
 	for _, image := range images {
-		if image.ServiceName == deployment.ServiceName && image.ImageVersionBuild == deployment.ImageVersionBuild {
+		found := image.ServiceName == deployment.ServiceName
+		if deployment.ImageVersionTag != "" {
+			found = found && image.ImageVersionTag == deployment.ImageVersionTag
+		}
+		if deployment.ImageVersionBuild != "" {
+			found = found && image.ImageVersionBuild == deployment.ImageVersionBuild
+		}
+		if found {
 			return &image
 		}
 	}
@@ -188,9 +196,13 @@ func createPDSDeployment(ctx context.Context, apiClient *pds.APIClient, deployme
 	pdsDeployment.SetServiceType(deployment.ServiceType)
 	pdsDeployment.SetStorageOptionsTemplateId(storage.GetId())
 
-	res, _, err := apiClient.DeploymentsApi.ApiProjectsIdDeploymentsPost(ctx, projectID).Body(*pdsDeployment).Execute()
+	res, httpRes, err := apiClient.DeploymentsApi.ApiProjectsIdDeploymentsPost(ctx, projectID).Body(*pdsDeployment).Execute()
 	if err != nil {
-		return "", err
+		rawbody, parseErr := io.ReadAll(httpRes.Body)
+		if parseErr != nil {
+			return "", err
+		}
+		return "", fmt.Errorf(string(rawbody))
 	}
 
 	return res.GetId(), nil

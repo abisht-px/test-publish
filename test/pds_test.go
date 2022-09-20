@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 
@@ -144,40 +146,40 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 }
 
 func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
-	s.Eventually(
+	var err error
+	s.Require().Eventually(
 		func() bool {
-			var err error
 			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
 			return err == nil
 		},
 		waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval,
-		"PDS deployment target %s does not exist.", env.pdsDeploymentTargetName,
+		"PDS deployment target %q does not exist: %s.", env.pdsDeploymentTargetName, err,
 	)
 
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool { return isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
-		"PDS deployment target %s is not healthy.", s.testPDSDeploymentTargetID,
+		"PDS deployment target %q is not healthy.", s.testPDSDeploymentTargetID,
 	)
 }
 
 func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool { return !isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
 	)
-	httRes, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
+	httpRes, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
 	if err != nil {
-		rawbody, parseErr := ioutil.ReadAll(httRes.Body)
+		rawbody, parseErr := ioutil.ReadAll(httpRes.Body)
 		s.Require().NoError(parseErr, "Parse api error")
 		s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdDelete: %s", rawbody)
 	}
-	s.Require().Equal(204, httRes.StatusCode, "PDS API must return HTTP 204")
+	s.Require().Equal(204, httpRes.StatusCode, "PDS API must return HTTP 204")
 }
 
 func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool {
 			var err error
 			s.testPDSNamespaceID, err = getNamespaceIDByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
@@ -300,8 +302,24 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 	return deploymentID
 }
 
+func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDeploymentSpec) {
+	image := findImageVersionForRecord(spec, s.imageVersionSpecList)
+	s.Require().NotNil(image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
+
+	req := pds.ControllersUpdateDeploymentRequest{
+		ImageId: &image.ImageID,
+	}
+	_, httpRes, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
+	if err != nil {
+		rawbody, parseErr := ioutil.ReadAll(httpRes.Body)
+		s.Require().NoError(parseErr, "Parse api error")
+		s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdPut: %s", rawbody)
+	}
+	s.Require().NoError(err, "Update %s deployment.", deploymentID)
+}
+
 func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool {
 			return isDeploymentHealthy(s.ctx, s.apiClient, deploymentID)
 		},
@@ -310,7 +328,48 @@ func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentReady(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	s.Require().Eventually(
+		func() bool {
+			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+			if err != nil {
+				return false
+			}
+
+			return *set.Spec.Replicas == set.Status.ReadyReplicas
+		},
+		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		"Deployment %s is not ready.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageBuild string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	dataService, _, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+	s.Require().NoError(err)
+
+	image, err := getDatabaseImage(dataService.GetName(), set)
+	s.Require().NoError(err)
+	s.Require().Contains(image, imageBuild, "found %s image, expected %s tag", image, imageBuild)
+}
+
+func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
 	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err)
 
@@ -321,7 +380,7 @@ func (s *PDSTestSuite) mustEnsureDeploymentReady(deploymentID string) {
 	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
 	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
 
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool {
 			clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
 			if err != nil {
@@ -360,7 +419,6 @@ func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
 	s.Require().NoError(err)
 
 	dbPassword := s.mustGetDBPassword(namespace.GetName(), deployment.GetClusterResourceName())
-
 	loadtest, err := s.mustGetLoadgenFor(dataService.GetName(), "localhost", strconv.Itoa(pf.Local), dbPassword)
 	s.Require().NoError(err)
 
@@ -374,7 +432,7 @@ func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
-	s.Eventually(
+	s.Require().Eventually(
 		func() bool {
 			_, httpResp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 			return httpResp.StatusCode == 404 && err != nil
@@ -426,4 +484,24 @@ func getDefaultDBPort(deploymentType string) (int, error) {
 		return 5432, nil
 	}
 	return -1, fmt.Errorf("has no default port for the %s database", deploymentType)
+}
+
+func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, error) {
+	var containerName string
+	switch deploymentType {
+	case dbPostgres:
+		containerName = "postgresql"
+	default:
+		return "", fmt.Errorf("unknown database type: %s", deploymentType)
+	}
+
+	for _, container := range set.Spec.Template.Spec.Containers {
+		if container.Name != containerName {
+			continue
+		}
+
+		return container.Image, nil
+	}
+
+	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
 }

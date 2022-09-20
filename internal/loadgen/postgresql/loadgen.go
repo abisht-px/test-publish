@@ -107,7 +107,7 @@ func (l *Loader) init(ctx context.Context) error {
 		l.cfg.User, l.cfg.Password, l.cfg.Host, l.cfg.Port, l.cfg.DBName)
 	conn, err := pgx.Connect(ctx, url)
 	if err != nil {
-		return fmt.Errorf("unable to connect to database: %s", err)
+		return fmt.Errorf("unable to connect to a database: %s", err)
 	}
 	l.conn = conn
 
