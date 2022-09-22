@@ -8,18 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/portworx/pds-integration-test/internal/portforward"
-
-	"k8s.io/client-go/rest"
-
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/portworx/pds-integration-test/internal/portforward"
 )
 
 type cluster struct {
@@ -71,6 +71,12 @@ func (c *cluster) GetJob(ctx context.Context, namespace, name string) (*batchv1.
 
 func (c *cluster) GetStatefulSet(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error) {
 	return c.clientset.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+func (c *cluster) ListPods(ctx context.Context, namespace string, labelSelector map[string]string) (*corev1.PodList, error) {
+	return c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(labelSelector),
+	})
 }
 
 func (c *cluster) getLogsForComponents(t *testing.T, ctx context.Context, components []componentSelector, since time.Time) {

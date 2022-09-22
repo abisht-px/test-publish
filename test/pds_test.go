@@ -9,16 +9,15 @@ import (
 	"testing"
 	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
-
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/portworx/pds-integration-test/test/auth"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
 	"github.com/portworx/pds-integration-test/internal/loadgen"
 	"github.com/portworx/pds-integration-test/internal/loadgen/postgresql"
+	"github.com/portworx/pds-integration-test/test/auth"
 	"github.com/portworx/pds-integration-test/test/cluster"
 )
 
@@ -153,7 +152,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 			return err == nil
 		},
 		waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval,
-		"PDS deployment target %q does not exist: %s.", env.pdsDeploymentTargetName, err,
+		"PDS deployment target %q does not exist: %v.", env.pdsDeploymentTargetName, err,
 	)
 
 	s.Require().Eventually(
@@ -303,12 +302,18 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 }
 
 func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDeploymentSpec) {
-	image := findImageVersionForRecord(spec, s.imageVersionSpecList)
-	s.Require().NotNil(image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
+	req := pds.ControllersUpdateDeploymentRequest{}
+	if spec.ImageVersionTag != "" && spec.ImageVersionBuild != "" {
+		image := findImageVersionForRecord(spec, s.imageVersionSpecList)
+		s.Require().NotNil(image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
-	req := pds.ControllersUpdateDeploymentRequest{
-		ImageId: &image.ImageID,
+		req.ImageId = &image.ImageID
 	}
+	if spec.NodeCount != 0 {
+		nodeCount := int32(spec.NodeCount)
+		req.NodeCount = &nodeCount
+	}
+
 	_, httpRes, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
 	if err != nil {
 		rawbody, parseErr := ioutil.ReadAll(httpRes.Body)
@@ -347,6 +352,28 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
 		},
 		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
 		"Deployment %s is not ready.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustEnsureStatefulSetReadyReplicas(deploymentID string, replicas int) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	s.Require().Eventually(
+		func() bool {
+			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+			if err != nil {
+				return false
+			}
+
+			return int(set.Status.ReadyReplicas) == replicas
+		},
+		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		"Deployment %s is expected to have %d ready replicas.", deploymentID, replicas,
 	)
 }
 
@@ -414,7 +441,7 @@ func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
 	port, err := getDefaultDBPort(dataService.GetName())
 	s.Require().NoError(err)
 
-	podName := getDeploymentPodName(deployment.GetClusterResourceName())
+	podName := s.mustGetDeploymentPodName(deploymentID, deployment.GetClusterResourceName(), dataService.GetName(), namespace.GetName())
 	pf, err := s.targetCluster.PortforwardPod(namespace.GetName(), podName, port)
 	s.Require().NoError(err)
 
@@ -476,6 +503,23 @@ func (s *PDSTestSuite) newPostgresLoadgen(host, port, dbUser, dbPassword string)
 	s.Require().NoError(err)
 
 	return postgresLoader
+}
+
+func (s *PDSTestSuite) mustGetDeploymentPodName(deploymentID, deploymentName, deploymentType, namespace string) string {
+	switch deploymentType {
+	case dbPostgres:
+		// For the port-forward tunnel needs the 'master' pod otherwise we'll get the 'read-only' error.
+		selector := map[string]string{
+			"pds/deployment-id": deploymentID,
+			"role":              "master",
+		}
+		podList, err := s.targetCluster.ListPods(s.ctx, namespace, selector)
+		s.Require().NoError(err)
+		s.Require().NotEmpty(podList.Items, "get pods for the label selector: %s", labels.FormatLabels(selector))
+		return podList.Items[0].Name
+	default:
+		return getDeploymentPodName(deploymentName)
+	}
 }
 
 func getDefaultDBPort(deploymentType string) (int, error) {
