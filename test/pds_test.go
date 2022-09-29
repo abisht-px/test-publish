@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/pointer"
 
 	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
 	"github.com/portworx/pds-integration-test/internal/loadgen"
@@ -28,7 +29,12 @@ const (
 	waiterDeploymentTargetStatusHealthyTimeout   = time.Second * 120
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
 	waiterDeploymentStatusHealthyTimeout         = time.Second * 300
+	waiterBackupStatusSucceededTimeout           = time.Second * 300
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
+)
+
+var (
+	namePrefix = fmt.Sprintf("integration-test-%d", time.Now().Unix())
 )
 
 type PDSTestSuite struct {
@@ -36,19 +42,21 @@ type PDSTestSuite struct {
 	ctx       context.Context
 	startTime time.Time
 
-	targetCluster             *cluster.TargetCluster
-	targetClusterKubeconfig   string
-	apiClient                 *pds.APIClient
-	pdsAgentInstallable       agent_installer.Installable
-	testPDSAccountID          string
-	testPDSTenantID           string
-	testPDSProjectID          string
-	testPDSNamespaceID        string
-	testPDSDeploymentTargetID string
-	testPDSServiceAccountID   string
-	testPDSAgentToken         string
-	shortDeploymentSpecMap    map[PDSDeploymentSpecID]ShortDeploymentSpec
-	imageVersionSpecList      []PDSImageReferenceSpec
+	targetCluster              *cluster.TargetCluster
+	targetClusterKubeconfig    string
+	apiClient                  *pds.APIClient
+	pdsAgentInstallable        agent_installer.Installable
+	testPDSAccountID           string
+	testPDSTenantID            string
+	testPDSProjectID           string
+	testPDSNamespaceID         string
+	testPDSDeploymentTargetID  string
+	testPDSServiceAccountID    string
+	testPDSBackupCredentialsID string
+	testPDSBackupTargetID      string
+	testPDSAgentToken          string
+	shortDeploymentSpecMap     map[PDSDeploymentSpecID]ShortDeploymentSpec
+	imageVersionSpecList       []PDSImageReferenceSpec
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -76,11 +84,15 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustInstallAgent(env)
 	s.mustHavePDStestDeploymentTarget(env)
 	s.mustHavePDStestNamespace(env)
+	s.mustEnsureS3BackupCredentials(env)
+	s.mustEnsureS3BackupTarget(env)
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
 	env := mustHaveEnvVariables(s.T())
 	s.mustUninstallAgent(env)
+	s.mustDeleteBackupTarget()
+	s.mustDeleteBackupCredentials()
 	s.mustDeletePDStestDeploymentTarget()
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
@@ -425,6 +437,119 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
 		},
 		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
 		"Deployment %s is not ready.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustCreateBackup(deploymentID string) *pds.ModelsBackup {
+	backupReq := pds.ControllersCreateDeploymentBackup{
+		BackupLevel:    pointer.String("snapshot"),
+		BackupTargetId: pointer.String(s.testPDSBackupTargetID),
+		BackupType:     pointer.String("adhoc"),
+	}
+	backup, _, err := s.apiClient.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(backupReq).Execute()
+	s.Require().NoError(err)
+
+	return backup
+}
+
+func (s *PDSTestSuite) mustDeleteBackup(backupID string) {
+	_, err := s.apiClient.BackupsApi.ApiBackupsIdDelete(s.ctx, backupID).Execute()
+	s.Require().NoError(err)
+}
+
+func (s *PDSTestSuite) mustEnsureS3BackupCredentials(env environment) {
+	tenantID := s.testPDSTenantID
+	backupCredentialsName := fmt.Sprintf("%s-backupcredentials-s3", namePrefix)
+
+	backupCredentialsResp, _, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, tenantID).Execute()
+	s.Require().NoError(err)
+
+	for _, backupCredentials := range backupCredentialsResp.Data {
+		if backupCredentials.GetName() == backupCredentialsName {
+			s.testPDSBackupCredentialsID = backupCredentials.GetId()
+			break
+		}
+	}
+
+	if s.testPDSBackupCredentialsID == "" {
+		backupCredentials := pds.ControllersCreateBackupCredentialsRequest{
+			Name: &backupCredentialsName,
+			Credentials: &pds.ControllersCredentials{
+				S3: &pds.ModelsS3Credentials{
+					Endpoint:  pointer.String(env.backupTarget.credentials.s3.endpoint),
+					AccessKey: pointer.String(env.backupTarget.credentials.s3.accessKey),
+					SecretKey: pointer.String(env.backupTarget.credentials.s3.secretKey),
+				},
+			},
+		}
+		backupCreds, _, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, tenantID).Body(backupCredentials).Execute()
+		s.Require().NoError(err)
+
+		s.testPDSBackupCredentialsID = backupCreds.GetId()
+	}
+}
+
+func (s *PDSTestSuite) mustEnsureS3BackupTarget(env environment) {
+	tenantID := s.testPDSTenantID
+	backupTargetName := fmt.Sprintf("%s-backuptarget-s3", namePrefix)
+
+	backupTargets, _, err := s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsGet(s.ctx, tenantID).Execute()
+	s.Require().NoError(err)
+
+	for _, backupTarget := range backupTargets.Data {
+		if backupTarget.GetName() == backupTargetName {
+			s.testPDSBackupTargetID = backupTarget.GetId()
+			break
+		}
+	}
+
+	if s.testPDSBackupTargetID == "" {
+		backupTarget := pds.ControllersCreateTenantBackupTarget{
+			Name:                pointer.StringPtr(backupTargetName),
+			BackupCredentialsId: pointer.StringPtr(s.testPDSBackupCredentialsID),
+			Bucket:              pointer.String(env.backupTarget.bucket),
+			Region:              pointer.String(env.backupTarget.region),
+			Type:                pointer.String("s3"),
+		}
+		backupTargetModel, _, err := s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(backupTarget).Execute()
+		s.Require().NoError(err)
+
+		s.testPDSBackupTargetID = backupTargetModel.GetId()
+	}
+}
+
+func (s *PDSTestSuite) mustDeleteBackupCredentials() {
+	if s.testPDSBackupCredentialsID != "" {
+		_, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, s.testPDSBackupCredentialsID).Execute()
+		s.NoError(err)
+	}
+}
+
+func (s *PDSTestSuite) mustDeleteBackupTarget() {
+	if s.testPDSBackupTargetID != "" {
+		_, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, s.testPDSBackupTargetID).Execute()
+		s.NoError(err)
+	}
+}
+
+func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	s.Require().Eventually(
+		func() bool {
+			pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
+			if err != nil {
+				return false
+			}
+			return isBackupSucceeded(pdsBackup)
+		},
+		waiterBackupStatusSucceededTimeout, waiterRetryInterval,
+		"Backup %s for the %s deployment is not ready.", backupName, deploymentID,
 	)
 }
 

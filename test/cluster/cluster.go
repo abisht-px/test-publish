@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -24,7 +25,7 @@ import (
 
 type cluster struct {
 	config     *rest.Config
-	clientset  kubernetes.Interface
+	clientset  *kubernetes.Clientset
 	metaClient metadata.Interface
 }
 
@@ -77,6 +78,13 @@ func (c *cluster) ListPods(ctx context.Context, namespace string, labelSelector 
 	return c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(labelSelector),
 	})
+}
+
+func (c *cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*backupsv1.Backup, error) {
+	result := &backupsv1.Backup{}
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
+	err := c.clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
+	return result, err
 }
 
 func (c *cluster) getLogsForComponents(t *testing.T, ctx context.Context, components []componentSelector, since time.Time) {

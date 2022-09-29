@@ -6,7 +6,7 @@ const (
 	dbPostgres = "PostgreSQL"
 )
 
-func (s *PDSTestSuite) TestPostgreSQL_WriteData() {
+func (s *PDSTestSuite) TestDataService_WriteData() {
 	deployments := []ShortDeploymentSpec{
 		{
 			ServiceName:                  dbPostgres,
@@ -35,7 +35,38 @@ func (s *PDSTestSuite) TestPostgreSQL_WriteData() {
 	}
 }
 
-func (s *PDSTestSuite) TestPostgreSQL_UpdateImage() {
+func (s *PDSTestSuite) TestDataService_Backup() {
+	deployments := []ShortDeploymentSpec{
+		{
+			ServiceName:                  dbPostgres,
+			ImageVersionBuild:            "81c330f",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "autotest-81c330f-",
+			NodeCount:                    1,
+		},
+	}
+
+	for _, deployment := range deployments {
+		s.Run(fmt.Sprintf("%s-%s-backup", deployment.ServiceName, deployment.ImageVersionBuild), func() {
+			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			s.T().Cleanup(func() {
+				s.mustRemoveDeployment(deploymentID)
+				s.mustEnsureDeploymentRemoved(deploymentID)
+			})
+			s.mustEnsureDeploymentHealthy(deploymentID)
+			s.mustEnsureDeploymentInitialized(deploymentID)
+			s.mustEnsureStatefulSetReady(deploymentID)
+			backup := s.mustCreateBackup(deploymentID)
+			s.mustEnsureBackupSuccessful(deploymentID, backup.GetClusterResourceName())
+			s.mustDeleteBackup(backup.GetId())
+		})
+	}
+}
+
+func (s *PDSTestSuite) TestDataService_UpdateImage() {
 	testCases := []struct {
 		spec           ShortDeploymentSpec
 		targetVersions []string
@@ -82,7 +113,7 @@ func (s *PDSTestSuite) TestPostgreSQL_UpdateImage() {
 	}
 }
 
-func (s *PDSTestSuite) TestPostgreSQL_ScaleUp() {
+func (s *PDSTestSuite) TestDataService_ScaleUp() {
 	testCases := []struct {
 		spec    ShortDeploymentSpec
 		scaleTo int

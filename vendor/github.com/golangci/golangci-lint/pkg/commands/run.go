@@ -95,7 +95,7 @@ func initFlagSet(fs *pflag.FlagSet, cfg *config.Config, m *lintersdb.Manager, is
 		"Modules download mode. If not empty, passed as -mod=<mode> to go tools")
 	fs.IntVar(&rc.ExitCodeIfIssuesFound, "issues-exit-code",
 		exitcodes.IssuesFound, wh("Exit code when issues were found"))
-	fs.StringVar(&rc.Go, "go", "1.17", wh("Targeted Go version"))
+	fs.StringVar(&rc.Go, "go", "", wh("Targeted Go version"))
 	fs.StringSliceVar(&rc.BuildTags, "build-tags", nil, wh("Build tags"))
 
 	fs.DurationVar(&rc.Timeout, "deadline", defaultTimeout, wh("Deadline for total work"))
@@ -279,10 +279,11 @@ func (e *Executor) initRun() {
 		Use:   "run",
 		Short: "Run the linters",
 		Run:   e.executeRun,
-		PreRun: func(_ *cobra.Command, _ []string) {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if ok := e.acquireFileLock(); !ok {
-				e.log.Fatalf("Parallel golangci-lint is running")
+				return errors.New("parallel golangci-lint is running")
 			}
+			return nil
 		},
 		PostRun: func(_ *cobra.Command, _ []string) {
 			e.releaseFileLock()

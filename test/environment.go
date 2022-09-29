@@ -24,6 +24,11 @@ const (
 	envSecretPDSUsername         = "SECRET_PDS_USERNAME"
 	envSecretPDSPassword         = "SECRET_PDS_PASSWORD"
 	envShortDeploymentSpecPrefix = "PDS_DEPLOYMENT_SPEC"
+	envBackupTargetBucket        = "PDS_BACKUPTARGET_BUCKET"
+	envBackupTargetRegion        = "PDS_BACKUPTARGET_REGION"
+	envS3CredentialsAccessKey    = "PDS_S3CREDENTIALS_ACCESSKEY"
+	envS3CredentialsEndpoint     = "PDS_S3CREDENTIALS_ENDPOINT"
+	envS3CredentialsSecretKey    = "PDS_S3CREDENTIALS_SECRETKEY"
 )
 
 const (
@@ -34,6 +39,7 @@ const (
 	defaultPXNamespaceName         = "kube-system"
 	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster"
 	defaultPDSAccountName          = "PDS Integration Test"
+	defaultS3Endpoint              = "s3.amazonaws.com"
 )
 
 type secrets struct {
@@ -42,6 +48,22 @@ type secrets struct {
 	issuerClientSecret string
 	pdsUsername        string
 	pdsPassword        string
+}
+
+type credentials struct {
+	s3 s3Credentials
+}
+
+type s3Credentials struct {
+	accessKey string
+	endpoint  string
+	secretKey string
+}
+
+type backupTarget struct {
+	bucket string
+	region string
+	credentials
 }
 
 type environment struct {
@@ -55,6 +77,7 @@ type environment struct {
 	pdsDeploymentTargetName string
 	pdsServiceAccountName   string
 	secrets                 secrets
+	backupTarget            backupTarget
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
@@ -75,6 +98,17 @@ func mustHaveEnvVariables(t *testing.T) environment {
 			issuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
 			pdsUsername:        mustGetEnvVariable(t, envSecretPDSUsername),
 			pdsPassword:        mustGetEnvVariable(t, envSecretPDSPassword),
+		},
+		backupTarget: backupTarget{
+			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
+			region: mustGetEnvVariable(t, envBackupTargetRegion),
+			credentials: credentials{
+				s3: s3Credentials{
+					accessKey: mustGetEnvVariable(t, envS3CredentialsAccessKey),
+					endpoint:  getEnvVariableWithDefault(envS3CredentialsEndpoint, defaultS3Endpoint),
+					secretKey: mustGetEnvVariable(t, envS3CredentialsSecretKey),
+				},
+			},
 		},
 	}
 }

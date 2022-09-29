@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 )
 
@@ -210,6 +211,10 @@ func createPDSDeployment(ctx context.Context, apiClient *pds.APIClient, deployme
 
 func isJobSucceeded(job *batchv1.Job) bool {
 	return *job.Spec.Completions == job.Status.Succeeded
+}
+
+func isBackupSucceeded(backup *backupsv1.Backup) bool {
+	return backup.Status.Succeeded > 0
 }
 
 func getDeploymentPodName(deploymentName string) string {

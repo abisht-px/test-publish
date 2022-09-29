@@ -5,19 +5,20 @@ go 1.16
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/coreos/go-oidc/v3 v3.2.0
-	github.com/golangci/golangci-lint v1.45.0
+	github.com/golangci/golangci-lint v1.48.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0
+	github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
+	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.7.1
-	k8s.io/api v0.22.1
-	k8s.io/apimachinery v0.22.1
+	k8s.io/api v0.22.7
+	k8s.io/apimachinery v0.22.7
 	k8s.io/cli-runtime v0.22.1
-	k8s.io/client-go v0.22.1
+	k8s.io/client-go v0.22.7
+	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 )
 
 replace (
