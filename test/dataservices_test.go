@@ -10,12 +10,12 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 	deployments := []ShortDeploymentSpec{
 		{
 			ServiceName:                  dbPostgres,
-			ImageVersionBuild:            "81c330f",
+			ImageVersionTag:              "14.5",
 			AppConfigTemplateName:        "QaDefault",
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-81c330f-",
+			NamePrefix:                   "autotest-14.5-",
 			NodeCount:                    1,
 		},
 	}
@@ -39,12 +39,12 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 	deployments := []ShortDeploymentSpec{
 		{
 			ServiceName:                  dbPostgres,
-			ImageVersionBuild:            "81c330f",
+			ImageVersionTag:              "14.5",
 			AppConfigTemplateName:        "QaDefault",
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-81c330f-",
+			NamePrefix:                   "autotest-14.5-",
 			NodeCount:                    1,
 		},
 	}
@@ -79,10 +79,23 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-81c330f-",
+				NamePrefix:                   "autotest-14.2-",
 				NodeCount:                    1,
 			},
-			targetVersions: []string{"14.4"},
+			targetVersions: []string{"14.4", "14.5"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbPostgres,
+				ImageVersionTag:              "14.4",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "autotest-14.4-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"14.5"},
 		},
 	}
 
@@ -105,8 +118,8 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				newSpec := tt.spec
 				newSpec.ImageVersionTag = targetVersionTag
 				s.mustUpdateDeployment(deploymentID, &newSpec)
-				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
+				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustReadWriteData(deploymentID)
 			})
 		}
@@ -126,7 +139,20 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-81c330f-",
+				NamePrefix:                   "autotest-14.4-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbPostgres,
+				ImageVersionTag:              "14.5",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "autotest-14.5-",
 				NodeCount:                    1,
 			},
 			scaleTo: 2,

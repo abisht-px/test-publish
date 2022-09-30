@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -315,7 +316,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 
 func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
-	if spec.ImageVersionTag != "" && spec.ImageVersionBuild != "" {
+	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
 		image := findImageVersionForRecord(spec, s.imageVersionSpecList)
 		s.Require().NotNil(image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
@@ -389,7 +390,7 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyReplicas(deploymentID string, r
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageBuild string) {
+func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageTag string) {
 	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err)
 
@@ -400,12 +401,21 @@ func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageBuild strin
 	s.Require().NoError(err)
 
 	namespace := namespaceModel.GetName()
-	set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-	s.Require().NoError(err)
-
-	image, err := getDatabaseImage(dataService.GetName(), set)
-	s.Require().NoError(err)
-	s.Require().Contains(image, imageBuild, "found %s image, expected %s tag", image, imageBuild)
+	s.Require().Eventually(
+		func() bool {
+			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+			if err != nil {
+				return false
+			}
+			image, err := getDatabaseImage(dataService.GetName(), set)
+			if err != nil {
+				return false
+			}
+			return strings.Contains(image, imageTag)
+		},
+		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		"Statefulset %s is expected to have %s image tag.", deployment.GetClusterResourceName(), imageTag,
+	)
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
@@ -587,7 +597,7 @@ func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
 	s.Require().Eventually(
 		func() bool {
 			_, httpResp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-			return httpResp.StatusCode == 404 && err != nil
+			return httpResp != nil && httpResp.StatusCode == 404 && err != nil
 		},
 		waiterDeploymentStatusRemovedTimeout, waiterRetryInterval,
 		"Deployment %s is not removed.", deploymentID,
