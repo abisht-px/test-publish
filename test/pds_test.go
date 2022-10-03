@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -94,9 +95,9 @@ func (s *PDSTestSuite) SetupSuite() {
 
 func (s *PDSTestSuite) TearDownSuite() {
 	env := mustHaveEnvVariables(s.T())
-	s.mustUninstallAgent(env)
 	s.mustDeleteBackupTarget()
 	s.mustDeleteBackupCredentials()
+	s.mustUninstallAgent(env)
 	s.mustDeletePDStestDeploymentTarget()
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
@@ -542,6 +543,15 @@ func (s *PDSTestSuite) mustDeleteBackupTarget() {
 	if s.testPDSBackupTargetID != "" {
 		_, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, s.testPDSBackupTargetID).Execute()
 		s.NoError(err)
+
+		s.Require().Eventually(
+			func() bool {
+				_, httpResp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, s.testPDSBackupTargetID).Execute()
+				return err != nil && httpResp != nil && httpResp.StatusCode == http.StatusNotFound
+			},
+			waiterBackupStatusSucceededTimeout, waiterRetryInterval,
+			"Backup target %s is node deleted.", s.testPDSBackupTargetID,
+		)
 	}
 }
 
