@@ -60,7 +60,9 @@ func (tc *TargetCluster) DeleteCRDs(ctx context.Context) error {
 	for _, crd := range crdList.Items {
 		if strings.HasSuffix(crd.Name, "pds.io") {
 			crdDelErr := tc.metaClient.Resource(crdGroupVersionResource).Delete(ctx, crd.Name, metav1.DeleteOptions{})
-			err = multierror.Append(err, crdDelErr)
+			if crdDelErr != nil {
+				err = multierror.Append(err, crdDelErr)
+			}
 		}
 	}
 	return err
@@ -103,7 +105,9 @@ func (tc *TargetCluster) DeleteReleasedPVs(ctx context.Context) error {
 		if item.Status.Phase == "Released" {
 			item.Spec.PersistentVolumeReclaimPolicy = "Delete"
 			_, updatePVErr := tc.clientset.CoreV1().PersistentVolumes().Update(ctx, &item, metav1.UpdateOptions{})
-			err = multierror.Append(err, updatePVErr)
+			if updatePVErr != nil {
+				err = multierror.Append(err, updatePVErr)
+			}
 		}
 	}
 	return err
@@ -136,7 +140,9 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context, pxNamespac
 		if volume.Volume.AttachedState == "ATTACH_STATE_INTERNAL" ||
 			volume.Volume.AttachedState == "ATTACH_STATE_INTERNAL_SWITCH" {
 			_, volumeDelErr := tc.deletePxVolume(ctx, pxNamespace, volume.Volume.ID)
-			err = multierror.Append(err, volumeDelErr)
+			if volumeDelErr != nil {
+				err = multierror.Append(err, volumeDelErr)
+			}
 		}
 	}
 
@@ -168,19 +174,21 @@ func (tc *TargetCluster) DeletePXCredentials(ctx context.Context, pxNamespace st
 
 	for _, credentialID := range credentialsResponse.CredentialIDs {
 		credentialDetailJSON, getCredentialsErr := tc.getPXCredentialDetail(ctx, pxNamespace, credentialID)
-		if err != nil {
+		if getCredentialsErr != nil {
 			err = multierror.Append(err, getCredentialsErr)
 			continue
 		}
 		var credentialDetail pxCredentialsInspectResponse
 		unmarshalErr := json.Unmarshal(credentialDetailJSON, &credentialDetail)
-		if err != nil {
+		if unmarshalErr != nil {
 			err = multierror.Append(err, unmarshalErr)
 			continue
 		}
 		if strings.HasPrefix(credentialDetail.Name, "pdscreds-") {
 			_, deleteCredentialErr := tc.deletePXCredential(ctx, pxNamespace, credentialID)
-			err = multierror.Append(err, deleteCredentialErr)
+			if deleteCredentialErr != nil {
+				err = multierror.Append(err, deleteCredentialErr)
+			}
 		}
 	}
 

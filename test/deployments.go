@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,6 +31,17 @@ type ShortDeploymentSpec struct {
 	ServiceType                  string `yaml:"service_type"`
 	NamePrefix                   string `yaml:"name_prefix"`
 	NodeCount                    int    `yaml:"node_count"`
+}
+
+func (d ShortDeploymentSpec) getImageVersionString() string {
+	if d.ImageVersionTag != "" {
+		if d.ImageVersionBuild != "" {
+			return fmt.Sprintf("%s-%s", d.ImageVersionTag, d.ImageVersionBuild)
+		} else {
+			return d.ImageVersionTag
+		}
+	}
+	return d.ImageVersionBuild
 }
 
 type PDSDeploymentSpecID int

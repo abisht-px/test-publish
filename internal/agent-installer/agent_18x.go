@@ -1,10 +1,10 @@
 package agent_installer
 
 const (
-	helmPDSVersionConstraint = "~1.4"
+	helmPDSVersionConstraint = "~1.8"
 )
 
-func NewSelectorHelmPDS14(kubeconfig, tenantID, bearerToken, APIEndpoint string) (*selectorHelmPDS, error) {
+func NewSelectorHelmPDS18(kubeconfig, tenantID, bearerToken, APIEndpoint string) (*selectorHelmPDS, error) {
 	getter := restGetterFromKubeConfig(kubeconfig)
 
 	return &selectorHelmPDS{
@@ -18,10 +18,10 @@ func NewSelectorHelmPDS14(kubeconfig, tenantID, bearerToken, APIEndpoint string)
 	}, nil
 }
 
-func NewSelectorHelmPDS14WithName(kubeconfig, tenantID, bearerToken, APIEndpoint, clusterName string) (*selectorHelmPDS, error) {
-	selector, error := NewSelectorHelmPDS14(kubeconfig, tenantID, bearerToken, APIEndpoint)
-	if error != nil {
-		return nil, error
+func NewSelectorHelmPDS18WithName(kubeconfig, tenantID, bearerToken, APIEndpoint, clusterName string) (*selectorHelmPDS, error) {
+	selector, err := NewSelectorHelmPDS18(kubeconfig, tenantID, bearerToken, APIEndpoint)
+	if err != nil {
+		return nil, err
 	}
 	selector.helmChartVals["clusterName"] = clusterName
 	return selector, nil

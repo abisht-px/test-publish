@@ -23,6 +23,10 @@ import (
 	"github.com/portworx/pds-integration-test/internal/portforward"
 )
 
+const (
+	jobNameLabel = "job-name"
+)
+
 type cluster struct {
 	config     *rest.Config
 	clientset  *kubernetes.Clientset
@@ -85,6 +89,61 @@ func (c *cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
 	err := c.clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
 	return result, err
+}
+
+func (c *cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar) (*batchv1.Job, error) {
+	jobs := c.clientset.BatchV1().Jobs(namespace)
+	var backOffLimit int32 = 0
+	var ttlSecondsAfterFinished int32 = 30
+
+	jobSpec := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: namespace,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "main",
+							Image: image,
+							Env:   env,
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+			BackoffLimit:            &backOffLimit,
+			TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
+		},
+	}
+
+	job, err := jobs.Create(ctx, jobSpec, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create job %s: %v", jobName, err)
+	}
+	return job, nil
+}
+
+func (c *cluster) GetJobLogs(t *testing.T, ctx context.Context, namespace, jobName string, since time.Time) (string, error) {
+	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(map[string]string{
+			jobNameLabel: jobName,
+		}),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get pod for job '%s': %w", jobName, err)
+	}
+	podCount := len(pods.Items)
+	if podCount == 0 {
+		return "", fmt.Errorf("no pod found for job '%s'", jobName)
+	}
+	if podCount > 1 {
+		return "", fmt.Errorf("more than 1 pods found for job '%s'", jobName)
+	}
+
+	return c.getPodLogs(t, ctx, pods.Items[0], since), nil
 }
 
 func (c *cluster) getLogsForComponents(t *testing.T, ctx context.Context, components []componentSelector, since time.Time) {

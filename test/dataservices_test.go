@@ -3,7 +3,8 @@ package test
 import "fmt"
 
 const (
-	dbPostgres = "PostgreSQL"
+	dbPostgres  = "PostgreSQL"
+	dbCassandra = "Cassandra"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -18,10 +19,20 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			NamePrefix:                   "autotest-14.5-",
 			NodeCount:                    1,
 		},
+		{
+			ServiceName:                  dbCassandra,
+			ImageVersionTag:              "4.0.5",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "autotest-4.0.5-",
+			NodeCount:                    1,
+		},
 	}
 
 	for _, deployment := range deployments {
-		s.Run(fmt.Sprintf("%s-%s", deployment.ServiceName, deployment.ImageVersionBuild), func() {
+		s.Run(fmt.Sprintf("%s-%s", deployment.ServiceName, deployment.getImageVersionString()), func() {
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -30,7 +41,8 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustReadWriteData(deploymentID)
+
+			s.mustRunBasicSmokeTest(deploymentID)
 		})
 	}
 }
@@ -47,10 +59,20 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			NamePrefix:                   "autotest-14.5-",
 			NodeCount:                    1,
 		},
+		{
+			ServiceName:                  dbCassandra,
+			ImageVersionTag:              "4.0.5",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "autotest-4.0.5-",
+			NodeCount:                    1,
+		},
 	}
 
 	for _, deployment := range deployments {
-		s.Run(fmt.Sprintf("%s-%s-backup", deployment.ServiceName, deployment.ImageVersionBuild), func() {
+		s.Run(fmt.Sprintf("%s-%s-backup", deployment.ServiceName, deployment.getImageVersionString()), func() {
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -59,6 +81,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
+
 			backup := s.mustCreateBackup(deploymentID)
 			s.mustEnsureBackupSuccessful(deploymentID, backup.GetClusterResourceName())
 			s.mustDeleteBackup(backup.GetId())
@@ -71,6 +94,19 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		spec           ShortDeploymentSpec
 		targetVersions []string
 	}{
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbCassandra,
+				ImageVersionTag:              "4.0.4",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-4.0.x-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"4.0.5"},
+		},
 		{
 			spec: ShortDeploymentSpec{
 				ServiceName:                  dbPostgres,
@@ -101,7 +137,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 
 	for _, tt := range testCases {
 		for _, targetVersionTag := range tt.targetVersions {
-			s.Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.ServiceName, tt.spec.ImageVersionTag, targetVersionTag), func() {
+			s.Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.ServiceName, tt.spec.getImageVersionString(), targetVersionTag), func() {
 				deploymentID := s.mustDeployDeploymentSpec(tt.spec)
 				s.T().Cleanup(func() {
 					s.mustRemoveDeployment(deploymentID)
@@ -112,7 +148,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureDeploymentHealthy(deploymentID)
 				s.mustEnsureDeploymentInitialized(deploymentID)
 				s.mustEnsureStatefulSetReady(deploymentID)
-				s.mustReadWriteData(deploymentID)
+				s.mustRunBasicSmokeTest(deploymentID)
 
 				// Update.
 				newSpec := tt.spec
@@ -120,7 +156,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustUpdateDeployment(deploymentID, &newSpec)
 				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
 				s.mustEnsureStatefulSetReady(deploymentID)
-				s.mustReadWriteData(deploymentID)
+				s.mustRunBasicSmokeTest(deploymentID)
 			})
 		}
 	}
@@ -146,6 +182,19 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		},
 		{
 			spec: ShortDeploymentSpec{
+				ServiceName:                  dbCassandra,
+				ImageVersionTag:              "4.0.5",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "autotest-4.0.5-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
 				ServiceName:                  dbPostgres,
 				ImageVersionTag:              "14.5",
 				AppConfigTemplateName:        "QaDefault",
@@ -160,7 +209,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 	}
 
 	for _, tt := range testCases {
-		s.Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.ServiceName, tt.spec.ImageVersionTag, tt.spec.NodeCount, tt.scaleTo), func() {
+		s.Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.ServiceName, tt.spec.getImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func() {
 			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -171,7 +220,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustReadWriteData(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
@@ -179,7 +228,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustUpdateDeployment(deploymentID, &updateSpec)
 			s.mustEnsureStatefulSetReady(deploymentID)
 			s.mustEnsureStatefulSetReadyReplicas(deploymentID, tt.scaleTo)
-			s.mustReadWriteData(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
 		})
 	}
 }

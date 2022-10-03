@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 
@@ -32,6 +34,7 @@ const (
 	waiterDeploymentStatusHealthyTimeout         = time.Second * 300
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
+	waiterLoadTestJobFinishedTimeout             = time.Second * 300
 )
 
 var (
@@ -265,7 +268,7 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	provider, err := agent_installer.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	helmSelectorAgent14, err := agent_installer.NewSelectorHelmPDS14WithName(env.targetKubeconfig, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
+	helmSelectorAgent14, err := agent_installer.NewSelectorHelmPDS18WithName(env.targetKubeconfig, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
 	s.Require().NoError(err, "Cannot create agent installer selector.")
 
 	installer, err := provider.Installer(helmSelectorAgent14)
@@ -563,6 +566,22 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 	)
 }
 
+func (s *PDSTestSuite) mustRunBasicSmokeTest(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	dataService, _, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	s.Require().NoError(err)
+	dataServiceType := dataService.GetName()
+
+	switch dataServiceType {
+	case dbPostgres:
+		s.mustReadWriteData(deploymentID)
+	default:
+		s.mustRunLoadTestJob(deploymentID)
+	}
+}
+
 func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
 	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err)
@@ -586,6 +605,99 @@ func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
 
 	err = loadtest.Run(s.ctx)
 	s.Require().NoError(err)
+}
+
+func (s *PDSTestSuite) mustRunLoadTestJob(deploymentID string) {
+	jobNamespace, jobName := s.mustCreateLoadTestJob(deploymentID)
+	s.mustEnsureLoadTestJobSucceeded(jobNamespace, jobName)
+	s.mustEnsureLoadTestJobLogsDoNotContain(jobNamespace, jobName, "ERROR|FATAL")
+}
+
+func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+	deploymentName := deployment.GetClusterResourceName()
+
+	namespace, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	dataService, _, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	s.Require().NoError(err)
+	dataServiceType := dataService.GetName()
+
+	jobName := fmt.Sprintf("%s-loadtest", deployment.GetClusterResourceName())
+
+	image, err := s.mustGetLoadTestJobImage(dataServiceType)
+	s.Require().NoError(err)
+
+	env := s.mustGetLoadTestJobEnv(deploymentName, namespace.GetName())
+
+	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env)
+	s.Require().NoError(err)
+
+	return namespace.GetName(), job.GetName()
+}
+
+func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string) {
+	// 1. Wait for the job to finish.
+	s.Require().Eventually(
+		func() bool {
+			job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
+			return err == nil && (job.Status.Succeeded > 0 || job.Status.Failed > 0)
+		},
+		waiterLoadTestJobFinishedTimeout, waiterRetryInterval,
+		"Failed to wait for load test job %s to finish.", jobName,
+	)
+
+	// 2. Check the result.
+	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
+	s.Require().NoError(err)
+
+	if job.Status.Failed > 0 {
+		// Job failed.
+		logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, jobName, s.startTime)
+		if err != nil {
+			s.Require().Fail("Job '%s' failed.", jobName)
+		} else {
+			s.Require().Fail("Job '%s' failed. See job logs for more details:\n%s", jobName, logs)
+		}
+	}
+	s.Require().True(job.Status.Succeeded > 0)
+}
+
+func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(namespace, jobName, rePattern string) {
+	logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, jobName, s.startTime)
+	s.Require().NoError(err)
+	re := regexp.MustCompile(rePattern)
+	s.Require().Nil(re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)
+}
+
+func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
+	switch dataServiceType {
+	case dbCassandra:
+		return "portworx/pds-loadtests:cassandra-0.0.3", nil
+	default:
+		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
+	}
+}
+
+func (s *PDSTestSuite) mustGetLoadTestJobEnv(deploymentName, namespace string) []corev1.EnvVar {
+	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
+	password := s.mustGetDBPassword(namespace, deploymentName)
+	return []corev1.EnvVar{
+		{
+			Name:  "HOST",
+			Value: host,
+		}, {
+			Name:  "PASSWORD",
+			Value: password,
+		}, {
+			Name:  "ITERATIONS",
+			Value: "1",
+		}, {
+			Name:  "FAIL_ON_ERROR",
+			Value: "true",
+		}}
 }
 
 func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
@@ -670,6 +782,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	switch deploymentType {
 	case dbPostgres:
 		containerName = "postgresql"
+	case dbCassandra:
+		containerName = "cassandra"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}
