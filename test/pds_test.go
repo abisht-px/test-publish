@@ -33,13 +33,18 @@ const (
 	waiterDeploymentTargetStatusHealthyTimeout   = time.Second * 120
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
 	waiterDeploymentStatusHealthyTimeout         = time.Second * 300
+	waiterLoadBalancerServicesReady              = time.Second * 300
+	waiterStatefulSetReadyAndUpdatedReplicas     = time.Second * 600
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
+
+	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
 )
 
 var (
-	namePrefix = fmt.Sprintf("integration-test-%d", time.Now().Unix())
+	namePrefix                 = fmt.Sprintf("integration-test-%d", time.Now().Unix())
+	pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 )
 
 type PDSTestSuite struct {
@@ -372,7 +377,41 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReadyReplicas(deploymentID string, replicas int) {
+func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+
+	namespace := namespaceModel.GetName()
+	s.Require().Eventually(
+		func() bool {
+			svcs, err := s.targetCluster.ListServices(s.ctx, namespace, map[string]string{
+				"name": deployment.GetClusterResourceName(),
+			})
+			if err != nil {
+				return false
+			}
+
+			for _, svc := range svcs.Items {
+				if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+					ingress := svc.Status.LoadBalancer.Ingress
+					if len(ingress) == 0 {
+						// Load balancer is not initialized yet, external address was not assigned yet.
+						return false
+					}
+				}
+			}
+
+			return true
+		},
+		waiterLoadBalancerServicesReady, waiterRetryInterval,
+		"Load balancers of %s are not ready.", deploymentID,
+	)
+}
+
+func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID string, replicas int) {
 	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err)
 
@@ -387,10 +426,11 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyReplicas(deploymentID string, r
 				return false
 			}
 
-			return int(set.Status.ReadyReplicas) == replicas
+			// Also check the UpdatedReplicas count, so we are sure that all nodes were restarted after the change.
+			return int(set.Status.ReadyReplicas) == replicas && int(set.Status.UpdatedReplicas) == replicas
 		},
-		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		"Deployment %s is expected to have %d ready replicas.", deploymentID, replicas,
+		waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval,
+		"Deployment %s is expected to have %d ready and updated replicas.", deploymentID, replicas,
 	)
 }
 
@@ -563,17 +603,36 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 	s.Require().NoError(err)
 
 	namespace := namespaceModel.GetName()
+
+	// 1. Wait for the backup to finish.
 	s.Require().Eventually(
 		func() bool {
 			pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
-			if err != nil {
-				return false
-			}
-			return isBackupSucceeded(pdsBackup)
+			return err == nil && isBackupFinished(pdsBackup)
 		},
 		waiterBackupStatusSucceededTimeout, waiterRetryInterval,
-		"Backup %s for the %s deployment is not ready.", backupName, deploymentID,
+		"Backup %s for the %s deployment is not finished.", backupName, deploymentID,
 	)
+
+	// 2. Check the result.
+	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
+	s.Require().NoError(err)
+
+	if isBackupFailed(pdsBackup) {
+		// Backup failed.
+		backupJobs := pdsBackup.Status.BackupJobs
+		var backupJobName string
+		if len(backupJobs) > 0 {
+			backupJobName = backupJobs[0].Name
+		}
+		logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, backupJobName, s.startTime)
+		if err != nil {
+			s.Require().Fail(fmt.Sprintf("Backup '%s' failed.", backupName))
+		} else {
+			s.Require().Fail(fmt.Sprintf("Backup job '%s' failed. See job logs for more details:", backupJobName), logs)
+		}
+	}
+	s.Require().True(isBackupSucceeded(pdsBackup))
 }
 
 func (s *PDSTestSuite) mustRunBasicSmokeTest(deploymentID string) {
@@ -640,7 +699,7 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, strin
 	image, err := s.mustGetLoadTestJobImage(dataServiceType)
 	s.Require().NoError(err)
 
-	env := s.mustGetLoadTestJobEnv(deploymentName, namespace.GetName())
+	env := s.mustGetLoadTestJobEnv(dataService, deploymentName, namespace.GetName(), deployment.NodeCount)
 
 	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env)
 	s.Require().NoError(err)
@@ -667,9 +726,9 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string)
 		// Job failed.
 		logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, jobName, s.startTime)
 		if err != nil {
-			s.Require().Fail("Job '%s' failed.", jobName)
+			s.Require().Fail(fmt.Sprintf("Job '%s' failed.", jobName))
 		} else {
-			s.Require().Fail("Job '%s' failed. See job logs for more details:\n%s", jobName, logs)
+			s.Require().Fail(fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
 		}
 	}
 	s.Require().True(job.Status.Succeeded > 0)
@@ -686,15 +745,17 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 	switch dataServiceType {
 	case dbCassandra:
 		return "portworx/pds-loadtests:cassandra-0.0.3", nil
+	case dbRedis:
+		return "portworx/pds-loadtests:redis-0.0.3", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
 	}
 }
 
-func (s *PDSTestSuite) mustGetLoadTestJobEnv(deploymentName, namespace string) []corev1.EnvVar {
+func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
 	password := s.mustGetDBPassword(namespace, deploymentName)
-	return []corev1.EnvVar{
+	env := []corev1.EnvVar{
 		{
 			Name:  "HOST",
 			Value: host,
@@ -708,6 +769,37 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(deploymentName, namespace string) [
 			Name:  "FAIL_ON_ERROR",
 			Value: "true",
 		}}
+
+	dataServiceType := dataService.GetName()
+	switch dataServiceType {
+	case dbRedis:
+		var clusterMode string
+		if nodeCount != nil && *nodeCount > 1 {
+			clusterMode = "true"
+		} else {
+			clusterMode = "false"
+		}
+		var user = "pds"
+		if dataService.CreatedAt != nil {
+			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, *dataService.CreatedAt)
+			if err == nil && dsCreatedAt.Before(pdsUserInRedisIntroducedAt) {
+				// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
+				user = "default"
+			}
+		}
+		env = append(env,
+			corev1.EnvVar{
+				Name:  "PDS_USER",
+				Value: user,
+			},
+			corev1.EnvVar{
+				Name:  "CLUSTER_MODE",
+				Value: clusterMode,
+			},
+		)
+	}
+
+	return env
 }
 
 func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
@@ -794,6 +886,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "postgresql"
 	case dbCassandra:
 		containerName = "cassandra"
+	case dbRedis:
+		containerName = "redis"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}

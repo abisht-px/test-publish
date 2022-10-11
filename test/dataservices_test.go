@@ -1,10 +1,13 @@
 package test
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	dbPostgres  = "PostgreSQL"
 	dbCassandra = "Cassandra"
+	dbRedis     = "Redis"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -16,23 +19,33 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-14.5-",
+			NamePrefix:                   "write-14.5-",
 			NodeCount:                    1,
 		},
 		{
 			ServiceName:                  dbCassandra,
-			ImageVersionTag:              "4.0.5",
+			ImageVersionTag:              "4.0.6",
 			AppConfigTemplateName:        "QaDefault",
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-4.0.5-",
+			NamePrefix:                   "write-4.0.6-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbRedis,
+			ImageVersionTag:              "7.0.5",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-7.0.5-",
 			NodeCount:                    1,
 		},
 	}
 
 	for _, deployment := range deployments {
-		s.Run(fmt.Sprintf("%s-%s", deployment.ServiceName, deployment.getImageVersionString()), func() {
+		s.Run(fmt.Sprintf("write-%s-%s", deployment.ServiceName, deployment.getImageVersionString()), func() {
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -41,6 +54,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
 
 			s.mustRunBasicSmokeTest(deploymentID)
 		})
@@ -56,23 +70,34 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-14.5-",
+			NamePrefix:                   "backup-14.5-",
 			NodeCount:                    1,
 		},
 		{
 			ServiceName:                  dbCassandra,
-			ImageVersionTag:              "4.0.5",
+			ImageVersionTag:              "4.0.6",
 			AppConfigTemplateName:        "QaDefault",
 			StorageOptionName:            "QaDefault",
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
-			NamePrefix:                   "autotest-4.0.5-",
+			NamePrefix:                   "backup-4.0.6-",
 			NodeCount:                    1,
 		},
+		// TODO Enable Redis backup after DS-3189 is fixed.
+		//{
+		//	ServiceName:                  dbRedis,
+		//	ImageVersionTag:              "7.0.5",
+		//	AppConfigTemplateName:        "QaDefault",
+		//	StorageOptionName:            "QaDefault",
+		//	ResourceSettingsTemplateName: "Qasmall",
+		//	ServiceType:                  "LoadBalancer",
+		//	NamePrefix:                   "backup-7.0.5-",
+		//	NodeCount:                    1,
+		//},
 	}
 
 	for _, deployment := range deployments {
-		s.Run(fmt.Sprintf("%s-%s-backup", deployment.ServiceName, deployment.getImageVersionString()), func() {
+		s.Run(fmt.Sprintf("backup-%s-%s", deployment.ServiceName, deployment.getImageVersionString()), func() {
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -96,26 +121,13 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 	}{
 		{
 			spec: ShortDeploymentSpec{
-				ServiceName:                  dbCassandra,
-				ImageVersionTag:              "4.0.4",
-				AppConfigTemplateName:        "QaDefault",
-				StorageOptionName:            "QaDefault",
-				ResourceSettingsTemplateName: "Qasmall",
-				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "update-4.0.x-",
-				NodeCount:                    1,
-			},
-			targetVersions: []string{"4.0.5"},
-		},
-		{
-			spec: ShortDeploymentSpec{
 				ServiceName:                  dbPostgres,
 				ImageVersionTag:              "14.2",
 				AppConfigTemplateName:        "QaDefault",
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-14.2-",
+				NamePrefix:                   "update-14.2-",
 				NodeCount:                    1,
 			},
 			targetVersions: []string{"14.4", "14.5"},
@@ -128,10 +140,62 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-14.4-",
+				NamePrefix:                   "update-14.4-",
 				NodeCount:                    1,
 			},
 			targetVersions: []string{"14.5"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbCassandra,
+				ImageVersionTag:              "4.0.5",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-4.0.x-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"4.0.6"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRedis,
+				ImageVersionTag:              "7.0.0",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-7.0.0-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"7.0.2", "7.0.4", "7.0.5"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRedis,
+				ImageVersionTag:              "7.0.2",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-7.0.2-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"7.0.4", "7.0.5"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRedis,
+				ImageVersionTag:              "7.0.4",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-7.0.4-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"7.0.5"},
 		},
 	}
 
@@ -148,6 +212,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureDeploymentHealthy(deploymentID)
 				s.mustEnsureDeploymentInitialized(deploymentID)
 				s.mustEnsureStatefulSetReady(deploymentID)
+				s.mustEnsureLoadBalancerServicesReady(deploymentID)
 				s.mustRunBasicSmokeTest(deploymentID)
 
 				// Update.
@@ -156,6 +221,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustUpdateDeployment(deploymentID, &newSpec)
 				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
 				s.mustEnsureStatefulSetReady(deploymentID)
+				s.mustEnsureLoadBalancerServicesReady(deploymentID)
 				s.mustRunBasicSmokeTest(deploymentID)
 			})
 		}
@@ -175,20 +241,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-14.4-",
-				NodeCount:                    1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				ServiceName:                  dbCassandra,
-				ImageVersionTag:              "4.0.5",
-				AppConfigTemplateName:        "QaDefault",
-				StorageOptionName:            "QaDefault",
-				ResourceSettingsTemplateName: "Qasmall",
-				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-4.0.5-",
+				NamePrefix:                   "scaleup-14.4-",
 				NodeCount:                    1,
 			},
 			scaleTo: 2,
@@ -201,10 +254,36 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				StorageOptionName:            "QaDefault",
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
-				NamePrefix:                   "autotest-14.5-",
+				NamePrefix:                   "scaleup-14.5-",
 				NodeCount:                    1,
 			},
 			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbCassandra,
+				ImageVersionTag:              "4.0.6",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scaleup-4.0.6-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRedis,
+				ImageVersionTag:              "7.0.5",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scaleup-7.0.5-",
+				NodeCount:                    6,
+			},
+			scaleTo: 8,
 		},
 	}
 
@@ -220,14 +299,15 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustEnsureDeploymentHealthy(deploymentID)
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
 			s.mustRunBasicSmokeTest(deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
 			s.mustUpdateDeployment(deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureStatefulSetReadyReplicas(deploymentID, tt.scaleTo)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID, tt.scaleTo)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
 			s.mustRunBasicSmokeTest(deploymentID)
 		})
 	}

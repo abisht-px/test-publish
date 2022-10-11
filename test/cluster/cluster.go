@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -84,6 +85,12 @@ func (c *cluster) ListPods(ctx context.Context, namespace string, labelSelector 
 	})
 }
 
+func (c *cluster) ListServices(ctx context.Context, namespace string, labelSelector map[string]string) (*corev1.ServiceList, error) {
+	return c.clientset.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(labelSelector),
+	})
+}
+
 func (c *cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*backupsv1.Backup, error) {
 	result := &backupsv1.Backup{}
 	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
@@ -139,11 +146,15 @@ func (c *cluster) GetJobLogs(t *testing.T, ctx context.Context, namespace, jobNa
 	if podCount == 0 {
 		return "", fmt.Errorf("no pod found for job '%s'", jobName)
 	}
-	if podCount > 1 {
-		return "", fmt.Errorf("more than 1 pods found for job '%s'", jobName)
+	var logs []string
+	for _, pod := range pods.Items {
+		podLogs := c.getPodLogs(t, ctx, pod, since)
+		if len(podLogs) > 0 {
+			logs = append(logs, podLogs)
+		}
 	}
 
-	return c.getPodLogs(t, ctx, pods.Items[0], since), nil
+	return strings.Join(logs[:], "\n--------\n"), nil
 }
 
 func (c *cluster) getLogsForComponents(t *testing.T, ctx context.Context, components []componentSelector, since time.Time) {

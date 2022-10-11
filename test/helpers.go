@@ -213,8 +213,16 @@ func isJobSucceeded(job *batchv1.Job) bool {
 	return *job.Spec.Completions == job.Status.Succeeded
 }
 
+func isBackupFinished(backup *backupsv1.Backup) bool {
+	return isBackupSucceeded(backup) || isBackupFailed(backup)
+}
+
 func isBackupSucceeded(backup *backupsv1.Backup) bool {
 	return backup.Status.Succeeded > 0
+}
+
+func isBackupFailed(backup *backupsv1.Backup) bool {
+	return backup.Status.Failed > 0
 }
 
 func getDeploymentPodName(deploymentName string) string {
