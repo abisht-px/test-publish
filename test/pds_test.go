@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	waiterShortRetryInterval                     = time.Second * 5
 	waiterRetryInterval                          = time.Second * 10
 	waiterDeploymentTargetNameExistsTimeout      = time.Second * 30
 	waiterNamespaceExistsTimeout                 = time.Second * 30
@@ -38,6 +39,9 @@ const (
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
+	waiterHostCheckFinishedTimeout               = time.Second * 60
+	waiterAllHostsAvailableTimeout               = time.Second * 300
+	waiterCoreDNSRestartedTimeout                = time.Second * 30
 
 	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
 )
@@ -411,6 +415,95 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(deploymentID string) 
 	)
 }
 
+func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID string) {
+	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	s.Require().NoError(err)
+	dataService, _, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	s.Require().NoError(err)
+	dataServiceType := dataService.GetName()
+
+	if !s.loadBalancerAddressRequiredForTest(dataServiceType) {
+		// Data service doesn't need load balancer addresses to be ready -> return.
+		return
+	}
+
+	namespaceModel, _, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	s.Require().NoError(err)
+	namespace := namespaceModel.GetName()
+
+	// Collect all CNAME hostnames from DNSEndpoints.
+	hostnames, err := s.targetCluster.GetDNSEndpoints(s.ctx, namespace, deployment.GetClusterResourceName(), "CNAME")
+	s.Require().NoError(err)
+
+	// Wait until all hosts are accessible (DNS server returns an IP address for all hosts).
+	if len(hostnames) > 0 {
+		s.Require().Eventually(
+			func() bool {
+				dnsIPs := s.mustFlushDNSCache()
+				jobNameSuffix := time.Now().Format("0405") // mmss
+				jobName := s.mustRunHostCheckJob(namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)
+				hostsAccessible := s.mustWaitForHostCheckJobResult(namespace, jobName)
+				return hostsAccessible
+			},
+			waiterAllHostsAvailableTimeout, waiterRetryInterval,
+			"Failed to wait for all hosts to be available:\n%s", strings.Join(hostnames, "\n"),
+		)
+	}
+}
+
+func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string) bool {
+	switch dataServiceType {
+	case dbKafka:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *PDSTestSuite) mustRunHostCheckJob(namespace string, jobNamePrefix, jobNameSuffix string, hosts, dnsIPs []string) string {
+
+	jobName := fmt.Sprintf("%s-hostcheck-%s", jobNamePrefix, jobNameSuffix)
+	image := "tutum/dnsutils" // TODO DS-3289: Copy this image into portworx repo.
+	env := []corev1.EnvVar{{
+		Name:  "HOSTS",
+		Value: strings.Join(hosts, " "),
+	}, {
+		Name:  "DNS_IPS",
+		Value: strings.Join(dnsIPs, " "),
+	}}
+	cmd := []string{
+		"/bin/bash",
+		"-c",
+		"for D in $DNS_IPS; do echo \"Checking on DNS $D:\"; for H in $HOSTS; do IP=$(dig +short @$D $H 2>/dev/null | head -n1); if [ -z \"$IP\" ]; then echo \"  $H - MISSING IP\";  exit 1; else echo \"  $H $IP - OK\"; fi; done; done",
+	}
+
+	job, err := s.targetCluster.CreateJob(s.ctx, namespace, jobName, image, env, cmd)
+	s.Require().NoError(err)
+	return job.GetName()
+}
+
+func (s *PDSTestSuite) mustWaitForHostCheckJobResult(namespace, jobName string) bool {
+	// 1. Wait for the job to finish.
+	s.waitForJobToFinish(namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
+
+	// 2. Check the result.
+	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
+	s.Require().NoError(err)
+
+	return job.Status.Succeeded > 0
+}
+
+func (s *PDSTestSuite) waitForJobToFinish(namespace string, jobName string, waitFor time.Duration, tick time.Duration) {
+	s.Require().Eventually(
+		func() bool {
+			job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
+			return err == nil && (job.Status.Succeeded > 0 || job.Status.Failed > 0)
+		},
+		waitFor, tick,
+		"Failed to wait for job %s to finish.", jobName,
+	)
+}
+
 func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID string, replicas int) {
 	deployment, _, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err)
@@ -701,7 +794,7 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, strin
 
 	env := s.mustGetLoadTestJobEnv(dataService, deploymentName, namespace.GetName(), deployment.NodeCount)
 
-	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env)
+	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env, nil)
 	s.Require().NoError(err)
 
 	return namespace.GetName(), job.GetName()
@@ -709,14 +802,7 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, strin
 
 func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	s.Require().Eventually(
-		func() bool {
-			job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-			return err == nil && (job.Status.Succeeded > 0 || job.Status.Failed > 0)
-		},
-		waiterLoadTestJobFinishedTimeout, waiterRetryInterval,
-		"Failed to wait for load test job %s to finish.", jobName,
-	)
+	s.waitForJobToFinish(namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
@@ -747,6 +833,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 		return "portworx/pds-loadtests:cassandra-0.0.3", nil
 	case dbRedis:
 		return "portworx/pds-loadtests:redis-0.0.3", nil
+	case dbKafka:
+		return "portworx/pds-loadtests:kafka-0.0.3", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
 	}
@@ -805,6 +893,42 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService,
 func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
 	_, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
 	s.Require().NoError(err, "Error while removing deployment %s.", deploymentID)
+}
+
+func (s *PDSTestSuite) mustFlushDNSCache() []string {
+	// Restarts CoreDNS pods to flush DNS cache:
+	// kubectl delete pods -l k8s-app=kube-dns -n kube-system
+	namespace := "kube-system"
+	selector := map[string]string{"k8s-app": "kube-dns"}
+	err := s.targetCluster.DeletePodsBySelector(s.ctx, namespace, selector)
+	s.Require().NoError(err, "Failed to delete coredns pods")
+
+	// Wait for CoreDNS pods to be fully restarted.
+	s.Require().Eventually(
+		func() bool {
+			set, err := s.targetCluster.ListDeployments(s.ctx, namespace, selector)
+			if err != nil || len(set.Items) != 1 {
+				return false
+			}
+
+			d := set.Items[0]
+			replicas := d.Status.Replicas
+			return d.Status.ReadyReplicas == replicas && d.Status.UpdatedReplicas == replicas
+		},
+		waiterCoreDNSRestartedTimeout, waiterShortRetryInterval,
+		"Failed to wait for CoreDNS pods to be restarted.",
+	)
+
+	// Get and return new CoreDNS pod IPs.
+	pods, err := s.targetCluster.ListPods(s.ctx, namespace, selector)
+	s.Require().NoError(err, "Failed to get CoreDNS pods")
+	var newPodIPs []string
+	for _, pod := range pods.Items {
+		if len(pod.Status.PodIP) > 0 && pod.Status.ContainerStatuses[0].Ready {
+			newPodIPs = append(newPodIPs, pod.Status.PodIP)
+		}
+	}
+	return newPodIPs
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
@@ -888,6 +1012,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "cassandra"
 	case dbRedis:
 		containerName = "redis"
+	case dbKafka:
+		containerName = "kafka"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}

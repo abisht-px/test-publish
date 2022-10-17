@@ -2606,6 +2606,7 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.27/go.mod h1:tq2nT0
 sigs.k8s.io/controller-runtime v0.10.3 h1:s5Ttmw/B4AuIbwrXD3sfBkXwnPMMWrqpVj4WRt1dano=
 sigs.k8s.io/controller-runtime v0.10.3/go.mod h1:CQp8eyUQZ/Q7PJvnIrB6/hgfTC1kBkGylwsLgOQi1WY=
 sigs.k8s.io/controller-tools v0.7.0/go.mod h1:bpBAo0VcSDDLuWt47evLhMLPxRPxMDInTEH/YbdeMK0=
+sigs.k8s.io/external-dns v0.5.12 h1:mwt3Tetm1DVEFLb8cQnT/VvuAApD/7ZS4IOnv6+W+SY=
 sigs.k8s.io/external-dns v0.5.12/go.mod h1:ROUFFlTuWHmlKOwrc7ezoz9WG9Dvfnzgtl59E+2ndCQ=
 sigs.k8s.io/kustomize/api v0.8.0/go.mod h1:Ih6Y6bOErR70EdapDtWitBzPG9HewyemRY6sFaQyugU=
 sigs.k8s.io/kustomize/api v0.8.8/go.mod h1:He1zoK0nk43Pc6NlV085xDXDXTNprtcyKZVm3swsdNY=

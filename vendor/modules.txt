@@ -49,6 +49,8 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/hcsshim/osversion
 # github.com/OpenPeeDeeP/depguard v1.1.0
 github.com/OpenPeeDeeP/depguard
+# github.com/PaesslerAG/jsonpath v0.1.1
+## explicit
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -1281,6 +1283,9 @@ oras.land/oras-go/pkg/context
 oras.land/oras-go/pkg/oras
 # sigs.k8s.io/controller-runtime v0.10.3
 sigs.k8s.io/controller-runtime/pkg/scheme
+# sigs.k8s.io/external-dns v0.5.12
+## explicit
+sigs.k8s.io/external-dns/endpoint
 # sigs.k8s.io/kustomize/api v0.8.11
 sigs.k8s.io/kustomize/api/builtins
 sigs.k8s.io/kustomize/api/filesys

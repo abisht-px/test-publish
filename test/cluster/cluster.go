@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
 )
@@ -91,6 +92,18 @@ func (c *cluster) ListServices(ctx context.Context, namespace string, labelSelec
 	})
 }
 
+func (c *cluster) ListDeployments(ctx context.Context, namespace string, labelSelector map[string]string) (*appsv1.DeploymentList, error) {
+	return c.clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(labelSelector),
+	})
+}
+
+func (c *cluster) DeletePodsBySelector(ctx context.Context, namespace string, labelSelector map[string]string) error {
+	return c.clientset.CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
+		LabelSelector: labels.FormatLabels(labelSelector),
+	})
+}
+
 func (c *cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*backupsv1.Backup, error) {
 	result := &backupsv1.Backup{}
 	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
@@ -98,7 +111,35 @@ func (c *cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	return result, err
 }
 
-func (c *cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar) (*batchv1.Job, error) {
+func (c *cluster) GetDNSEndpoints(ctx context.Context, namespace, nameFilter string, recordTypeFilter string) ([]string, error) {
+	// Query DNSEndpoints.
+	endpointList := &endpoint.DNSEndpointList{}
+	err := c.clientset.RESTClient().Get().
+		AbsPath(fmt.Sprintf("apis/externaldns.k8s.io/v1alpha1/namespaces/%s/dnsendpoints", namespace)).
+		Param("labelSelector", fmt.Sprintf("name=%s", nameFilter)).
+		Do(ctx).
+		Into(endpointList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect DNS names.
+	var dnsNames []string
+	for _, item := range endpointList.Items {
+		if len(item.Spec.Endpoints) > 0 {
+			for _, e := range item.Spec.Endpoints {
+				if len(recordTypeFilter) > 0 && e.RecordType != recordTypeFilter {
+					// Skip endpoint with different record type.
+					continue
+				}
+				dnsNames = append(dnsNames, e.DNSName)
+			}
+		}
+	}
+	return dnsNames, nil
+}
+
+func (c *cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string) (*batchv1.Job, error) {
 	jobs := c.clientset.BatchV1().Jobs(namespace)
 	var backOffLimit int32 = 0
 	var ttlSecondsAfterFinished int32 = 30
@@ -113,9 +154,10 @@ func (c *cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "main",
-							Image: image,
-							Env:   env,
+							Name:    "main",
+							Image:   image,
+							Env:     env,
+							Command: command,
 						},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,

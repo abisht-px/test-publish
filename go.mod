@@ -19,6 +19,7 @@ require (
 	k8s.io/cli-runtime v0.22.1
 	k8s.io/client-go v0.22.7
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
+	sigs.k8s.io/external-dns v0.5.12
 )
 
 replace (

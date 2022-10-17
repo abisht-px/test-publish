@@ -8,6 +8,7 @@ const (
 	dbPostgres  = "PostgreSQL"
 	dbCassandra = "Cassandra"
 	dbRedis     = "Redis"
+	dbKafka     = "Kafka"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -42,10 +43,70 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			NamePrefix:                   "write-7.0.5-",
 			NodeCount:                    1,
 		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.0.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.0.1-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.0.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.0.1-n3-",
+			NodeCount:                    3,
+		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.1.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.1.1-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.1.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.1.1-n3-",
+			NodeCount:                    3,
+		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.2.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.2.1-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbKafka,
+			ImageVersionTag:              "3.2.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.2.1-n3-",
+			NodeCount:                    3,
+		},
 	}
 
 	for _, deployment := range deployments {
-		s.Run(fmt.Sprintf("write-%s-%s", deployment.ServiceName, deployment.getImageVersionString()), func() {
+		s.Run(fmt.Sprintf("write-%s-%s-n%d", deployment.ServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(deploymentID)
@@ -55,6 +116,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 
 			s.mustRunBasicSmokeTest(deploymentID)
 		})
@@ -213,6 +275,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureDeploymentInitialized(deploymentID)
 				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(deploymentID)
+				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 				s.mustRunBasicSmokeTest(deploymentID)
 
 				// Update.
@@ -222,6 +285,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
 				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(deploymentID)
+				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 				s.mustRunBasicSmokeTest(deploymentID)
 			})
 		}
@@ -285,6 +349,45 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			},
 			scaleTo: 8,
 		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbKafka,
+				ImageVersionTag:              "3.0.1",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scaleup-3.0.1-",
+				NodeCount:                    1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbKafka,
+				ImageVersionTag:              "3.1.1",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scaleup-3.1.1-",
+				NodeCount:                    1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbKafka,
+				ImageVersionTag:              "3.2.1",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scaleup-3.2.1-",
+				NodeCount:                    1,
+			},
+			scaleTo: 3,
+		},
 	}
 
 	for _, tt := range testCases {
@@ -300,6 +403,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 			s.mustRunBasicSmokeTest(deploymentID)
 
 			// Update.
@@ -308,6 +412,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustUpdateDeployment(deploymentID, &updateSpec)
 			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID, tt.scaleTo)
 			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 			s.mustRunBasicSmokeTest(deploymentID)
 		})
 	}
