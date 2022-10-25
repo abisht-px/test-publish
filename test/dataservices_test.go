@@ -10,6 +10,7 @@ const (
 	dbRedis     = "Redis"
 	dbKafka     = "Kafka"
 	dbRabbitMQ  = "RabbitMQ"
+	dbZooKeeper = "ZooKeeper"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -43,6 +44,36 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			ServiceType:                  "LoadBalancer",
 			NamePrefix:                   "write-7.0.5-",
 			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbZooKeeper,
+			ImageVersionTag:              "3.6.3",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.6.3-n3-",
+			NodeCount:                    3,
+		},
+		{
+			ServiceName:                  dbZooKeeper,
+			ImageVersionTag:              "3.7.1",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.7.1-n3-",
+			NodeCount:                    3,
+		},
+		{
+			ServiceName:                  dbZooKeeper,
+			ImageVersionTag:              "3.8.0",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.8.0-n3-",
+			NodeCount:                    3,
 		},
 		{
 			ServiceName:                  dbKafka,

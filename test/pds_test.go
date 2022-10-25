@@ -833,6 +833,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 		return "portworx/pds-loadtests:cassandra-0.0.3", nil
 	case dbRedis:
 		return "portworx/pds-loadtests:redis-0.0.3", nil
+	case dbZooKeeper:
+		return "portworx/pds-loadtests:zookeeper-0.0.2", nil
 	case dbKafka:
 		return "portworx/pds-loadtests:kafka-0.0.3", nil
 	case dbRabbitMQ:
@@ -1014,6 +1016,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "cassandra"
 	case dbRedis:
 		containerName = "redis"
+	case dbZooKeeper:
+		containerName = "zookeeper"
 	case dbKafka:
 		containerName = "kafka"
 	case dbRabbitMQ:
