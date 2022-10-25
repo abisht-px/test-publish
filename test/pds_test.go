@@ -683,7 +683,7 @@ func (s *PDSTestSuite) mustDeleteBackupTarget() {
 				return err != nil && httpResp != nil && httpResp.StatusCode == http.StatusNotFound
 			},
 			waiterBackupStatusSucceededTimeout, waiterRetryInterval,
-			"Backup target %s is node deleted.", s.testPDSBackupTargetID,
+			"Backup target %s is not deleted.", s.testPDSBackupTargetID,
 		)
 	}
 }
@@ -835,6 +835,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 		return "portworx/pds-loadtests:redis-0.0.3", nil
 	case dbKafka:
 		return "portworx/pds-loadtests:kafka-0.0.3", nil
+	case dbRabbitMQ:
+		return "portworx/pds-loadtests:rabbitmq-0.0.2", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
 	}
@@ -1014,6 +1016,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "redis"
 	case dbKafka:
 		containerName = "kafka"
+	case dbRabbitMQ:
+		containerName = "rabbitmq"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}

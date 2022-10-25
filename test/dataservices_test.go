@@ -9,6 +9,7 @@ const (
 	dbCassandra = "Cassandra"
 	dbRedis     = "Redis"
 	dbKafka     = "Kafka"
+	dbRabbitMQ  = "RabbitMQ"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -102,6 +103,46 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			ServiceType:                  "LoadBalancer",
 			NamePrefix:                   "write-3.2.1-n3-",
 			NodeCount:                    3,
+		},
+		{
+			ServiceName:                  dbRabbitMQ,
+			ImageVersionTag:              "3.9.22",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.9.22-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbRabbitMQ,
+			ImageVersionTag:              "3.10.6",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.10.6-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbRabbitMQ,
+			ImageVersionTag:              "3.10.7",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.10.7-n1-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbRabbitMQ,
+			ImageVersionTag:              "3.10.9",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-3.10.9-n1-",
+			NodeCount:                    1,
 		},
 	}
 
@@ -413,6 +454,58 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				NodeCount:                    1,
 			},
 			scaleTo: 3,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.9.22",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-3.9.22-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.10.6",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-3.10.6-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.10.7",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-3.10.7-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.10.9",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-3.10.9-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
 		},
 	}
 
