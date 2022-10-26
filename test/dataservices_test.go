@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -357,6 +358,45 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			},
 			targetVersions: []string{"3.2.3"},
 		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.9.21",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-3.9.21-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"3.9.22"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.10.6",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-3.10.6-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"3.10.9"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "3.10.7",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-3.10.7-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"3.10.9"},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -384,6 +424,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+				time.Sleep(10 * time.Second)
 				s.mustRunBasicSmokeTest(deploymentID)
 			})
 		}

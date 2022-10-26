@@ -453,7 +453,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentI
 
 func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string) bool {
 	switch dataServiceType {
-	case dbKafka:
+	case dbKafka, dbRabbitMQ:
 		return true
 	default:
 		return false
