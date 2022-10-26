@@ -218,17 +218,16 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			NamePrefix:                   "backup-4.0.6-",
 			NodeCount:                    1,
 		},
-		// TODO Enable Redis backup after DS-3189 is fixed.
-		//{
-		//	ServiceName:                  dbRedis,
-		//	ImageVersionTag:              "7.0.5",
-		//	AppConfigTemplateName:        "QaDefault",
-		//	StorageOptionName:            "QaDefault",
-		//	ResourceSettingsTemplateName: "Qasmall",
-		//	ServiceType:                  "LoadBalancer",
-		//	NamePrefix:                   "backup-7.0.5-",
-		//	NodeCount:                    1,
-		//},
+		{
+			ServiceName:                  dbRedis,
+			ImageVersionTag:              "7.0.5",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "backup-7.0.5-",
+			NodeCount:                    1,
+		},
 	}
 
 	for _, deployment := range deployments {
