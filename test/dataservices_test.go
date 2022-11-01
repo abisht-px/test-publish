@@ -12,6 +12,7 @@ const (
 	dbKafka     = "Kafka"
 	dbRabbitMQ  = "RabbitMQ"
 	dbZooKeeper = "ZooKeeper"
+	dbMySQL     = "MySQL"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -176,6 +177,16 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			NamePrefix:                   "write-3.10.9-n1-",
 			NodeCount:                    1,
 		},
+		{
+			ServiceName:                  dbMySQL,
+			ImageVersionTag:              "8.0.30",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-8.0.30-n1-",
+			NodeCount:                    1,
+		},
 	}
 
 	for _, deployment := range deployments {
@@ -226,6 +237,16 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
 			NamePrefix:                   "backup-7.0.5-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbMySQL,
+			ImageVersionTag:              "8.0.30",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "backup-8.0.30-",
 			NodeCount:                    1,
 		},
 	}
@@ -574,6 +595,19 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
 				NamePrefix:                   "scale-3.10.9-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbMySQL,
+				ImageVersionTag:              "8.0.30",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-8.0.30-",
 				NodeCount:                    1,
 			},
 			scaleTo: 2,
