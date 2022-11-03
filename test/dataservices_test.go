@@ -187,6 +187,16 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			NamePrefix:                   "write-8.0.30-n1-",
 			NodeCount:                    1,
 		},
+		{
+			ServiceName:                  dbMySQL,
+			ImageVersionTag:              "8.0.31",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "write-8.0.31-n1-",
+			NodeCount:                    1,
+		},
 	}
 
 	for _, deployment := range deployments {
@@ -247,6 +257,16 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			ResourceSettingsTemplateName: "Qasmall",
 			ServiceType:                  "LoadBalancer",
 			NamePrefix:                   "backup-8.0.30-",
+			NodeCount:                    1,
+		},
+		{
+			ServiceName:                  dbMySQL,
+			ImageVersionTag:              "8.0.31",
+			AppConfigTemplateName:        "QaDefault",
+			StorageOptionName:            "QaDefault",
+			ResourceSettingsTemplateName: "Qasmall",
+			ServiceType:                  "LoadBalancer",
+			NamePrefix:                   "backup-8.0.31-",
 			NodeCount:                    1,
 		},
 	}
@@ -416,6 +436,19 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				NodeCount:                    1,
 			},
 			targetVersions: []string{"3.10.9"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbRabbitMQ,
+				ImageVersionTag:              "8.0.30",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "update-8.0.30-",
+				NodeCount:                    1,
+			},
+			targetVersions: []string{"8.0.31"},
 		},
 	}
 
@@ -608,6 +641,19 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				ResourceSettingsTemplateName: "Qasmall",
 				ServiceType:                  "LoadBalancer",
 				NamePrefix:                   "scale-8.0.30-",
+				NodeCount:                    1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:                  dbMySQL,
+				ImageVersionTag:              "8.0.31",
+				AppConfigTemplateName:        "QaDefault",
+				StorageOptionName:            "QaDefault",
+				ResourceSettingsTemplateName: "Qasmall",
+				ServiceType:                  "LoadBalancer",
+				NamePrefix:                   "scale-8.0.31-",
 				NodeCount:                    1,
 			},
 			scaleTo: 2,
