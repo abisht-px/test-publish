@@ -51,6 +51,13 @@ var (
 	pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 )
 
+type applicationTemplatesInfo struct {
+	AppConfigTemplateID   string
+	AppConfigTemplateName string
+	ResourceTemplateID    string
+	ResourceTemplateName  string
+}
+
 type PDSTestSuite struct {
 	suite.Suite
 	ctx       context.Context
@@ -69,6 +76,9 @@ type PDSTestSuite struct {
 	testPDSBackupCredentialsID string
 	testPDSBackupTargetID      string
 	testPDSAgentToken          string
+	testPDSStorageTemplateID   string
+	testPDSStorageTemplateName string
+	testPDSTemplatesMap        map[string]applicationTemplatesInfo
 	shortDeploymentSpecMap     map[PDSDeploymentSpecID]ShortDeploymentSpec
 	imageVersionSpecList       []PDSImageReferenceSpec
 }
@@ -98,6 +108,8 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustInstallAgent(env)
 	s.mustHavePDStestDeploymentTarget(env)
 	s.mustHavePDStestNamespace(env)
+	s.mustCreateApplicationTemplates()
+	s.mustCreateStorageOptions()
 	s.mustEnsureS3BackupCredentials(env)
 	s.mustEnsureS3BackupTarget(env)
 }
@@ -106,6 +118,8 @@ func (s *PDSTestSuite) TearDownSuite() {
 	env := mustHaveEnvVariables(s.T())
 	s.mustDeleteBackupTarget()
 	s.mustDeleteBackupCredentials()
+	s.mustDeleteApplicationTemplates()
+	s.mustDeleteStorageOptions()
 	s.mustUninstallAgent(env)
 	s.mustDeletePDStestDeploymentTarget()
 	if s.T().Failed() {
@@ -259,6 +273,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 		env.secrets.pdsPassword,
 	)
 	s.Require().NoError(err, "Cannot get bearer token.")
+
 	s.ctx = context.WithValue(s.ctx,
 		pds.ContextAPIKeys,
 		map[string]pds.APIKey{
@@ -320,11 +335,31 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
 	s.Require().NotNil(image, "No image found for deployment %s.", deployment.ServiceName)
 
+	s.setDeploymentDefaults(&deployment)
+
 	deploymentID, err := createPDSDeployment(s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
 	s.Require().NoError(err, "Error while creating deployment %s.", deployment.ServiceName)
 	s.Require().NotEmpty(deploymentID, "Deployment ID is empty.")
 
 	return deploymentID
+}
+
+func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
+	if deployment.ServiceType == "" {
+		deployment.ServiceType = "LoadBalancer"
+	}
+	if deployment.StorageOptionName == "" {
+		deployment.StorageOptionName = s.testPDSStorageTemplateName
+	}
+	dsTemplate, found := s.testPDSTemplatesMap[deployment.ServiceName]
+	if found {
+		if deployment.ResourceSettingsTemplateName == "" {
+			deployment.ResourceSettingsTemplateName = dsTemplate.ResourceTemplateName
+		}
+		if deployment.AppConfigTemplateName == "" {
+			deployment.AppConfigTemplateName = dsTemplate.AppConfigTemplateName
+		}
+	}
 }
 
 func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDeploymentSpec) {
@@ -685,6 +720,80 @@ func (s *PDSTestSuite) mustDeleteBackupTarget() {
 			waiterBackupStatusSucceededTimeout, waiterRetryInterval,
 			"Backup target %s is not deleted.", s.testPDSBackupTargetID,
 		)
+	}
+}
+
+func (s *PDSTestSuite) mustCreateStorageOptions() {
+	storageTemplate := pds.ControllersCreateStorageOptionsTemplatesRequest{
+		Name:   pointer.StringPtr(namePrefix),
+		Repl:   pointer.Int32Ptr(1),
+		Secure: pointer.BoolPtr(false),
+		Fs:     pointer.StringPtr("xfs"),
+		Fg:     pointer.BoolPtr(false),
+	}
+	storageTemplateResp, _, err := s.apiClient.StorageOptionsTemplatesApi.
+		ApiTenantsIdStorageOptionsTemplatesPost(s.ctx, s.testPDSTenantID).
+		Body(storageTemplate).Execute()
+	s.Require().NoError(err)
+
+	s.testPDSStorageTemplateID = storageTemplateResp.GetId()
+	s.testPDSStorageTemplateName = storageTemplateResp.GetName()
+}
+
+func (s *PDSTestSuite) mustCreateApplicationTemplates() {
+	dataServicesTemplates := make(map[string]applicationTemplatesInfo)
+	for _, imageVersion := range s.imageVersionSpecList {
+		dsTemplate, found := dataServiceTemplatesSpec[imageVersion.ServiceName]
+		if !found {
+			continue
+		}
+		_, found = dataServicesTemplates[imageVersion.ServiceName]
+		if found {
+			continue
+		}
+
+		configTemplateBody := dsTemplate.configurationTemplate
+		configTemplateBody.Name = pointer.StringPtr(namePrefix)
+		configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+
+		configTemplate, _, err := s.apiClient.ApplicationConfigurationTemplatesApi.
+			ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
+			Body(configTemplateBody).Execute()
+		s.Require().NoError(err, "data service: %s", imageVersion.ServiceName)
+
+		resourceTemplateBody := dsTemplate.resourceTemplate
+		resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
+		resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+
+		resourceTemplate, _, err := s.apiClient.ResourceSettingsTemplatesApi.
+			ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
+			Body(resourceTemplateBody).Execute()
+		s.Require().NoError(err, "data service: %s", imageVersion.ServiceName)
+
+		dataServicesTemplates[imageVersion.ServiceName] = applicationTemplatesInfo{
+			AppConfigTemplateID:   configTemplate.GetId(),
+			AppConfigTemplateName: configTemplate.GetName(),
+			ResourceTemplateID:    resourceTemplate.GetId(),
+			ResourceTemplateName:  resourceTemplate.GetName(),
+		}
+	}
+	s.testPDSTemplatesMap = dataServicesTemplates
+}
+
+func (s *PDSTestSuite) mustDeleteStorageOptions() {
+	_, err := s.apiClient.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.testPDSStorageTemplateID).Execute()
+	s.Require().NoError(err)
+}
+
+func (s *PDSTestSuite) mustDeleteApplicationTemplates() {
+	for _, dsTemplate := range s.testPDSTemplatesMap {
+		appConfigTemplateID := dsTemplate.AppConfigTemplateID
+		_, err := s.apiClient.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, appConfigTemplateID).Execute()
+		s.Require().NoError(err)
+
+		resourceTemplateID := dsTemplate.ResourceTemplateID
+		_, err = s.apiClient.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateID).Execute()
+		s.Require().NoError(err)
 	}
 }
 
