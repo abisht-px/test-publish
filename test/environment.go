@@ -29,6 +29,7 @@ const (
 	envS3CredentialsAccessKey    = "PDS_S3CREDENTIALS_ACCESSKEY"
 	envS3CredentialsEndpoint     = "PDS_S3CREDENTIALS_ENDPOINT"
 	envS3CredentialsSecretKey    = "PDS_S3CREDENTIALS_SECRETKEY"
+	envPDSToken                  = "SECRET_PDS_TOKEN"
 )
 
 const (
@@ -76,12 +77,26 @@ type environment struct {
 	pxNamespaceName         string
 	pdsDeploymentTargetName string
 	pdsServiceAccountName   string
+	pdsToken                string
 	secrets                 secrets
 	backupTarget            backupTarget
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
+
+	pdsToken := os.Getenv(envPDSToken)
+	var authConf secrets
+	if pdsToken == "" {
+		authConf = secrets{
+			tokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
+			issuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
+			issuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
+			pdsUsername:        mustGetEnvVariable(t, envSecretPDSUsername),
+			pdsPassword:        mustGetEnvVariable(t, envSecretPDSPassword),
+		}
+	}
+
 	return environment{
 		controlPlaneAPI:         mustGetEnvVariable(t, envControlPlaneAPI),
 		targetKubeconfig:        mustGetEnvVariable(t, envTargetKubeconfig),
@@ -92,13 +107,8 @@ func mustHaveEnvVariables(t *testing.T) environment {
 		pxNamespaceName:         getEnvVariableWithDefault(envPXNamespaceName, defaultPXNamespaceName),
 		pdsDeploymentTargetName: getEnvVariableWithDefault(envPDSDeploymentTargetName, defaultPDSDeploymentTargetName),
 		pdsServiceAccountName:   getEnvVariableWithDefault(envPDSServiceAccountName, defaultPDSServiceAccountName),
-		secrets: secrets{
-			tokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
-			issuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
-			issuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
-			pdsUsername:        mustGetEnvVariable(t, envSecretPDSUsername),
-			pdsPassword:        mustGetEnvVariable(t, envSecretPDSPassword),
-		},
+		pdsToken:                pdsToken,
+		secrets:                 authConf,
 		backupTarget: backupTarget{
 			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
 			region: mustGetEnvVariable(t, envBackupTargetRegion),

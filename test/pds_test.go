@@ -265,14 +265,17 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 	apiConf.Host = endpointUrl.Host
 	apiConf.Scheme = endpointUrl.Scheme
 
-	bearerToken, err := auth.GetBearerToken(s.ctx,
-		env.secrets.tokenIssuerURL,
-		env.secrets.issuerClientID,
-		env.secrets.issuerClientSecret,
-		env.secrets.pdsUsername,
-		env.secrets.pdsPassword,
-	)
-	s.Require().NoError(err, "Cannot get bearer token.")
+	bearerToken := env.pdsToken
+	if bearerToken == "" {
+		bearerToken, err = auth.GetBearerToken(s.ctx,
+			env.secrets.tokenIssuerURL,
+			env.secrets.issuerClientID,
+			env.secrets.issuerClientSecret,
+			env.secrets.pdsUsername,
+			env.secrets.pdsPassword,
+		)
+		s.Require().NoError(err, "Cannot get bearer token.")
+	}
 
 	s.ctx = context.WithValue(s.ctx,
 		pds.ContextAPIKeys,

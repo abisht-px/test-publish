@@ -37,8 +37,11 @@ Running locally (`make test`) is also possible if:
 | SECRET_ISSUER_CLIENT_SECRET | Secret to authenticate with the issuer.                                             |
 | SECRET_PDS_USERNAME         | Username of a PDS user on the control plane. This user must already be pre-created. |
 | SECRET_PDS_PASSWORD         | Password corresponding to the PDS user.                                             |
+| SECRET_PDS_TOKEN            | User api token (can have custom expiration date)                                    |
 | PDS_S3CREDENTIALS_ACCESSKEY | AWS access key used for the pds backup credentials.                                 |
 | PDS_S3CREDENTIALS_SECRETKEY | AWS secret key used for the pds backup credentials.                                 |
+
+NOTE: `SECRET_PDS_TOKEN` can be used for auth instead of user/password one.
 
 ## Example run
 
