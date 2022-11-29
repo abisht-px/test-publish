@@ -8,6 +8,7 @@ import (
 const (
 	dbCassandra = "Cassandra"
 	dbKafka     = "Kafka"
+	dbMongoDB   = "MongoDB"
 	dbMySQL     = "MySQL"
 	dbPostgres  = "PostgreSQL"
 	dbRabbitMQ  = "RabbitMQ"
@@ -73,6 +74,18 @@ var (
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("1G"),
 				MemoryLimit:    pointer.StringPtr("2G"),
+				StorageRequest: pointer.StringPtr("5G"),
+			},
+		},
+		dbMongoDB: {
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+				ConfigItems: []pds.ModelsConfigItem{},
+			},
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+				CpuRequest:     pointer.StringPtr("0.4"),
+				CpuLimit:       pointer.StringPtr("0.5"),
+				MemoryRequest:  pointer.StringPtr("800M"),
+				MemoryLimit:    pointer.StringPtr("1G"),
 				StorageRequest: pointer.StringPtr("5G"),
 			},
 		},

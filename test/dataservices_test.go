@@ -97,6 +97,11 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			ImageVersionTag: "8.0.31",
 			NodeCount:       1,
 		},
+		{
+			ServiceName:     dbMongoDB,
+			ImageVersionTag: "6.0.2",
+			NodeCount:       1,
+		},
 	}
 
 	for _, deployment := range deployments {
@@ -143,6 +148,11 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 		{
 			ServiceName:     dbMySQL,
 			ImageVersionTag: "8.0.31",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbMongoDB,
+			ImageVersionTag: "6.0.2",
 			NodeCount:       1,
 		},
 	}
@@ -407,6 +417,14 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbMySQL,
 				ImageVersionTag: "8.0.31",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbMongoDB,
+				ImageVersionTag: "6.0.2",
 				NodeCount:       1,
 			},
 			scaleTo: 2,

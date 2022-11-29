@@ -951,6 +951,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 		return "portworx/pds-loadtests:kafka-0.0.3", nil
 	case dbRabbitMQ:
 		return "portworx/pds-loadtests:rabbitmq-0.0.2", nil
+	case dbMongoDB:
+		return "portworx/pds-loadtests:mongodb-0.0.1", nil
 	case dbMySQL:
 		return "portworx/pds-loadtests:mysql-0.0.3", nil
 	default:
@@ -1136,6 +1138,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "kafka"
 	case dbRabbitMQ:
 		containerName = "rabbitmq"
+	case dbMongoDB:
+		containerName = "mongodb"
 	case dbMySQL:
 		containerName = "mysql"
 	default:
