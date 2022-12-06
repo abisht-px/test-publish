@@ -133,6 +133,7 @@ func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSet
 	if client.Version == "" {
 		client.Version = ">0.0.0-0"
 	}
+	client.CreateNamespace = true
 
 	cp, err := client.ChartPathOptions.LocateChart(fmt.Sprintf("%s/%s", repoName, chartName), settings)
 	if err != nil {
