@@ -23,4 +23,4 @@ COPY --from=builder /workspace/pds-test .
 
 USER nonroot:nonroot
 
-ENTRYPOINT ["/pds-test"]
+ENTRYPOINT ["/pds-test", "-test.v"]
