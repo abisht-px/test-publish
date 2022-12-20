@@ -9,7 +9,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 	deployments := []ShortDeploymentSpec{
 		{
 			ServiceName:     dbPostgres,
-			ImageVersionTag: "14.5",
+			ImageVersionTag: "14.6",
 			NodeCount:       1,
 		},
 		{
@@ -127,7 +127,22 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 	deployments := []ShortDeploymentSpec{
 		{
 			ServiceName:     dbPostgres,
-			ImageVersionTag: "14.5",
+			ImageVersionTag: "11.18",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbPostgres,
+			ImageVersionTag: "12.13",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbPostgres,
+			ImageVersionTag: "13.9",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbPostgres,
+			ImageVersionTag: "14.6",
 			NodeCount:       1,
 		},
 		{
@@ -184,10 +199,34 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		{
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbPostgres,
+				ImageVersionTag: "11.16",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"11.18"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "12.11",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"12.13"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "13.7",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"13.9"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
 				ImageVersionTag: "14.2",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"14.4", "14.5"},
+			targetVersions: []string{"14.6"},
 		},
 		{
 			spec: ShortDeploymentSpec{
@@ -195,7 +234,15 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "14.4",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"14.5"},
+			targetVersions: []string{"14.6"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "14.5",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"14.6"},
 		},
 		{
 			spec: ShortDeploymentSpec{
@@ -320,7 +367,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbPostgres,
-				ImageVersionTag: "14.4",
+				ImageVersionTag: "11.18",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -328,7 +375,23 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbPostgres,
-				ImageVersionTag: "14.5",
+				ImageVersionTag: "12.13",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "13.9",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "14.6",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
