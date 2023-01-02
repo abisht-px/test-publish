@@ -49,8 +49,6 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/hcsshim/osversion
 # github.com/OpenPeeDeeP/depguard v1.1.0
 github.com/OpenPeeDeeP/depguard
-# github.com/PaesslerAG/jsonpath v0.1.1
-## explicit
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -1371,7 +1369,6 @@ sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
-# github.anim.dreamworks.com/golang/logging => github.com/portworx/golang_logging v1.0.0
 # github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 # github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5
 # github.anim.dreamworks.com/golang/utils => github.com/portworx/golang_utils v0.0.0-20181008202924-011984e32408
