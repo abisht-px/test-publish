@@ -43,6 +43,29 @@ Running locally (`make test`) is also possible if:
 
 NOTE: `SECRET_PDS_TOKEN` can be used for auth instead of user/password one.
 
+Make sure you have added helm chart manually to your local.
+Since minihelm looks for this entry it fails if you do not define this.
+See this slack [thread](https://purestorage.slack.com/archives/C04CQSSMFPC/p1669717983272019)
+
+Add the following entry to `/home/nonroot/.config/helm/repositories.yaml`:
+
+```bash
+cat <<EOT >> /home/nonroot/.config/helm/repositories.yaml
+apiVersion: ""
+generated: "0001-01-01T00:00:00Z"
+repositories:
+- caFile: ""
+  certFile: ""
+  insecure_skip_tls_verify: false
+  keyFile: ""
+  name: pds
+  pass_credentials_all: true
+  password: <PX_PASSWORD>
+  url: https://portworx.github.io/pds-charts
+  username: <PX_USER>
+EOT
+```
+
 ## Example run
 
 this example loads one deployment specification and starts all test cases
