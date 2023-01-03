@@ -70,6 +70,7 @@ func isDeploymentHealthy(ctx context.Context, apiClient *pds.APIClient, deployme
 
 func getAllImageVersions(ctx context.Context, apiClient *pds.APIClient) ([]PDSImageReferenceSpec, error) {
 	var records []PDSImageReferenceSpec
+
 	dataServices, _, err := apiClient.DataServicesApi.ApiDataServicesGet(ctx).Execute()
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func getAllImageVersions(ctx context.Context, apiClient *pds.APIClient) ([]PDSIm
 			}
 		}
 	}
+
 	return records, nil
 }
 

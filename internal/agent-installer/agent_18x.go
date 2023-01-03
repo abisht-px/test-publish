@@ -1,7 +1,7 @@
 package agent_installer
 
 const (
-	helmPDSVersionConstraint = "~1.10"
+	helmPDSVersionConstraint = "~1.11"
 )
 
 func NewSelectorHelmPDS18(kubeconfig, tenantID, bearerToken, APIEndpoint string) (*selectorHelmPDS, error) {

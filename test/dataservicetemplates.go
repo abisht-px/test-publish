@@ -6,14 +6,15 @@ import (
 )
 
 const (
-	dbCassandra = "Cassandra"
-	dbKafka     = "Kafka"
-	dbMongoDB   = "MongoDB"
-	dbMySQL     = "MySQL"
-	dbPostgres  = "PostgreSQL"
-	dbRabbitMQ  = "RabbitMQ"
-	dbRedis     = "Redis"
-	dbZooKeeper = "ZooKeeper"
+	dbCassandra     = "Cassandra"
+	dbKafka         = "Kafka"
+	dbMongoDB       = "MongoDB"
+	dbMySQL         = "MySQL"
+	dbPostgres      = "PostgreSQL"
+	dbRabbitMQ      = "RabbitMQ"
+	dbRedis         = "Redis"
+	dbZooKeeper     = "ZooKeeper"
+	dbElasticSearch = "Elasticsearch"
 )
 
 type dataServiceTemplateSpec struct {
@@ -98,6 +99,23 @@ var (
 				CpuLimit:       pointer.StringPtr("0.5"),
 				MemoryRequest:  pointer.StringPtr("800M"),
 				MemoryLimit:    pointer.StringPtr("1G"),
+				StorageRequest: pointer.StringPtr("5G"),
+			},
+		},
+		dbElasticSearch: {
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+				ConfigItems: []pds.ModelsConfigItem{
+					{
+						Key:   pointer.StringPtr("HEAP_SIZE"),
+						Value: pointer.StringPtr("2G"),
+					},
+				},
+			},
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+				CpuRequest:     pointer.StringPtr("1"),
+				CpuLimit:       pointer.StringPtr("2"),
+				MemoryRequest:  pointer.StringPtr("2G"),
+				MemoryLimit:    pointer.StringPtr("4G"),
 				StorageRequest: pointer.StringPtr("5G"),
 			},
 		},

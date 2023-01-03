@@ -102,6 +102,11 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			ImageVersionTag: "6.0.2",
 			NodeCount:       1,
 		},
+		{
+			ServiceName:     dbElasticSearch,
+			ImageVersionTag: "8.5.2",
+			NodeCount:       1,
+		},
 	}
 
 	for _, deployment := range deployments {
@@ -168,6 +173,11 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 		{
 			ServiceName:     dbMongoDB,
 			ImageVersionTag: "6.0.2",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbElasticSearch,
+			ImageVersionTag: "8.5.2",
 			NodeCount:       1,
 		},
 	}
@@ -488,6 +498,14 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbMongoDB,
 				ImageVersionTag: "6.0.2",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbElasticSearch,
+				ImageVersionTag: "8.5.2",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
