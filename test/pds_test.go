@@ -501,7 +501,7 @@ func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string
 func (s *PDSTestSuite) mustRunHostCheckJob(namespace string, jobNamePrefix, jobNameSuffix string, hosts, dnsIPs []string) string {
 
 	jobName := fmt.Sprintf("%s-hostcheck-%s", jobNamePrefix, jobNameSuffix)
-	image := "tutum/dnsutils" // TODO DS-3289: Copy this image into portworx repo.
+	image := "portworx/dnsutils"
 	env := []corev1.EnvVar{{
 		Name:  "HOSTS",
 		Value: strings.Join(hosts, " "),
