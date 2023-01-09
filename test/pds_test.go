@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -40,7 +40,7 @@ const (
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
 	waiterHostCheckFinishedTimeout               = time.Second * 60
-	waiterAllHostsAvailableTimeout               = time.Second * 300
+	waiterAllHostsAvailableTimeout               = time.Second * 600
 	waiterCoreDNSRestartedTimeout                = time.Second * 30
 
 	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
@@ -210,7 +210,7 @@ func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
 	)
 	httpRes, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
 	if err != nil {
-		rawbody, parseErr := ioutil.ReadAll(httpRes.Body)
+		rawbody, parseErr := io.ReadAll(httpRes.Body)
 		s.Require().NoError(parseErr, "Parse api error")
 		s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdDelete: %s", rawbody)
 	}
@@ -380,7 +380,7 @@ func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDepl
 
 	_, httpRes, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
 	if err != nil {
-		rawbody, parseErr := ioutil.ReadAll(httpRes.Body)
+		rawbody, parseErr := io.ReadAll(httpRes.Body)
 		s.Require().NoError(parseErr, "Parse api error")
 		s.Require().NoError(err, "Error calling PDS API DeploymentTargetsIdPut: %s", rawbody)
 	}
@@ -491,7 +491,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentI
 
 func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string) bool {
 	switch dataServiceType {
-	case dbKafka, dbRabbitMQ:
+	case dbKafka, dbRabbitMQ, dbCouchbase:
 		return true
 	default:
 		return false
@@ -943,6 +943,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 	switch dataServiceType {
 	case dbCassandra:
 		return "portworx/pds-loadtests:cassandra-0.0.3", nil
+	case dbCouchbase:
+		return "portworx/pds-loadtests:couchbase-0.0.2", nil
 	case dbRedis:
 		return "portworx/pds-loadtests:redis-0.0.3", nil
 	case dbZooKeeper:
@@ -1132,6 +1134,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "postgresql"
 	case dbCassandra:
 		containerName = "cassandra"
+	case dbCouchbase:
+		containerName = "couchbase"
 	case dbRedis:
 		containerName = "redis"
 	case dbZooKeeper:

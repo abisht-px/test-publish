@@ -7,6 +7,7 @@ import (
 
 const (
 	dbCassandra     = "Cassandra"
+	dbCouchbase     = "Couchbase"
 	dbKafka         = "Kafka"
 	dbMongoDB       = "MongoDB"
 	dbMySQL         = "MySQL"
@@ -50,6 +51,31 @@ var (
 					{
 						Key:   pointer.StringPtr("CASSANDRA_DC"),
 						Value: pointer.StringPtr("dc1"),
+					},
+				},
+			},
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+				CpuRequest:     pointer.StringPtr("1"),
+				CpuLimit:       pointer.StringPtr("2"),
+				MemoryRequest:  pointer.StringPtr("2G"),
+				MemoryLimit:    pointer.StringPtr("4G"),
+				StorageRequest: pointer.StringPtr("10G"),
+			},
+		},
+		dbCouchbase: {
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+				ConfigItems: []pds.ModelsConfigItem{
+					{
+						Key:   pointer.StringPtr("COUCHBASE_RAMSIZE"),
+						Value: pointer.StringPtr("2048"),
+					},
+					{
+						Key:   pointer.StringPtr("COUCHBASE_FTS_RAMSIZE"),
+						Value: pointer.StringPtr("256"),
+					},
+					{
+						Key:   pointer.StringPtr("COUCHBASE_INDEX_RAMSIZE"),
+						Value: pointer.StringPtr("256"),
 					},
 				},
 			},
