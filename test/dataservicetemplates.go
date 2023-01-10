@@ -9,7 +9,7 @@ const (
 	dbCassandra     = "Cassandra"
 	dbCouchbase     = "Couchbase"
 	dbKafka         = "Kafka"
-	dbMongoDB       = "MongoDB"
+	dbMongoDB       = "MongoDB Enterprise"
 	dbMySQL         = "MySQL"
 	dbPostgres      = "PostgreSQL"
 	dbRabbitMQ      = "RabbitMQ"

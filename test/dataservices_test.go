@@ -228,6 +228,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 	}{
 		{
 			spec: ShortDeploymentSpec{
+				ServiceName:     dbMongoDB,
+				ImageVersionTag: "6.0.2",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"6.0.3"},
+		},
+		{
+			spec: ShortDeploymentSpec{
 				ServiceName:     dbPostgres,
 				ImageVersionTag: "11.16",
 				NodeCount:       1,

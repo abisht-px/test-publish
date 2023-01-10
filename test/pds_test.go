@@ -1147,7 +1147,7 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	case dbRabbitMQ:
 		containerName = "rabbitmq"
 	case dbMongoDB:
-		containerName = "mongodb"
+		containerName = "mongos"
 	case dbMySQL:
 		containerName = "mysql"
 	case dbElasticSearch:
