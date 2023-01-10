@@ -3,7 +3,6 @@ package minihelm
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -54,7 +53,7 @@ func New() (Client, error) {
 		return nil, err
 	}
 
-	bs, err := ioutil.ReadFile(repoFile)
+	bs, err := os.ReadFile(repoFile)
 	if err != nil {
 		return nil, err
 	}

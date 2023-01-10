@@ -6,31 +6,29 @@ on:
     branches:
     - master
 
-env:
-  GO_VERSION: '1.16'
-
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2.3.4
+      uses: actions/checkout@v3
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: ${{ env.GO_VERSION }}
+        go-version-file: 'go.mod'
+        cache: true
 
     - name: Golangci-lint
       uses: golangci/golangci-lint-action@v3.1.0
       with:
-        version: v1.45
+        version: v1.50.1
 
   markdown-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3
 
       - name: Lint markdown files
         uses: DavidAnson/markdownlint-cli2-action@v5

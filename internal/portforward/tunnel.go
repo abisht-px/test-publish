@@ -16,7 +16,6 @@ package portforward
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -54,7 +53,7 @@ func NewTunnel(client rest.Interface, config *rest.Config, namespace, podName st
 		Remote:    remote,
 		stopChan:  make(chan struct{}, 1),
 		readyChan: make(chan struct{}, 1),
-		Out:       ioutil.Discard,
+		Out:       io.Discard,
 	}
 }
 
