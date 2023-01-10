@@ -959,6 +959,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 		return "portworx/pds-loadtests:mysql-0.0.3", nil
 	case dbElasticSearch:
 		return "portworx/pds-loadtests:elasticsearch-0.0.2", nil
+	case dbConsul:
+		return "portworx/pds-loadtests:consul-bench-0.1.0", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
 	}
@@ -1150,6 +1152,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "mysql"
 	case dbElasticSearch:
 		containerName = "elasticsearch"
+	case dbConsul:
+		containerName = "consul"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}

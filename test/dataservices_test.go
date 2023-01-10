@@ -13,6 +13,11 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			NodeCount:       1,
 		},
 		{
+			ServiceName:     dbConsul,
+			ImageVersionTag: "1.14.0",
+			NodeCount:       1,
+		},
+		{
 			ServiceName:     dbCassandra,
 			ImageVersionTag: "4.0.6",
 			NodeCount:       1,
@@ -158,6 +163,11 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 		{
 			ServiceName:     dbCassandra,
 			ImageVersionTag: "4.0.6",
+			NodeCount:       1,
+		},
+		{
+			ServiceName:     dbConsul,
+			ImageVersionTag: "1.14.0",
 			NodeCount:       1,
 		},
 		{
@@ -423,6 +433,14 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				NodeCount:       1,
 			},
 			scaleTo: 2,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbConsul,
+				ImageVersionTag: "1.14.0",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
 		},
 		{
 			spec: ShortDeploymentSpec{

@@ -16,6 +16,7 @@ const (
 	dbRedis         = "Redis"
 	dbZooKeeper     = "ZooKeeper"
 	dbElasticSearch = "Elasticsearch"
+	dbConsul        = "Consul"
 )
 
 type dataServiceTemplateSpec struct {
@@ -85,6 +86,18 @@ var (
 				MemoryRequest:  pointer.StringPtr("2G"),
 				MemoryLimit:    pointer.StringPtr("4G"),
 				StorageRequest: pointer.StringPtr("10G"),
+			},
+		},
+		dbConsul: {
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+				ConfigItems: []pds.ModelsConfigItem{},
+			},
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+				CpuRequest:     pointer.StringPtr("0.5"),
+				CpuLimit:       pointer.StringPtr("1"),
+				MemoryRequest:  pointer.StringPtr("1G"),
+				MemoryLimit:    pointer.StringPtr("2G"),
+				StorageRequest: pointer.StringPtr("5G"),
 			},
 		},
 		dbKafka: {
