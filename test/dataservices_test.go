@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"time"
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -390,7 +389,6 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureStatefulSetReady(deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-				time.Sleep(10 * time.Second)
 				s.mustRunBasicSmokeTest(deploymentID)
 			})
 		}
