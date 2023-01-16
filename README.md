@@ -88,3 +88,12 @@ PDS_S3CREDENTIALS_SECRETKEY='...' \
 PDS_DEPLOYMENT_SPEC0='{spec_id:0, service_name: PostgreSQL, image_version_build: 802315d, app_config_template_name: QaDefault, storage_option_name: QaDefault, resource_settings_template_name: Medium, service_type: LoadBalancer, name_prefix: autotest-81c330f-, node_count: 1}' \
 go test -test.v -test.run=Test ./...
 ```
+
+the following command only runs a single test from the suite.
+
+```bash
+go test -test.v ./... -testify.m {put_test_name_here}
+
+#for instance
+go test -test.v ./... -testify.m TestDataService_UpdateImage
+```
