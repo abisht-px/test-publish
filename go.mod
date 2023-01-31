@@ -8,7 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0
+	github.com/portworx/pds-api-go-client v0.0.0-20230112132458-c195ccb1dc84
 	github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5

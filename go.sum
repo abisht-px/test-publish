@@ -1140,8 +1140,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/polyfloyd/go-errorlint v1.0.5 h1:AHB5JRCjlmelh9RrLxT9sgzpalIwwq4hqE8EkwIwKdY=
 github.com/polyfloyd/go-errorlint v1.0.5/go.mod h1:APVvOesVSAnne5SClsPxPdfvZTVDojXh1/G3qb5wjGI=
-github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0 h1:d/J/Pvvse/BVpnY/98aK4WMhiqcPkYQizulAUQ5M5iQ=
-github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0/go.mod h1:yn0abd9g4Q3fBpY720Eb+hwRV1OnTjROUaSb9mOlzBk=
+github.com/portworx/pds-api-go-client v0.0.0-20230112132458-c195ccb1dc84 h1:spxF6KeypeK1opLPuGcrm7ErwGa3c5OLqF2AzN4p53A=
+github.com/portworx/pds-api-go-client v0.0.0-20230112132458-c195ccb1dc84/go.mod h1:yn0abd9g4Q3fBpY720Eb+hwRV1OnTjROUaSb9mOlzBk=
 github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f h1:U1F0XCmsh0xiGMt03rX1i3jKtbCLokHugQHVHfocXnY=
 github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f/go.mod h1:/Jc9rYY0K7aq75ePLLE9krqZaTrSNiZofWK+H7iTUKc=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=

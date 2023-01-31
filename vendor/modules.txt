@@ -739,7 +739,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/polyfloyd/go-errorlint v1.0.5
 ## explicit; go 1.13
 github.com/polyfloyd/go-errorlint/errorlint
-# github.com/portworx/pds-api-go-client v0.0.0-20220810014203-e9b075efe9b0
+# github.com/portworx/pds-api-go-client v0.0.0-20230112132458-c195ccb1dc84
 ## explicit; go 1.17
 github.com/portworx/pds-api-go-client/pds/v1alpha1
 # github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f

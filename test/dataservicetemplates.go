@@ -20,14 +20,14 @@ const (
 )
 
 type dataServiceTemplateSpec struct {
-	configurationTemplate pds.ControllersCreateApplicationConfigurationTemplatesRequest
-	resourceTemplate      pds.ControllersCreateResourceSettingsTemplatesRequest
+	configurationTemplate pds.ControllersCreateApplicationConfigurationTemplateRequest
+	resourceTemplate      pds.ControllersCreateResourceSettingsTemplateRequest
 }
 
 var (
 	dataServiceTemplatesSpec = map[string]dataServiceTemplateSpec{
 		dbCassandra: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("CASSANDRA_AUTHORIZER"),
@@ -55,7 +55,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("1"),
 				CpuLimit:       pointer.StringPtr("2"),
 				MemoryRequest:  pointer.StringPtr("2G"),
@@ -64,7 +64,7 @@ var (
 			},
 		},
 		dbCouchbase: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("COUCHBASE_RAMSIZE"),
@@ -80,7 +80,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("1"),
 				CpuLimit:       pointer.StringPtr("2"),
 				MemoryRequest:  pointer.StringPtr("2G"),
@@ -89,10 +89,10 @@ var (
 			},
 		},
 		dbConsul: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("1G"),
@@ -101,7 +101,7 @@ var (
 			},
 		},
 		dbKafka: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("heapSize"),
@@ -109,7 +109,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("1G"),
@@ -118,10 +118,10 @@ var (
 			},
 		},
 		dbMongoDB: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.4"),
 				CpuLimit:       pointer.StringPtr("0.5"),
 				MemoryRequest:  pointer.StringPtr("800M"),
@@ -130,10 +130,10 @@ var (
 			},
 		},
 		dbMySQL: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.4"),
 				CpuLimit:       pointer.StringPtr("0.5"),
 				MemoryRequest:  pointer.StringPtr("800M"),
@@ -142,7 +142,7 @@ var (
 			},
 		},
 		dbElasticSearch: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("HEAP_SIZE"),
@@ -150,7 +150,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("1"),
 				CpuLimit:       pointer.StringPtr("2"),
 				MemoryRequest:  pointer.StringPtr("2G"),
@@ -159,7 +159,7 @@ var (
 			},
 		},
 		dbPostgres: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("PG_DATABASE"),
@@ -167,7 +167,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("500M"),
@@ -176,7 +176,7 @@ var (
 			},
 		},
 		dbRabbitMQ: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("RABBITMQ_DEFAULT_USER"),
@@ -188,7 +188,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("300M"),
@@ -197,10 +197,10 @@ var (
 			},
 		},
 		dbRedis: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("1G"),
@@ -209,7 +209,7 @@ var (
 			},
 		},
 		dbZooKeeper: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplatesRequest{
+			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				ConfigItems: []pds.ModelsConfigItem{
 					{
 						Key:   pointer.StringPtr("ZOO_4LW_COMMANDS_WHITELIST"),
@@ -217,7 +217,7 @@ var (
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplatesRequest{
+			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
 				CpuRequest:     pointer.StringPtr("0.5"),
 				CpuLimit:       pointer.StringPtr("1"),
 				MemoryRequest:  pointer.StringPtr("1G"),

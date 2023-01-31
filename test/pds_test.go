@@ -725,7 +725,7 @@ func (s *PDSTestSuite) mustDeleteBackupTarget() {
 }
 
 func (s *PDSTestSuite) mustCreateStorageOptions() {
-	storageTemplate := pds.ControllersCreateStorageOptionsTemplatesRequest{
+	storageTemplate := pds.ControllersCreateStorageOptionsTemplateRequest{
 		Name:   pointer.StringPtr(namePrefix),
 		Repl:   pointer.Int32Ptr(1),
 		Secure: pointer.BoolPtr(false),
