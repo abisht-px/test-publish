@@ -293,7 +293,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbRedis,
 				ImageVersionTag: "7.0.0",
-				NodeCount:       1,
+				NodeCount:       6,
 			},
 			targetVersions: []string{"7.0.2", "7.0.4", "7.0.5"},
 		},
@@ -301,7 +301,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbRedis,
 				ImageVersionTag: "7.0.2",
-				NodeCount:       1,
+				NodeCount:       6,
 			},
 			targetVersions: []string{"7.0.4", "7.0.5"},
 		},
@@ -309,7 +309,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec: ShortDeploymentSpec{
 				ServiceName:     dbRedis,
 				ImageVersionTag: "7.0.4",
-				NodeCount:       1,
+				NodeCount:       6,
 			},
 			targetVersions: []string{"7.0.5"},
 		},
