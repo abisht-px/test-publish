@@ -79,7 +79,6 @@ type PDSTestSuite struct {
 	testPDSStorageTemplateID   string
 	testPDSStorageTemplateName string
 	testPDSTemplatesMap        map[string]applicationTemplatesInfo
-	shortDeploymentSpecMap     map[PDSDeploymentSpecID]ShortDeploymentSpec
 	imageVersionSpecList       []PDSImageReferenceSpec
 }
 
@@ -94,7 +93,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
 	s.targetClusterKubeconfig = env.targetKubeconfig
-	s.shortDeploymentSpecMap = mustLoadShortDeploymentSpecMap(s.T())
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env)
 	s.mustHaveAPIClient(env)

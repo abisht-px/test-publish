@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -9,27 +8,26 @@ import (
 )
 
 const (
-	envControlPlaneAPI           = "CONTROL_PLANE_API"
-	envPDSAccountName            = "PDS_ACCOUNT_NAME"
-	envPDSTenantName             = "PDS_TENANT_NAME"
-	envPDSProjectName            = "PDS_PROJECT_NAME"
-	envPDSDeploymentTargetName   = "PDS_DEPTARGET_NAME"
-	envPDSNamespaceName          = "PDS_NAMESPACE_NAME"
-	envPXNamespaceName           = "PX_NAMESPACE_NAME"
-	envPDSServiceAccountName     = "PDS_SERVICE_ACCOUNT_NAME"
-	envTargetKubeconfig          = "TARGET_CLUSTER_KUBECONFIG"
-	envSecretTokenIssuerURL      = "SECRET_TOKEN_ISSUER_URL"
-	envSecretIssuerClientID      = "SECRET_ISSUER_CLIENT_ID"
-	envSecretIssuerClientSecret  = "SECRET_ISSUER_CLIENT_SECRET"
-	envSecretPDSUsername         = "SECRET_PDS_USERNAME"
-	envSecretPDSPassword         = "SECRET_PDS_PASSWORD"
-	envShortDeploymentSpecPrefix = "PDS_DEPLOYMENT_SPEC"
-	envBackupTargetBucket        = "PDS_BACKUPTARGET_BUCKET"
-	envBackupTargetRegion        = "PDS_BACKUPTARGET_REGION"
-	envS3CredentialsAccessKey    = "PDS_S3CREDENTIALS_ACCESSKEY"
-	envS3CredentialsEndpoint     = "PDS_S3CREDENTIALS_ENDPOINT"
-	envS3CredentialsSecretKey    = "PDS_S3CREDENTIALS_SECRETKEY"
-	envPDSToken                  = "SECRET_PDS_TOKEN"
+	envControlPlaneAPI          = "CONTROL_PLANE_API"
+	envPDSAccountName           = "PDS_ACCOUNT_NAME"
+	envPDSTenantName            = "PDS_TENANT_NAME"
+	envPDSProjectName           = "PDS_PROJECT_NAME"
+	envPDSDeploymentTargetName  = "PDS_DEPTARGET_NAME"
+	envPDSNamespaceName         = "PDS_NAMESPACE_NAME"
+	envPXNamespaceName          = "PX_NAMESPACE_NAME"
+	envPDSServiceAccountName    = "PDS_SERVICE_ACCOUNT_NAME"
+	envTargetKubeconfig         = "TARGET_CLUSTER_KUBECONFIG"
+	envSecretTokenIssuerURL     = "SECRET_TOKEN_ISSUER_URL"
+	envSecretIssuerClientID     = "SECRET_ISSUER_CLIENT_ID"
+	envSecretIssuerClientSecret = "SECRET_ISSUER_CLIENT_SECRET"
+	envSecretPDSUsername        = "SECRET_PDS_USERNAME"
+	envSecretPDSPassword        = "SECRET_PDS_PASSWORD"
+	envBackupTargetBucket       = "PDS_BACKUPTARGET_BUCKET"
+	envBackupTargetRegion       = "PDS_BACKUPTARGET_REGION"
+	envS3CredentialsAccessKey   = "PDS_S3CREDENTIALS_ACCESSKEY"
+	envS3CredentialsEndpoint    = "PDS_S3CREDENTIALS_ENDPOINT"
+	envS3CredentialsSecretKey   = "PDS_S3CREDENTIALS_SECRETKEY"
+	envPDSToken                 = "SECRET_PDS_TOKEN"
 )
 
 const (
@@ -128,24 +126,6 @@ func mustGetEnvVariable(t *testing.T, key string) string {
 	value := os.Getenv(key)
 	require.NotEmptyf(t, value, "Env variable %q is empty.", key)
 	return value
-}
-
-func mustGetEnvList(t *testing.T, key string) []string {
-	t.Helper()
-	list := make([]string, 0)
-	index := 0
-	for {
-		envVarName := fmt.Sprintf("%s%d", key, index)
-		value, ok := os.LookupEnv(envVarName)
-		if !ok {
-			break
-		}
-		list = append(list, value)
-		index++
-	}
-
-	require.NotEmptyf(t, list, "Env variable %q is empty.", key)
-	return list
 }
 
 func getEnvVariableWithDefault(key, fallback string) string {
