@@ -27,6 +27,7 @@ Running locally (`make test`) is also possible if:
 | PDS_BACKUPTARGET_BUCKET    |                              | Bucket name for the S3 or S3 compatible service.                               |
 | PDS_BACKUPTARGET_REGION    |                              | Region of the bucket, required for S3.                                         |
 | PDS_S3CREDENTIALS_ENDPOINT | s3.amazonaws.com             | Base path for the AWS S3 endpoint.                                             |
+| PDS_HELM_CHART_VERSION     | configured by control plane  | PDS Helm chart version. Use "0" to skip PDS chart installation.                |
 
 ### Secrets
 

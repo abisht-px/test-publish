@@ -67,6 +67,7 @@ type PDSTestSuite struct {
 	targetClusterKubeconfig    string
 	apiClient                  *pds.APIClient
 	pdsAgentInstallable        agent_installer.Installable
+	pdsHelmChartVersion        string
 	testPDSAccountID           string
 	testPDSTenantID            string
 	testPDSProjectID           string
@@ -96,14 +97,16 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env)
 	s.mustHaveAPIClient(env)
+	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
 	s.mustHavePDStestProject(env)
-	s.mustHavePDStestServiceAccount(env)
-	s.mustHavePDStestAgentToken(env)
-
 	s.mustLoadImageVersions()
-	s.mustInstallAgent(env)
+	if shouldInstallPDSHelmChart(s.pdsHelmChartVersion) {
+		s.mustHavePDStestServiceAccount(env)
+		s.mustHavePDStestAgentToken(env)
+		s.mustInstallAgent(env)
+	}
 	s.mustHavePDStestDeploymentTarget(env)
 	s.mustHavePDStestNamespace(env)
 	s.mustCreateApplicationTemplates()
@@ -118,10 +121,26 @@ func (s *PDSTestSuite) TearDownSuite() {
 	s.mustDeleteBackupCredentials()
 	s.mustDeleteApplicationTemplates()
 	s.mustDeleteStorageOptions()
-	s.mustUninstallAgent(env)
-	s.mustDeletePDStestDeploymentTarget()
+	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {
+		s.mustUninstallAgent(env)
+		s.mustDeletePDStestDeploymentTarget()
+	}
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
+	}
+}
+
+// mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
+func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
+	metadata, resp, err := s.apiClient.MetadataApi.ApiMetadataGet(s.ctx).Execute()
+	s.Require().NoError(err, "Error calling PDS API MetadataGet.")
+	s.Require().Equal(200, resp.StatusCode, "PDS API must return HTTP 200")
+
+	// If user didn't specify the helm chart version, let's use the one configured in PDS API.
+	if env.pdsHelmChartVersion == "" {
+		s.pdsHelmChartVersion = metadata.GetHelmChartVersion()
+	} else {
+		s.pdsHelmChartVersion = env.pdsHelmChartVersion
 	}
 }
 
@@ -294,14 +313,13 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	provider, err := agent_installer.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	helmSelectorAgent14, err := agent_installer.NewSelectorHelmPDS18WithName(env.targetKubeconfig, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
-	s.Require().NoError(err, "Cannot create agent installer selector.")
+	helmSelectorAgentSelector := agent_installer.NewSelectorHelmPDS(env.targetKubeconfig, s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
 
-	installer, err := provider.Installer(helmSelectorAgent14)
-	s.Require().NoError(err, "Cannot get agent installer for version selector %s.", helmSelectorAgent14.ConstraintsString())
+	installer, err := provider.Installer(helmSelectorAgentSelector)
+	s.Require().NoError(err, "Cannot get agent installer for version selector %s.", helmSelectorAgentSelector.ConstraintsString())
 
 	err = installer.Install(s.ctx)
-	s.Require().NoError(err, "Cannot install agent for version %s selector.", helmSelectorAgent14.ConstraintsString())
+	s.Require().NoError(err, "Cannot install agent for version %s selector.", helmSelectorAgentSelector.ConstraintsString())
 	s.pdsAgentInstallable = installer
 }
 
@@ -322,7 +340,6 @@ func (s *PDSTestSuite) mustUninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete detached PX volumes.")
 	err = s.targetCluster.DeletePXCredentials(s.ctx, env.pxNamespaceName)
 	s.NoError(err, "Cannot delete detached PX volumes.")
-
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {

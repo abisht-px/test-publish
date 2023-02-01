@@ -28,6 +28,7 @@ const (
 	envS3CredentialsEndpoint    = "PDS_S3CREDENTIALS_ENDPOINT"
 	envS3CredentialsSecretKey   = "PDS_S3CREDENTIALS_SECRETKEY"
 	envPDSToken                 = "SECRET_PDS_TOKEN"
+	envPDSHelmChartVersion      = "PDS_HELM_CHART_VERSION"
 )
 
 const (
@@ -78,6 +79,7 @@ type environment struct {
 	pdsToken                string
 	secrets                 secrets
 	backupTarget            backupTarget
+	pdsHelmChartVersion     string
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
@@ -118,6 +120,7 @@ func mustHaveEnvVariables(t *testing.T) environment {
 				},
 			},
 		},
+		pdsHelmChartVersion: getEnvVariableWithDefault(envPDSHelmChartVersion, ""),
 	}
 }
 

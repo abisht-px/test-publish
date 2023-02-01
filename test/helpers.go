@@ -246,3 +246,7 @@ func (l *TestLogger) Print(v ...interface{}) {
 func (l *TestLogger) Printf(format string, v ...interface{}) {
 	l.t.Logf(format, v...)
 }
+
+func shouldInstallPDSHelmChart(versionConstraints string) bool {
+	return versionConstraints != "0"
+}

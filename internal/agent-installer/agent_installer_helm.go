@@ -33,9 +33,9 @@ type InstallableHelmPDS struct {
 }
 
 type selectorHelmPDS struct {
-	restGetter        genericclioptions.RESTClientGetter
-	versionContraints string
-	helmChartVals     map[string]string
+	restGetter         genericclioptions.RESTClientGetter
+	versionConstraints string
+	helmChartVals      map[string]string
 }
 
 func nullWriter(format string, v ...interface{}) {}
@@ -127,5 +127,5 @@ func (s *selectorHelmPDS) ChartVals() string {
 }
 
 func (s *selectorHelmPDS) ConstraintsString() string {
-	return s.versionContraints
+	return s.versionConstraints
 }
