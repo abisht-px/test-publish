@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 
-	agent_installer "github.com/portworx/pds-integration-test/internal/agent-installer"
+	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/loadgen"
 	"github.com/portworx/pds-integration-test/internal/loadgen/postgresql"
 	"github.com/portworx/pds-integration-test/test/auth"
@@ -66,7 +66,7 @@ type PDSTestSuite struct {
 	targetCluster              *cluster.TargetCluster
 	targetClusterKubeconfig    string
 	apiClient                  *pds.APIClient
-	pdsAgentInstallable        agent_installer.Installable
+	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
 	pdsHelmChartVersion        string
 	testPDSAccountID           string
 	testPDSTenantID            string
@@ -310,16 +310,16 @@ func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
 }
 
 func (s *PDSTestSuite) mustInstallAgent(env environment) {
-	provider, err := agent_installer.NewHelmProvider()
+	provider, err := helminstaller.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	helmSelectorAgentSelector := agent_installer.NewSelectorHelmPDS(env.targetKubeconfig, s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
+	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
 
-	installer, err := provider.Installer(helmSelectorAgentSelector)
-	s.Require().NoError(err, "Cannot get agent installer for version selector %s.", helmSelectorAgentSelector.ConstraintsString())
+	installer, err := provider.Installer(env.targetKubeconfig, pdsChartConfig)
+	s.Require().NoError(err, "Cannot get agent installer for version constraints %s.", pdsChartConfig.VersionConstraints)
 
 	err = installer.Install(s.ctx)
-	s.Require().NoError(err, "Cannot install agent for version %s selector.", helmSelectorAgentSelector.ConstraintsString())
+	s.Require().NoError(err, "Cannot install agent for version %s.", installer.Version())
 	s.pdsAgentInstallable = installer
 }
 
@@ -761,11 +761,11 @@ func (s *PDSTestSuite) mustCreateStorageOptions() {
 func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 	dataServicesTemplates := make(map[string]applicationTemplatesInfo)
 	for _, imageVersion := range s.imageVersionSpecList {
-		dsTemplate, found := dataServiceTemplatesSpec[imageVersion.ServiceName]
+		dsTemplate, found := dataServiceTemplatesSpec[imageVersion.DataServiceName]
 		if !found {
 			continue
 		}
-		_, found = dataServicesTemplates[imageVersion.ServiceName]
+		_, found = dataServicesTemplates[imageVersion.DataServiceName]
 		if found {
 			continue
 		}
@@ -777,7 +777,7 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 		configTemplate, _, err := s.apiClient.ApplicationConfigurationTemplatesApi.
 			ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
 			Body(configTemplateBody).Execute()
-		s.Require().NoError(err, "data service: %s", imageVersion.ServiceName)
+		s.Require().NoError(err, "data service: %s", imageVersion.DataServiceName)
 
 		resourceTemplateBody := dsTemplate.resourceTemplate
 		resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
@@ -786,9 +786,9 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 		resourceTemplate, _, err := s.apiClient.ResourceSettingsTemplatesApi.
 			ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
 			Body(resourceTemplateBody).Execute()
-		s.Require().NoError(err, "data service: %s", imageVersion.ServiceName)
+		s.Require().NoError(err, "data service: %s", imageVersion.DataServiceName)
 
-		dataServicesTemplates[imageVersion.ServiceName] = applicationTemplatesInfo{
+		dataServicesTemplates[imageVersion.DataServiceName] = applicationTemplatesInfo{
 			AppConfigTemplateID:   configTemplate.GetId(),
 			AppConfigTemplateName: configTemplate.GetName(),
 			ResourceTemplateID:    resourceTemplate.GetId(),

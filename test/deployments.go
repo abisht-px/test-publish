@@ -6,7 +6,7 @@ import (
 
 // PDSImageReferenceSpec is a summary specification of every image version with enough information to pass to a deployment call.
 type PDSImageReferenceSpec struct {
-	ServiceName       string
+	DataServiceName   string
 	DataServiceID     string
 	VersionID         string
 	ImageVersionBuild string

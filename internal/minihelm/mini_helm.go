@@ -22,15 +22,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-type DebugLog func(format string, v ...interface{})
-
 type Client interface {
-	HasRepoWithName(repoName string) bool
 	HasRepoWithNameAndURL(repoName, url string) bool
 	UpdateRepo(repoName string) error
 	GetChartVersions(repoName, chartName string) ([]string, error)
-	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, ChartVersion, chartVals string, logger DebugLog) error
-	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger DebugLog) error
+	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
+	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger action.DebugLog) error
 }
 
 // miniHelm is a partial implementation of HelmCmd, w/o Helm storage mutating features (Add Chart, Add Repo etc.).
@@ -105,14 +102,14 @@ func (m *miniHelm) GetChartVersions(repoName, chartName string) ([]string, error
 	return nil, fmt.Errorf("chart %s not found", chartName)
 }
 
-func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVersion, chartVals string, logger DebugLog) error {
-	_, err := installPDSChartVersionWithContext(ctx, m.settings, restGetter, repoName, chartName, chartVersion, chartVals, action.DebugLog(logger))
+func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
+	_, err := installPDSChartVersionWithContext(ctx, m.settings, restGetter, repoName, chartName, chartVersion, chartVals, logger)
 	return err
 }
 
-func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger DebugLog) error {
+func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger action.DebugLog) error {
 	// TODO (dbugrik): Add Context handling, Context is not naturally supported by helm v3 action yet
-	_, err := uninstallPDSChartWithContext(m.settings, restGetter, chartName, action.DebugLog(logger))
+	_, err := uninstallPDSChartWithContext(m.settings, restGetter, chartName, logger)
 	return err
 }
 

@@ -90,7 +90,7 @@ func getAllImageVersions(ctx context.Context, apiClient *pds.APIClient) ([]PDSIm
 
 			for _, image := range images.GetData() {
 				record := PDSImageReferenceSpec{
-					ServiceName:       dataService.GetName(),
+					DataServiceName:   dataService.GetName(),
 					DataServiceID:     dataService.GetId(),
 					VersionID:         version.GetId(),
 					ImageVersionBuild: image.GetBuild(),
@@ -107,7 +107,7 @@ func getAllImageVersions(ctx context.Context, apiClient *pds.APIClient) ([]PDSIm
 
 func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImageReferenceSpec) *PDSImageReferenceSpec {
 	for _, image := range images {
-		found := image.ServiceName == deployment.ServiceName
+		found := image.DataServiceName == deployment.ServiceName
 		if deployment.ImageVersionTag != "" {
 			found = found && image.ImageVersionTag == deployment.ImageVersionTag
 		}
