@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	"github.com/stretchr/testify/require"
 	batchv1 "k8s.io/api/batch/v1"
 )
 
@@ -229,6 +231,27 @@ func isBackupFailed(backup *backupsv1.Backup) bool {
 
 func getDeploymentPodName(deploymentName string) string {
 	return fmt.Sprintf("%s-0", deploymentName)
+}
+
+func handleAPIError(t *testing.T, resp *http.Response, err error) {
+	t.Helper()
+
+	if err != nil {
+		rawbody, parseErr := io.ReadAll(resp.Body)
+		require.NoError(t, parseErr, "Error calling PDS API: failed to read response body")
+		require.NoErrorf(t, err, "Error calling PDS API: %s", rawbody)
+	}
+}
+
+func handleAPIErrorf(t *testing.T, resp *http.Response, err error, msg string, args ...any) {
+	t.Helper()
+
+	if err != nil {
+		rawbody, parseErr := io.ReadAll(resp.Body)
+		require.NoError(t, parseErr, "Error calling PDS API: failed to read response body")
+		details := fmt.Sprintf(msg, args...)
+		require.NoErrorf(t, err, "Error calling PDS API: %s: %s", details, rawbody)
+	}
 }
 
 type TestLogger struct {
