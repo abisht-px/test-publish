@@ -58,26 +58,26 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	dataServices, resp, err := apiClient.DataServicesApi.ApiDataServicesGet(ctx).Execute()
 	handleAPIError(t, resp, err)
 
-	for _, dataService := range dataServices.GetData() {
-		versions, resp, err := apiClient.VersionsApi.ApiDataServicesIdVersionsGet(ctx, dataService.GetId()).Execute()
-		handleAPIError(t, resp, err)
+	dataServicesByID := make(map[string]pds.ModelsDataService)
+	for i := range dataServices.GetData() {
+		dataService := dataServices.GetData()[i]
+		dataServicesByID[dataService.GetId()] = dataService
+	}
 
-		for _, version := range versions.GetData() {
-			images, resp, err := apiClient.ImagesApi.ApiVersionsIdImagesGet(ctx, version.GetId()).SortBy("-created_at").Execute()
-			handleAPIError(t, resp, err)
+	images, resp, err := apiClient.ImagesApi.ApiImagesGet(ctx).Execute()
+	handleAPIError(t, resp, err)
 
-			for _, image := range images.GetData() {
-				record := PDSImageReferenceSpec{
-					DataServiceName:   dataService.GetName(),
-					DataServiceID:     dataService.GetId(),
-					VersionID:         version.GetId(),
-					ImageVersionBuild: image.GetBuild(),
-					ImageVersionTag:   image.GetTag(),
-					ImageID:           image.GetId(),
-				}
-				records = append(records, record)
-			}
+	for _, image := range images.GetData() {
+		dataService := dataServicesByID[image.GetDataServiceId()]
+		record := PDSImageReferenceSpec{
+			DataServiceName:   dataService.GetName(),
+			DataServiceID:     dataService.GetId(),
+			VersionID:         image.GetVersionId(),
+			ImageVersionBuild: image.GetBuild(),
+			ImageVersionTag:   image.GetTag(),
+			ImageID:           image.GetId(),
 		}
+		records = append(records, record)
 	}
 
 	return records, nil

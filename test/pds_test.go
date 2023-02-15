@@ -199,7 +199,7 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 
 func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 	var err error
-	s.Require().Eventually(
+	s.nowOrEventually(
 		func() bool {
 			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
 			return err == nil
@@ -208,7 +208,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 		"PDS deployment target %q does not exist: %v.", env.pdsDeploymentTargetName, err,
 	)
 
-	s.Require().Eventually(
+	s.nowOrEventually(
 		func() bool { return isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %q is not healthy.", s.testPDSDeploymentTargetID,
@@ -216,7 +216,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 }
 
 func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
-	s.Require().Eventually(
+	s.nowOrEventually(
 		func() bool { return !isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
@@ -227,7 +227,7 @@ func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
 }
 
 func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
-	s.Require().Eventually(
+	s.nowOrEventually(
 		func() bool {
 			var err error
 			s.testPDSNamespaceID, err = getNamespaceIDByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
@@ -1125,4 +1125,13 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	}
 
 	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
+}
+
+// nowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
+// This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
+func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
+	if condition() {
+		return
+	}
+	s.Require().Eventually(condition, waitFor, tick, msgAndArgs)
 }
