@@ -575,7 +575,115 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
 			s.mustUpdateDeployment(deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID, tt.scaleTo)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
+		})
+	}
+}
+
+func (s *PDSTestSuite) TestDataService_ScaleResources() {
+	testCases := []struct {
+		spec                    ShortDeploymentSpec
+		scaleToResourceTemplate string
+	}{
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbPostgres,
+				ImageVersionTag: "14.6",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbPostgres].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbCassandra,
+				ImageVersionTag: "4.0.6",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbCassandra].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbKafka,
+				ImageVersionTag: "3.2.1",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbKafka].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbRabbitMQ,
+				ImageVersionTag: "3.10.9",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbRabbitMQ].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbMySQL,
+				ImageVersionTag: "8.0.31",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbMySQL].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbMongoDB,
+				ImageVersionTag: "6.0.2",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbMongoDB].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbElasticSearch,
+				ImageVersionTag: "8.5.2",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbElasticSearch].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbCouchbase,
+				ImageVersionTag: "7.1.1",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbCouchbase].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				ServiceName:     dbRedis,
+				ImageVersionTag: "7.0.5",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbRedis].ResourceTemplates[1].Name,
+		},
+	}
+
+	for _, tt := range testCases {
+		s.Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.ServiceName, tt.spec.getImageVersionString()), func() {
+			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
+			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
+			s.T().Cleanup(func() {
+				s.mustRemoveDeployment(deploymentID)
+				s.mustEnsureDeploymentRemoved(deploymentID)
+			})
+
+			// Create.
+			s.mustEnsureDeploymentHealthy(deploymentID)
+			s.mustEnsureDeploymentInitialized(deploymentID)
+			s.mustEnsureStatefulSetReady(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
+
+			// Update.
+			updateSpec := tt.spec
+			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
+			s.mustUpdateDeployment(deploymentID, &updateSpec)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 			s.mustRunBasicSmokeTest(deploymentID)

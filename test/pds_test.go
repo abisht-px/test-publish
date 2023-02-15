@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,12 +14,9 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
-	"github.com/portworx/pds-integration-test/internal/loadgen"
-	"github.com/portworx/pds-integration-test/internal/loadgen/postgresql"
 	"github.com/portworx/pds-integration-test/test/auth"
 	"github.com/portworx/pds-integration-test/test/cluster"
 )
@@ -50,11 +46,16 @@ var (
 	pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 )
 
-type applicationTemplatesInfo struct {
-	AppConfigTemplateID   string
-	AppConfigTemplateName string
-	ResourceTemplateID    string
-	ResourceTemplateName  string
+// Info for a single template.
+type templateInfo struct {
+	ID   string
+	Name string
+}
+
+// Info for all app config and resource templates which belong to a data service.
+type dataServiceTemplateInfo struct {
+	AppConfigTemplates []templateInfo
+	ResourceTemplates  []templateInfo
 }
 
 type PDSTestSuite struct {
@@ -78,7 +79,7 @@ type PDSTestSuite struct {
 	testPDSAgentToken          string
 	testPDSStorageTemplateID   string
 	testPDSStorageTemplateName string
-	testPDSTemplatesMap        map[string]applicationTemplatesInfo
+	testPDSTemplatesMap        map[string]dataServiceTemplateInfo
 	imageVersionSpecList       []PDSImageReferenceSpec
 }
 
@@ -200,7 +201,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 	var err error
 	s.Require().Eventually(
 		func() bool {
-			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
+			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
 			return err == nil
 		},
 		waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval,
@@ -208,7 +209,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 	)
 
 	s.Require().Eventually(
-		func() bool { return isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
+		func() bool { return isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %q is not healthy.", s.testPDSDeploymentTargetID,
 	)
@@ -216,7 +217,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 
 func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
 	s.Require().Eventually(
-		func() bool { return !isDeploymentTargetHealthy(s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
+		func() bool { return !isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
 	)
@@ -229,7 +230,7 @@ func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
 	s.Require().Eventually(
 		func() bool {
 			var err error
-			s.testPDSNamespaceID, err = getNamespaceIDByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
+			s.testPDSNamespaceID, err = getNamespaceIDByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
 			return err == nil
 		},
 		waiterNamespaceExistsTimeout, waiterRetryInterval,
@@ -333,7 +334,7 @@ func (s *PDSTestSuite) mustUninstallAgent(env environment) {
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {
-	imageVersions, err := getAllImageVersions(s.ctx, s.apiClient)
+	imageVersions, err := getAllImageVersions(s.T(), s.ctx, s.apiClient)
 	s.Require().NoError(err, "Error while reading image versions.")
 	s.Require().NotEmpty(imageVersions, "No image versions found.")
 	s.imageVersionSpecList = imageVersions
@@ -345,7 +346,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := createPDSDeployment(s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	deploymentID, err := createPDSDeployment(s.T(), s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
 	s.Require().NoError(err, "Error while creating deployment %s.", deployment.ServiceName)
 	s.Require().NotEmpty(deploymentID, "Deployment ID is empty.")
 
@@ -359,13 +360,13 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
 	if deployment.StorageOptionName == "" {
 		deployment.StorageOptionName = s.testPDSStorageTemplateName
 	}
-	dsTemplate, found := s.testPDSTemplatesMap[deployment.ServiceName]
+	dsTemplates, found := s.testPDSTemplatesMap[deployment.ServiceName]
 	if found {
 		if deployment.ResourceSettingsTemplateName == "" {
-			deployment.ResourceSettingsTemplateName = dsTemplate.ResourceTemplateName
+			deployment.ResourceSettingsTemplateName = dsTemplates.ResourceTemplates[0].Name
 		}
 		if deployment.AppConfigTemplateName == "" {
-			deployment.AppConfigTemplateName = dsTemplate.AppConfigTemplateName
+			deployment.AppConfigTemplateName = dsTemplates.AppConfigTemplates[0].Name
 		}
 	}
 }
@@ -383,14 +384,29 @@ func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDepl
 		req.NodeCount = &nodeCount
 	}
 
-	_, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
+	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	handleAPIError(s.T(), resp, err)
+
+	if spec.ResourceSettingsTemplateName != "" {
+		resourceTemplate, err := getResourceSettingsTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		s.Require().NoError(err)
+		req.ResourceSettingsTemplateId = resourceTemplate.Id
+	}
+
+	if spec.AppConfigTemplateName != "" {
+		appConfigTemplate, err := getAppConfigTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		s.Require().NoError(err)
+		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
+	}
+
+	_, resp, err = s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
 	handleAPIErrorf(s.T(), resp, err, "update %s deployment", deploymentID)
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
 	s.Require().Eventually(
 		func() bool {
-			return isDeploymentHealthy(s.ctx, s.apiClient, deploymentID)
+			return isDeploymentHealthy(s.T(), s.ctx, s.apiClient, deploymentID)
 		},
 		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
 		"Deployment %s is not healthy.", deploymentID,
@@ -542,7 +558,7 @@ func (s *PDSTestSuite) waitForJobToFinish(namespace string, jobName string, wait
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID string, replicas int) {
+func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	handleAPIError(s.T(), resp, err)
 
@@ -558,10 +574,10 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID
 			}
 
 			// Also check the UpdatedReplicas count, so we are sure that all nodes were restarted after the change.
-			return int(set.Status.ReadyReplicas) == replicas && int(set.Status.UpdatedReplicas) == replicas
+			return set.Status.ReadyReplicas == *deployment.NodeCount && set.Status.UpdatedReplicas == *deployment.NodeCount
 		},
 		waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval,
-		"Deployment %s is expected to have %d ready and updated replicas.", deploymentID, replicas,
+		"Deployment %s is expected to have %d ready and updated replicas.", deploymentID, *deployment.NodeCount,
 	)
 }
 
@@ -745,9 +761,9 @@ func (s *PDSTestSuite) mustCreateStorageOptions() {
 }
 
 func (s *PDSTestSuite) mustCreateApplicationTemplates() {
-	dataServicesTemplates := make(map[string]applicationTemplatesInfo)
+	dataServicesTemplates := make(map[string]dataServiceTemplateInfo)
 	for _, imageVersion := range s.imageVersionSpecList {
-		dsTemplate, found := dataServiceTemplatesSpec[imageVersion.DataServiceName]
+		templatesSpec, found := dataServiceTemplatesSpec[imageVersion.DataServiceName]
 		if !found {
 			continue
 		}
@@ -756,30 +772,48 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			continue
 		}
 
-		configTemplateBody := dsTemplate.configurationTemplate
-		configTemplateBody.Name = pointer.StringPtr(namePrefix)
-		configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+		var resultTemplateInfo dataServiceTemplateInfo
+		for _, configTemplateSpec := range templatesSpec.configurationTemplates {
+			configTemplateBody := configTemplateSpec
+			if configTemplateBody.Name == nil {
+				configTemplateBody.Name = pointer.StringPtr(namePrefix)
+			}
+			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
-		configTemplate, resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.
-			ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
-			Body(configTemplateBody).Execute()
-		handleAPIErrorf(s.T(), resp, err, "data service: %s", imageVersion.DataServiceName)
+			configTemplate, resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.
+				ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
+				Body(configTemplateBody).Execute()
+			handleAPIError(s.T(), resp, err)
 
-		resourceTemplateBody := dsTemplate.resourceTemplate
-		resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
-		resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+			configTemplateInfo := templateInfo{
+				ID:   configTemplate.GetId(),
+				Name: configTemplate.GetName(),
+			}
 
-		resourceTemplate, resp, err := s.apiClient.ResourceSettingsTemplatesApi.
-			ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
-			Body(resourceTemplateBody).Execute()
-		handleAPIErrorf(s.T(), resp, err, "data service: %s", imageVersion.DataServiceName)
-
-		dataServicesTemplates[imageVersion.DataServiceName] = applicationTemplatesInfo{
-			AppConfigTemplateID:   configTemplate.GetId(),
-			AppConfigTemplateName: configTemplate.GetName(),
-			ResourceTemplateID:    resourceTemplate.GetId(),
-			ResourceTemplateName:  resourceTemplate.GetName(),
+			resultTemplateInfo.AppConfigTemplates = append(resultTemplateInfo.AppConfigTemplates, configTemplateInfo)
 		}
+
+		for _, resourceTemplateSpec := range templatesSpec.resourceTemplates {
+			resourceTemplateBody := resourceTemplateSpec
+			if resourceTemplateBody.Name == nil {
+				resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
+			}
+			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+
+			resourceTemplate, resp, err := s.apiClient.ResourceSettingsTemplatesApi.
+				ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
+				Body(resourceTemplateBody).Execute()
+			handleAPIError(s.T(), resp, err)
+
+			resourceTemplateInfo := templateInfo{
+				ID:   resourceTemplate.GetId(),
+				Name: resourceTemplate.GetName(),
+			}
+
+			resultTemplateInfo.ResourceTemplates = append(resultTemplateInfo.ResourceTemplates, resourceTemplateInfo)
+		}
+
+		dataServicesTemplates[imageVersion.DataServiceName] = resultTemplateInfo
 	}
 	s.testPDSTemplatesMap = dataServicesTemplates
 }
@@ -791,13 +825,15 @@ func (s *PDSTestSuite) mustDeleteStorageOptions() {
 
 func (s *PDSTestSuite) mustDeleteApplicationTemplates() {
 	for _, dsTemplate := range s.testPDSTemplatesMap {
-		appConfigTemplateID := dsTemplate.AppConfigTemplateID
-		resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, appConfigTemplateID).Execute()
-		handleAPIError(s.T(), resp, err)
+		for _, configTemplateInfo := range dsTemplate.AppConfigTemplates {
+			resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, configTemplateInfo.ID).Execute()
+			handleAPIError(s.T(), resp, err)
+		}
 
-		resourceTemplateID := dsTemplate.ResourceTemplateID
-		resp, err = s.apiClient.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateID).Execute()
-		handleAPIError(s.T(), resp, err)
+		for _, resourceTemplateInfo := range dsTemplate.ResourceTemplates {
+			resp, err := s.apiClient.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateInfo.ID).Execute()
+			handleAPIError(s.T(), resp, err)
+		}
 	}
 }
 
@@ -842,44 +878,7 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 }
 
 func (s *PDSTestSuite) mustRunBasicSmokeTest(deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	handleAPIError(s.T(), resp, err)
-
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	handleAPIError(s.T(), resp, err)
-	dataServiceType := dataService.GetName()
-
-	switch dataServiceType {
-	case dbPostgres:
-		s.mustReadWriteData(deploymentID)
-	default:
-		s.mustRunLoadTestJob(deploymentID)
-	}
-}
-
-func (s *PDSTestSuite) mustReadWriteData(deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	handleAPIError(s.T(), resp, err)
-
-	namespace, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	handleAPIError(s.T(), resp, err)
-
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	handleAPIError(s.T(), resp, err)
-
-	port, err := getDefaultDBPort(dataService.GetName())
-	handleAPIError(s.T(), resp, err)
-
-	podName := s.mustGetDeploymentPodName(deploymentID, deployment.GetClusterResourceName(), dataService.GetName(), namespace.GetName())
-	pf, err := s.targetCluster.PortforwardPod(namespace.GetName(), podName, port)
-	s.Require().NoError(err)
-
-	dbPassword := s.mustGetDBPassword(namespace.GetName(), deployment.GetClusterResourceName())
-	loadtest, err := s.mustGetLoadgenFor(dataService.GetName(), "localhost", strconv.Itoa(pf.Local), dbPassword)
-	s.Require().NoError(err)
-
-	err = loadtest.Run(s.ctx)
-	s.Require().NoError(err)
+	s.mustRunLoadTestJob(deploymentID)
 }
 
 func (s *PDSTestSuite) mustRunLoadTestJob(deploymentID string) {
@@ -900,12 +899,16 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, strin
 	handleAPIError(s.T(), resp, err)
 	dataServiceType := dataService.GetName()
 
-	jobName := fmt.Sprintf("%s-loadtest", deployment.GetClusterResourceName())
+	dsImage, resp, err := s.apiClient.ImagesApi.ApiImagesIdGet(s.ctx, deployment.GetImageId()).Execute()
+	handleAPIError(s.T(), resp, err)
+	dsImageCreatedAt := dsImage.GetCreatedAt()
+
+	jobName := fmt.Sprintf("%s-loadtest-%d", deployment.GetClusterResourceName(), time.Now().Unix())
 
 	image, err := s.mustGetLoadTestJobImage(dataServiceType)
 	s.Require().NoError(err)
 
-	env := s.mustGetLoadTestJobEnv(dataService, deploymentName, namespace.GetName(), deployment.NodeCount)
+	env := s.mustGetLoadTestJobEnv(dataService, dsImageCreatedAt, deploymentName, namespace.GetName(), deployment.NodeCount)
 
 	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env, nil)
 	s.Require().NoError(err)
@@ -945,7 +948,7 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 	case dbCassandra:
 		return "portworx/pds-loadtests:cassandra-0.0.3", nil
 	case dbCouchbase:
-		return "portworx/pds-loadtests:couchbase-0.0.2", nil
+		return "portworx/pds-loadtests:couchbase-0.0.3", nil
 	case dbRedis:
 		return "portworx/pds-loadtests:redis-0.0.3", nil
 	case dbZooKeeper:
@@ -961,13 +964,15 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 	case dbElasticSearch:
 		return "portworx/pds-loadtests:elasticsearch-0.0.2", nil
 	case dbConsul:
-		return "portworx/pds-loadtests:consul-bench-0.1.0", nil
+		return "portworx/pds-loadtests:consul-0.0.1", nil
+	case dbPostgres:
+		return "portworx/pds-loadtests:postgresql-0.0.3", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
 	}
 }
 
-func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
+func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
 	password := s.mustGetDBPassword(namespace, deploymentName)
 	env := []corev1.EnvVar{
@@ -995,8 +1000,8 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService,
 			clusterMode = "false"
 		}
 		var user = "pds"
-		if dataService.CreatedAt != nil {
-			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, *dataService.CreatedAt)
+		if dsImageCreatedAt != "" {
+			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, dsImageCreatedAt)
 			if err == nil && dsCreatedAt.Before(pdsUserInRedisIntroducedAt) {
 				// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
 				user = "default"
@@ -1080,54 +1085,6 @@ func (s *PDSTestSuite) mustGetDBPassword(namespace, deploymentName string) strin
 	s.Require().NoError(err)
 
 	return string(secret.Data["password"])
-}
-
-func (s *PDSTestSuite) mustGetLoadgenFor(dataServiceType, host, port, dbPassword string) (loadgen.Interface, error) {
-	switch dataServiceType {
-	case dbPostgres:
-		return s.newPostgresLoadgen(host, port, "pds", dbPassword), nil
-	}
-
-	return nil, fmt.Errorf("loadgen for the %s database is not found", dataServiceType)
-}
-
-func (s *PDSTestSuite) newPostgresLoadgen(host, port, dbUser, dbPassword string) loadgen.Interface {
-	postgresLoader, err := postgresql.New(postgresql.Config{
-		User:     dbUser,
-		Password: dbPassword,
-		Host:     host,
-		Port:     port,
-		Count:    5,
-		Logger:   newTestLogger(s.T()),
-	})
-	s.Require().NoError(err)
-
-	return postgresLoader
-}
-
-func (s *PDSTestSuite) mustGetDeploymentPodName(deploymentID, deploymentName, deploymentType, namespace string) string {
-	switch deploymentType {
-	case dbPostgres:
-		// For the port-forward tunnel needs the 'master' pod otherwise we'll get the 'read-only' error.
-		selector := map[string]string{
-			"pds/deployment-id": deploymentID,
-			"role":              "master",
-		}
-		podList, err := s.targetCluster.ListPods(s.ctx, namespace, selector)
-		s.Require().NoError(err)
-		s.Require().NotEmpty(podList.Items, "get pods for the label selector: %s", labels.FormatLabels(selector))
-		return podList.Items[0].Name
-	default:
-		return getDeploymentPodName(deploymentName)
-	}
-}
-
-func getDefaultDBPort(deploymentType string) (int, error) {
-	switch deploymentType {
-	case dbPostgres:
-		return 5432, nil
-	}
-	return -1, fmt.Errorf("has no default port for the %s database", deploymentType)
 }
 
 func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, error) {

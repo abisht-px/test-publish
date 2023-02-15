@@ -1,6 +1,9 @@
 package test
 
 import (
+	"fmt"
+	"time"
+
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"k8s.io/utils/pointer"
 )
@@ -20,209 +23,332 @@ const (
 )
 
 type dataServiceTemplateSpec struct {
-	configurationTemplate pds.ControllersCreateApplicationConfigurationTemplateRequest
-	resourceTemplate      pds.ControllersCreateResourceSettingsTemplateRequest
+	configurationTemplates map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest
+	resourceTemplates      map[string]pds.ControllersCreateResourceSettingsTemplateRequest
 }
 
 var (
+	templateNameDefault = fmt.Sprintf("integration-test-default-%d", time.Now().Unix())
+	templateNameSmall   = fmt.Sprintf("integration-test-small-%d", time.Now().Unix())
+	templateNameMed     = fmt.Sprintf("integration-test-med-%d", time.Now().Unix())
+
+	// When updating, please consider that the first element in each list is used by the setDeploymentDefaults function.
 	dataServiceTemplatesSpec = map[string]dataServiceTemplateSpec{
 		dbCassandra: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("CASSANDRA_AUTHORIZER"),
-						Value: pointer.StringPtr("AllowAllAuthorizer"),
-					},
-					{
-						Key:   pointer.StringPtr("CASSANDRA_AUTHENTICATOR"),
-						Value: pointer.StringPtr("AllowAllAuthenticator"),
-					},
-					{
-						Key:   pointer.StringPtr("HEAP_NEWSIZE"),
-						Value: pointer.StringPtr("400M"),
-					},
-					{
-						Key:   pointer.StringPtr("MAX_HEAP_SIZE"),
-						Value: pointer.StringPtr("1G"),
-					},
-					{
-						Key:   pointer.StringPtr("CASSANDRA_RACK"),
-						Value: pointer.StringPtr("rack1"),
-					},
-					{
-						Key:   pointer.StringPtr("CASSANDRA_DC"),
-						Value: pointer.StringPtr("dc1"),
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name: pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{
+						{
+							Key:   pointer.StringPtr("HEAP_NEWSIZE"),
+							Value: pointer.StringPtr("400M"),
+						},
+						{
+							Key:   pointer.StringPtr("MAX_HEAP_SIZE"),
+							Value: pointer.StringPtr("1G"),
+						},
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("1"),
-				CpuLimit:       pointer.StringPtr("2"),
-				MemoryRequest:  pointer.StringPtr("2G"),
-				MemoryLimit:    pointer.StringPtr("4G"),
-				StorageRequest: pointer.StringPtr("10G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbCouchbase: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("COUCHBASE_RAMSIZE"),
-						Value: pointer.StringPtr("2048"),
-					},
-					{
-						Key:   pointer.StringPtr("COUCHBASE_FTS_RAMSIZE"),
-						Value: pointer.StringPtr("256"),
-					},
-					{
-						Key:   pointer.StringPtr("COUCHBASE_INDEX_RAMSIZE"),
-						Value: pointer.StringPtr("256"),
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name: pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{
+						{
+							Key:   pointer.StringPtr("COUCHBASE_RAMSIZE"),
+							Value: pointer.StringPtr("1024"),
+						},
+						{
+							Key:   pointer.StringPtr("COUCHBASE_FTS_RAMSIZE"),
+							Value: pointer.StringPtr("256"),
+						},
+						{
+							Key:   pointer.StringPtr("COUCHBASE_INDEX_RAMSIZE"),
+							Value: pointer.StringPtr("256"),
+						},
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("1"),
-				CpuLimit:       pointer.StringPtr("2"),
-				MemoryRequest:  pointer.StringPtr("2G"),
-				MemoryLimit:    pointer.StringPtr("4G"),
-				StorageRequest: pointer.StringPtr("10G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbConsul: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
+				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("1G"),
-				MemoryLimit:    pointer.StringPtr("2G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbKafka: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("heapSize"),
-						Value: pointer.StringPtr("1500M"),
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name: pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{
+						{
+							Key:   pointer.StringPtr("heapSize"),
+							Value: pointer.StringPtr("1500M"),
+						},
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("1G"),
-				MemoryLimit:    pointer.StringPtr("2G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbMongoDB: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
+				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.4"),
-				CpuLimit:       pointer.StringPtr("0.5"),
-				MemoryRequest:  pointer.StringPtr("800M"),
-				MemoryLimit:    pointer.StringPtr("1G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbMySQL: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
+				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.4"),
-				CpuLimit:       pointer.StringPtr("0.5"),
-				MemoryRequest:  pointer.StringPtr("800M"),
-				MemoryLimit:    pointer.StringPtr("1G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbElasticSearch: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("HEAP_SIZE"),
-						Value: pointer.StringPtr("2G"),
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name: pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{
+						{
+							Key:   pointer.StringPtr("HEAP_SIZE"),
+							Value: pointer.StringPtr("1G"),
+						},
 					},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("1"),
-				CpuLimit:       pointer.StringPtr("2"),
-				MemoryRequest:  pointer.StringPtr("2G"),
-				MemoryLimit:    pointer.StringPtr("4G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbPostgres: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("PG_DATABASE"),
-						Value: pointer.StringPtr("pds"),
-					},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("500M"),
-				MemoryLimit:    pointer.StringPtr("1G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbRabbitMQ: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("RABBITMQ_DEFAULT_USER"),
-						Value: pointer.StringPtr("pds"),
-					},
-					{
-						Key:   pointer.StringPtr("DEFAULT_VHOST"),
-						Value: pointer.StringPtr("/"),
-					},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("300M"),
-				MemoryLimit:    pointer.StringPtr("400M"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbRedis: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					ConfigItems: []pds.ModelsConfigItem{},
+				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("1G"),
-				MemoryLimit:    pointer.StringPtr("2G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 		dbZooKeeper: {
-			configurationTemplate: pds.ControllersCreateApplicationConfigurationTemplateRequest{
-				ConfigItems: []pds.ModelsConfigItem{
-					{
-						Key:   pointer.StringPtr("ZOO_4LW_COMMANDS_WHITELIST"),
-						Value: pointer.StringPtr("*"),
-					},
+			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					Name:        pointer.StringPtr(templateNameDefault),
+					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplate: pds.ControllersCreateResourceSettingsTemplateRequest{
-				CpuRequest:     pointer.StringPtr("0.5"),
-				CpuLimit:       pointer.StringPtr("1"),
-				MemoryRequest:  pointer.StringPtr("1G"),
-				MemoryLimit:    pointer.StringPtr("2G"),
-				StorageRequest: pointer.StringPtr("5G"),
+			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
 			},
 		},
 	}
