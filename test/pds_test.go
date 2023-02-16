@@ -17,6 +17,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
+	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/test/auth"
 	"github.com/portworx/pds-integration-test/test/cluster"
 )
@@ -32,6 +33,7 @@ const (
 	waiterLoadBalancerServicesReady              = time.Second * 300
 	waiterStatefulSetReadyAndUpdatedReplicas     = time.Second * 600
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
+	waiterBackupTargetSyncedTimeout              = time.Second * 60
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
 	waiterHostCheckFinishedTimeout               = time.Second * 60
@@ -74,12 +76,11 @@ type PDSTestSuite struct {
 	testPDSNamespaceID         string
 	testPDSDeploymentTargetID  string
 	testPDSServiceAccountID    string
-	testPDSBackupCredentialsID string
-	testPDSBackupTargetID      string
 	testPDSAgentToken          string
 	testPDSStorageTemplateID   string
 	testPDSStorageTemplateName string
 	testPDSTemplatesMap        map[string]dataServiceTemplateInfo
+	config                     environment
 	imageVersionSpecList       []PDSImageReferenceSpec
 }
 
@@ -93,6 +94,7 @@ func (s *PDSTestSuite) SetupSuite() {
 
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
+	s.config = env
 	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env)
@@ -111,14 +113,10 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHavePDStestNamespace(env)
 	s.mustCreateApplicationTemplates()
 	s.mustCreateStorageOptions()
-	s.mustEnsureS3BackupCredentials(env)
-	s.mustEnsureS3BackupTarget(env)
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
 	env := mustHaveEnvVariables(s.T())
-	s.mustDeleteBackupTarget()
-	s.mustDeleteBackupCredentials()
 	s.mustDeleteApplicationTemplates()
 	s.mustDeleteStorageOptions()
 	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {
@@ -641,13 +639,13 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustCreateBackup(deploymentID string) *pds.ModelsBackup {
-	backupReq := pds.ControllersCreateDeploymentBackup{
+func (s *PDSTestSuite) mustCreateBackup(deploymentID, backupTargetID string) *pds.ModelsBackup {
+	requestBody := pds.ControllersCreateDeploymentBackup{
 		BackupLevel:    pointer.String("snapshot"),
-		BackupTargetId: pointer.String(s.testPDSBackupTargetID),
+		BackupTargetId: pointer.String(backupTargetID),
 		BackupType:     pointer.String("adhoc"),
 	}
-	backup, resp, err := s.apiClient.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(backupReq).Execute()
+	backup, resp, err := s.apiClient.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(requestBody).Execute()
 	handleAPIError(s.T(), resp, err)
 
 	return backup
@@ -658,88 +656,83 @@ func (s *PDSTestSuite) mustDeleteBackup(backupID string) {
 	handleAPIError(s.T(), resp, err)
 }
 
-func (s *PDSTestSuite) mustEnsureS3BackupCredentials(env environment) {
+func (s *PDSTestSuite) mustCreateS3BackupCredentials(endpoint, accessKey, secretKey string) *pds.ModelsBackupCredentials {
 	tenantID := s.testPDSTenantID
-	backupCredentialsName := fmt.Sprintf("%s-backupcredentials-s3", namePrefix)
+	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
+	name := fmt.Sprintf("integration-test-s3-%s", nameSuffix)
 
-	backupCredentialsResp, resp, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, tenantID).Execute()
+	requestBody := pds.ControllersCreateBackupCredentialsRequest{
+		Name: &name,
+		Credentials: &pds.ControllersCredentials{
+			S3: &pds.ModelsS3Credentials{
+				Endpoint:  &endpoint,
+				AccessKey: &accessKey,
+				SecretKey: &secretKey,
+			},
+		},
+	}
+	backupCredentials, resp, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, tenantID).Body(requestBody).Execute()
+	handleAPIError(s.T(), resp, err)
+	return backupCredentials
+}
+
+func (s *PDSTestSuite) mustCreateS3BackupTarget(backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
+	tenantID := s.testPDSTenantID
+	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
+	name := fmt.Sprintf("integration-test-s3-%s", nameSuffix)
+
+	requestBody := pds.ControllersCreateTenantBackupTarget{
+		Name:                &name,
+		BackupCredentialsId: &backupCredentialsID,
+		Bucket:              &bucket,
+		Region:              &region,
+		Type:                pointer.String("s3"),
+	}
+	backupTarget, resp, err := s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(requestBody).Execute()
 	handleAPIError(s.T(), resp, err)
 
-	for _, backupCredentials := range backupCredentialsResp.Data {
-		if backupCredentials.GetName() == backupCredentialsName {
-			s.testPDSBackupCredentialsID = backupCredentials.GetId()
-			break
-		}
-	}
-
-	if s.testPDSBackupCredentialsID == "" {
-		backupCredentials := pds.ControllersCreateBackupCredentialsRequest{
-			Name: &backupCredentialsName,
-			Credentials: &pds.ControllersCredentials{
-				S3: &pds.ModelsS3Credentials{
-					Endpoint:  pointer.String(env.backupTarget.credentials.s3.endpoint),
-					AccessKey: pointer.String(env.backupTarget.credentials.s3.accessKey),
-					SecretKey: pointer.String(env.backupTarget.credentials.s3.secretKey),
-				},
-			},
-		}
-		backupCreds, resp, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, tenantID).Body(backupCredentials).Execute()
-		handleAPIError(s.T(), resp, err)
-
-		s.testPDSBackupCredentialsID = backupCreds.GetId()
-	}
+	return backupTarget
 }
 
-func (s *PDSTestSuite) mustEnsureS3BackupTarget(env environment) {
-	tenantID := s.testPDSTenantID
-	backupTargetName := fmt.Sprintf("%s-backuptarget-s3", namePrefix)
+func (s *PDSTestSuite) mustEnsureBackupTargetSynced(backupTargetID, deploymentTargetID string) {
+	s.Eventually(func() bool {
+		backupTargetState := s.mustGetBackupTargetState(backupTargetID, deploymentTargetID)
+		return backupTargetState.GetState() == "successful"
+	}, waiterBackupTargetSyncedTimeout, waiterRetryInterval,
+		"Backup target %s failed to get synced to deployment target %s", backupTargetID, deploymentTargetID,
+	)
+}
 
-	backupTargets, resp, err := s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsGet(s.ctx, tenantID).Execute()
+func (s *PDSTestSuite) mustGetBackupTargetState(backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
+	backupTargetStates, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
 	handleAPIError(s.T(), resp, err)
 
-	for _, backupTarget := range backupTargets.Data {
-		if backupTarget.GetName() == backupTargetName {
-			s.testPDSBackupTargetID = backupTarget.GetId()
-			break
+	for _, backupTargetState := range backupTargetStates.GetData() {
+		if backupTargetState.GetDeploymentTargetId() == deploymentTargetID {
+			return backupTargetState
 		}
 	}
-
-	if s.testPDSBackupTargetID == "" {
-		backupTarget := pds.ControllersCreateTenantBackupTarget{
-			Name:                pointer.StringPtr(backupTargetName),
-			BackupCredentialsId: pointer.StringPtr(s.testPDSBackupCredentialsID),
-			Bucket:              pointer.String(env.backupTarget.bucket),
-			Region:              pointer.String(env.backupTarget.region),
-			Type:                pointer.String("s3"),
-		}
-		backupTargetModel, resp, err := s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(backupTarget).Execute()
-		handleAPIError(s.T(), resp, err)
-
-		s.testPDSBackupTargetID = backupTargetModel.GetId()
-	}
+	s.Require().Fail("Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, deploymentTargetID)
+	return pds.ModelsBackupTargetState{}
 }
 
-func (s *PDSTestSuite) mustDeleteBackupCredentials() {
-	if s.testPDSBackupCredentialsID != "" {
-		resp, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, s.testPDSBackupCredentialsID).Execute()
-		handleAPIError(s.T(), resp, err)
-	}
+func (s *PDSTestSuite) mustDeleteBackupCredentials(backupCredentialsID string) {
+	resp, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, backupCredentialsID).Execute()
+	handleAPIError(s.T(), resp, err)
 }
 
-func (s *PDSTestSuite) mustDeleteBackupTarget() {
-	if s.testPDSBackupTargetID != "" {
-		resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, s.testPDSBackupTargetID).Execute()
-		handleAPIError(s.T(), resp, err)
+func (s *PDSTestSuite) mustDeleteBackupTarget(backupTargetID string) {
+	resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Execute()
+	handleAPIError(s.T(), resp, err)
 
-		s.Require().Eventually(
-			func() bool {
-				_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, s.testPDSBackupTargetID).Execute()
-				return err != nil && resp != nil && resp.StatusCode == http.StatusNotFound
-			},
-			waiterBackupStatusSucceededTimeout, waiterRetryInterval,
-			"Backup target %s is not deleted.", s.testPDSBackupTargetID,
-		)
-	}
+	s.Require().Eventually(
+		func() bool {
+			_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
+			return err != nil && resp != nil && resp.StatusCode == http.StatusNotFound
+		},
+		waiterBackupStatusSucceededTimeout, waiterRetryInterval,
+		"Backup target %s is not deleted.", backupTargetID,
+	)
 }
 
 func (s *PDSTestSuite) mustCreateStorageOptions() {

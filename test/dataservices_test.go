@@ -213,9 +213,18 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			s.mustEnsureDeploymentInitialized(deploymentID)
 			s.mustEnsureStatefulSetReady(deploymentID)
 
-			backup := s.mustCreateBackup(deploymentID)
+			backupTargetConfig := s.config.backupTarget
+			backupCredentialsConfig := backupTargetConfig.credentials.s3
+			backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig.endpoint, backupCredentialsConfig.accessKey, backupCredentialsConfig.secretKey)
+			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(backupCredentials.GetId()) })
+
+			backupTarget := s.mustCreateS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+			s.mustEnsureBackupTargetSynced(backupTarget.GetId(), s.testPDSDeploymentTargetID)
+			s.T().Cleanup(func() { s.mustDeleteBackupTarget(backupTarget.GetId()) })
+
+			backup := s.mustCreateBackup(deploymentID, backupTarget.GetId())
 			s.mustEnsureBackupSuccessful(deploymentID, backup.GetClusterResourceName())
-			s.mustDeleteBackup(backup.GetId())
+			s.T().Cleanup(func() { s.mustDeleteBackup(backup.GetId()) })
 		})
 	}
 }
