@@ -3,6 +3,7 @@ package test
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -32,14 +33,20 @@ const (
 )
 
 const (
-	defaultPDSServiceAccountName   = "Default-AgentWriter"
-	defaultPDSTenantName           = "Default"
-	defaultPDSProjectName          = "Default"
-	defaultPDSNamespaceName        = "dev"
-	defaultPXNamespaceName         = "kube-system"
-	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster"
-	defaultPDSAccountName          = "PDS Integration Test"
-	defaultS3Endpoint              = "s3.amazonaws.com"
+	defaultPDSServiceAccountName = "Default-AgentWriter"
+	defaultPDSTenantName         = "Default"
+	defaultPDSProjectName        = "Default"
+	defaultPDSNamespaceName      = "dev"
+	defaultPXNamespaceName       = "kube-system"
+	defaultPDSAccountName        = "PDS Integration Test"
+	defaultS3Endpoint            = "s3.amazonaws.com"
+)
+
+var (
+	// runTimestamp is the current timestamp to identify resources created within a single test run.
+	runTimestamp = time.Now().Format("2006-01-02 15:04:05")
+
+	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster " + runTimestamp
 )
 
 type secrets struct {

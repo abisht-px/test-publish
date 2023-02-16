@@ -13,21 +13,21 @@ Running locally (`make test`) is also possible if:
 
 ## Environment Configuration
 
-| Key                        | Default value                | Description                                                                    |
-|----------------------------|------------------------------|--------------------------------------------------------------------------------|
-| CONTROL_PLANE_API          |                              | URL of the publicly accessible control plane PDS API.                          |
-| TARGET_CLUSTER_KUBECONFIG  |                              | Path to the kubeconfig file that allows the test to access the target cluster. |
-| PDS_ACCOUNT_NAME           | PDS Integration Test         | Name of the PDS account to be used for the test.                               |
-| PDS_TENANT_NAME            | Default                      | Name of the PDS tenant to be used for the test.                                |
-| PDS_DEPTARGET_NAME         | PDS Integration Test Cluster | Name of the PDS deployment target to be used for the test.                     |
-| PDS_SERVICE_ACCOUNT_NAME   | Default-AgentWriter          | Name of the PDS service account to be used for agent installation.             |
-| PDS_PROJECT_NAME           | Default                      | Name of the PDS project to be used for the test.                               |
-| PDS_NAMESPACE_NAME         | dev                          | Name of the PDS namespace to be used for the test.                             |
-| PX_NAMESPACE_NAME          | kube-system                  | Name of the PX namespace to be used for the test.                              |
-| PDS_BACKUPTARGET_BUCKET    |                              | Bucket name for the S3 or S3 compatible service.                               |
-| PDS_BACKUPTARGET_REGION    |                              | Region of the bucket, required for S3.                                         |
-| PDS_S3CREDENTIALS_ENDPOINT | s3.amazonaws.com             | Base path for the AWS S3 endpoint.                                             |
-| PDS_HELM_CHART_VERSION     | configured by control plane  | PDS Helm chart version. Use "0" to skip PDS chart installation.                |
+| Key                        | Default value                | Description                                                                                                                     |
+|----------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| CONTROL_PLANE_API          |                              | URL of the publicly accessible control plane PDS API.                                                                           |
+| TARGET_CLUSTER_KUBECONFIG  |                              | Path to the kubeconfig file that allows the test to access the target cluster.                                                  |
+| PDS_ACCOUNT_NAME           | PDS Integration Test         | Name of the PDS account to be used for the test.                                                                                |
+| PDS_TENANT_NAME            | Default                      | Name of the PDS tenant to be used for the test.                                                                                 |
+| PDS_DEPTARGET_NAME         | PDS Integration Test Cluster \<timestamp\> | Name of the PDS deployment target to be used for the test. Can be left empty if chart installation isn't skipped. |
+| PDS_SERVICE_ACCOUNT_NAME   | Default-AgentWriter          | Name of the PDS service account to be used for agent installation.                                                              |
+| PDS_PROJECT_NAME           | Default                      | Name of the PDS project to be used for the test.                                                                                |
+| PDS_NAMESPACE_NAME         | dev                          | Name of the PDS namespace to be used for the test.                                                                              |
+| PX_NAMESPACE_NAME          | kube-system                  | Name of the PX namespace to be used for the test.                                                                               |
+| PDS_BACKUPTARGET_BUCKET    |                              | Bucket name for the S3 or S3 compatible service.                                                                                |
+| PDS_BACKUPTARGET_REGION    |                              | Region of the bucket, required for S3.                                                                                          |
+| PDS_S3CREDENTIALS_ENDPOINT | s3.amazonaws.com             | Base path for the AWS S3 endpoint.                                                                                              |
+| PDS_HELM_CHART_VERSION     | configured by control plane  | PDS Helm chart version. Use "0" to skip PDS chart installation.                                                                 |
 
 ### Secrets
 
