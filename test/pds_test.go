@@ -340,12 +340,12 @@ func (s *PDSTestSuite) mustLoadImageVersions() {
 
 func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) string {
 	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
-	s.Require().NotNil(image, "No image found for deployment %s.", deployment.ServiceName)
+	s.Require().NotNil(image, "No image found for deployment %s.", deployment.DataServiceName)
 
 	s.setDeploymentDefaults(&deployment)
 
 	deploymentID, err := createPDSDeployment(s.T(), s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
-	s.Require().NoError(err, "Error while creating deployment %s.", deployment.ServiceName)
+	s.Require().NoError(err, "Error while creating deployment %s.", deployment.DataServiceName)
 	s.Require().NotEmpty(deploymentID, "Deployment ID is empty.")
 
 	return deploymentID
@@ -358,7 +358,7 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
 	if deployment.StorageOptionName == "" {
 		deployment.StorageOptionName = s.testPDSStorageTemplateName
 	}
-	dsTemplates, found := s.testPDSTemplatesMap[deployment.ServiceName]
+	dsTemplates, found := s.testPDSTemplatesMap[deployment.DataServiceName]
 	if found {
 		if deployment.ResourceSettingsTemplateName == "" {
 			deployment.ResourceSettingsTemplateName = dsTemplates.ResourceTemplates[0].Name

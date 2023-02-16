@@ -85,7 +85,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APICl
 
 func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImageReferenceSpec) *PDSImageReferenceSpec {
 	for _, image := range images {
-		found := image.DataServiceName == deployment.ServiceName
+		found := image.DataServiceName == deployment.DataServiceName
 		if deployment.ImageVersionTag != "" {
 			found = found && image.ImageVersionTag == deployment.ImageVersionTag
 		}

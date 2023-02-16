@@ -17,7 +17,7 @@ type PDSImageReferenceSpec struct {
 // ShortDeploymentSpec is a shortened specification of Deployment.
 // NOTE: Using only ImageVersionBuild should be sufficient but not 100% guaranteed uniqueness though.
 type ShortDeploymentSpec struct {
-	ServiceName                  string `yaml:"service_name"`
+	DataServiceName              string `yaml:"service_name"`
 	ImageVersionTag              string `yaml:"image_version_tag"`
 	ImageVersionBuild            string `yaml:"image_version_build"`
 	AppConfigTemplateName        string `yaml:"app_config_template_name"`
