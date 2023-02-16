@@ -10,7 +10,11 @@ import (
 	"github.com/hashicorp/go-multierror"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/portworx/pds-integration-test/internal/portworx"
 )
 
 const pdsEnvironmentLabel = "pds/environment"
@@ -18,16 +22,39 @@ const pdsEnvironmentLabel = "pds/environment"
 // TargetCluster wraps a PDS target cluster.
 type TargetCluster struct {
 	*cluster
+	portworx.Portworx
 }
 
 // NewTargetCluster creates a TargetCluster instance with the specified kubeconfig.
 // Fails if a kubernetes go-client cannot be configured based on the kubeconfig.
-func NewTargetCluster(kubeconfig string) (*TargetCluster, error) {
-	cluster, err := newCluster(kubeconfig)
+func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, error) {
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return nil, err
 	}
-	return &TargetCluster{cluster}, nil
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	metaClient, err := metadata.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	pxNamespace, err := portworx.FindPXNamespace(ctx, clientset.CoreV1())
+	if err != nil {
+		return nil, err
+	}
+	px := portworx.New(clientset.CoreV1().RESTClient(), pxNamespace)
+
+	cluster, err := newCluster(config, clientset, metaClient)
+	if err != nil {
+		return nil, err
+	}
+	return &TargetCluster{
+		cluster:  cluster,
+		Portworx: px,
+	}, nil
 }
 
 // LogComponents extracts the logs of all relevant PDS components, beginning at the specified time.
@@ -114,7 +141,7 @@ func (tc *TargetCluster) DeleteReleasedPVs(ctx context.Context) error {
 }
 
 // DeleteDetachedPXVolumes deletes all detached Portworx volumes in the target cluster. Used in the test cleanup.
-func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context, pxNamespace string) error {
+func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context) error {
 	// pxVolumesResponse is reduced volumes detail response from the Portworx API used for cleanup.
 	type pxVolumesResponse struct {
 		Volumes []struct {
@@ -126,7 +153,7 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context, pxNamespac
 	}
 
 	var volumes pxVolumesResponse
-	pxctlResult, err := tc.getPxVolumes(ctx, pxNamespace)
+	pxctlResult, err := tc.GetPXVolumes(ctx)
 	if err != nil {
 		return err
 	}
@@ -139,7 +166,7 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context, pxNamespac
 	for _, volume := range volumes.Volumes {
 		if volume.Volume.AttachedState == "ATTACH_STATE_INTERNAL" ||
 			volume.Volume.AttachedState == "ATTACH_STATE_INTERNAL_SWITCH" {
-			_, volumeDelErr := tc.deletePxVolume(ctx, pxNamespace, volume.Volume.ID)
+			_, volumeDelErr := tc.DeletePXVolume(ctx, volume.Volume.ID)
 			if volumeDelErr != nil {
 				err = multierror.Append(err, volumeDelErr)
 			}
@@ -148,119 +175,3 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context, pxNamespac
 
 	return err
 }
-
-// DeletePXCredentials deletes all Portworx credentials in the target cluster. Used in the test cleanup.
-func (tc *TargetCluster) DeletePXCredentials(ctx context.Context, pxNamespace string) error {
-	// pxCredentialsInspectResponse is reduced credentials detail response from the Portworx API used for cleanup.
-	type pxCredentialsInspectResponse struct {
-		Name string `json:"name"`
-	}
-
-	// pxCredentialsResponse is credentials response from the Portworx API used for cleanup.
-	type pxCredentialsResponse struct {
-		CredentialIDs []string `json:"credential_ids"`
-	}
-
-	credentialsJSON, err := tc.getPXCredentials(ctx, pxNamespace)
-	if err != nil {
-		return err
-	}
-
-	var credentialsResponse pxCredentialsResponse
-	err = json.Unmarshal(credentialsJSON, &credentialsResponse)
-	if err != nil {
-		return err
-	}
-
-	for _, credentialID := range credentialsResponse.CredentialIDs {
-		credentialDetailJSON, getCredentialsErr := tc.getPXCredentialDetail(ctx, pxNamespace, credentialID)
-		if getCredentialsErr != nil {
-			err = multierror.Append(err, getCredentialsErr)
-			continue
-		}
-		var credentialDetail pxCredentialsInspectResponse
-		unmarshalErr := json.Unmarshal(credentialDetailJSON, &credentialDetail)
-		if unmarshalErr != nil {
-			err = multierror.Append(err, unmarshalErr)
-			continue
-		}
-		if strings.HasPrefix(credentialDetail.Name, "pdscreds-") {
-			_, deleteCredentialErr := tc.deletePXCredential(ctx, pxNamespace, credentialID)
-			if deleteCredentialErr != nil {
-				err = multierror.Append(err, deleteCredentialErr)
-			}
-		}
-	}
-
-	return nil
-}
-
-// region <<pxctl utility functions>>
-
-func buildPxCtlRequest(pxNamespace string, baseRequest *rest.Request, pathSuffix string) *rest.Request {
-	return baseRequest.Namespace(pxNamespace).
-		Resource("services").
-		Name("portworx-api:9021").
-		SubResource("proxy").
-		Suffix(pathSuffix)
-}
-
-func (tc *TargetCluster) getPxVolumes(
-	ctx context.Context,
-	pxNamespace string,
-) ([]byte, error) {
-	return buildPxCtlRequest(
-		pxNamespace,
-		tc.clientset.CoreV1().RESTClient().Post(),
-		"v1/volumes/inspectwithfilters",
-	).Do(ctx).Raw()
-}
-
-func (tc *TargetCluster) deletePxVolume(
-	ctx context.Context,
-	pxNamespace string,
-	volumeId string,
-) ([]byte, error) {
-	return buildPxCtlRequest(
-		pxNamespace,
-		tc.clientset.CoreV1().RESTClient().Delete(),
-		"v1/volumes/"+volumeId,
-	).Do(ctx).Raw()
-}
-
-func (tc *TargetCluster) getPXCredentials(
-	ctx context.Context,
-	pxNamespace string,
-) ([]byte, error) {
-	return buildPxCtlRequest(
-		pxNamespace,
-		tc.clientset.CoreV1().RESTClient().Get(),
-		"v1/credentials",
-	).Do(ctx).Raw()
-}
-
-func (tc *TargetCluster) deletePXCredential(
-	ctx context.Context,
-	pxNamespace string,
-	credentialID string,
-) ([]byte, error) {
-	return buildPxCtlRequest(
-		pxNamespace,
-		tc.clientset.CoreV1().RESTClient().Delete(),
-		"v1/credentials/"+credentialID,
-	).Do(ctx).Raw()
-}
-
-func (tc *TargetCluster) getPXCredentialDetail(
-	ctx context.Context,
-	pxNamespace string,
-	credentialID string,
-) ([]byte, error) {
-	return buildPxCtlRequest(
-		pxNamespace,
-		tc.clientset.CoreV1().RESTClient().Get(),
-		"v1/credentials/inspect/"+credentialID,
-	).Do(ctx).Raw()
-}
-
-// endregion <<pxctl utility functions>>

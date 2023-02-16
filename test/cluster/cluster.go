@@ -19,7 +19,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
@@ -44,19 +43,7 @@ func (s componentSelector) String() string {
 	return fmt.Sprintf("%s/%s", s.namespace, s.labelSelector)
 }
 
-func newCluster(kubeconfig string) (*cluster, error) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	metaClient, err := metadata.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
+func newCluster(config *rest.Config, clientset *kubernetes.Clientset, metaClient metadata.Interface) (*cluster, error) {
 	return &cluster{
 		config:     config,
 		clientset:  clientset,

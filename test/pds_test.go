@@ -293,7 +293,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 }
 
 func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
-	tc, err := cluster.NewTargetCluster(env.targetKubeconfig)
+	tc, err := cluster.NewTargetCluster(s.ctx, env.targetKubeconfig)
 	s.Require().NoError(err, "Cannot create target cluster.")
 	s.targetCluster = tc
 }
@@ -325,10 +325,10 @@ func (s *PDSTestSuite) mustUninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete storage classes.")
 	err = s.targetCluster.DeleteReleasedPVs(s.ctx)
 	s.NoError(err, "Cannot delete released PVs.")
-	err = s.targetCluster.DeleteDetachedPXVolumes(s.ctx, env.pxNamespaceName)
+	err = s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
 	s.NoError(err, "Cannot delete detached PX volumes.")
-	err = s.targetCluster.DeletePXCredentials(s.ctx, env.pxNamespaceName)
-	s.NoError(err, "Cannot delete detached PX volumes.")
+	err = s.targetCluster.DeletePXCloudCredentials(s.ctx)
+	s.NoError(err, "Cannot delete PX cloud credentials.")
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {
