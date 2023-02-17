@@ -1126,7 +1126,7 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 // requireNowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
 // This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
 func (s *PDSTestSuite) requireNowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
-	if s.nowOrEventually(condition, waitFor, tick, msgAndArgs) {
+	if s.nowOrEventually(condition, waitFor, tick, msgAndArgs...) {
 		return
 	}
 
@@ -1139,5 +1139,5 @@ func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Durat
 	if condition() {
 		return true
 	}
-	return s.Eventually(condition, waitFor, tick, msgAndArgs)
+	return s.Eventually(condition, waitFor, tick, msgAndArgs...)
 }
