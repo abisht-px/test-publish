@@ -1,7 +1,12 @@
 package test
 
 import (
+	"flag"
 	"fmt"
+)
+
+var (
+	skipBackups = flag.Bool("skip-backups", false, "Skip tests related to backups.")
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -138,6 +143,9 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 }
 
 func (s *PDSTestSuite) TestDataService_Backup() {
+	if *skipBackups {
+		s.T().Skip("Backup tests skipped.")
+	}
 	deployments := []ShortDeploymentSpec{
 		{
 			DataServiceName: dbPostgres,
