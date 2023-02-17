@@ -20,13 +20,13 @@ const (
 
 func isDeploymentTargetHealthy(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID string) bool {
 	target, resp, err := apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, deploymentTargetID).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	return target.GetStatus() == pdsDeploymentTargetHealthState
 }
 
 func getDeploymentTargetIDByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, deploymentTargetName string) (string, error) {
 	targets, resp, err := apiClient.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	for _, target := range targets.GetData() {
 		if target.GetName() == deploymentTargetName {
 			return target.GetId(), nil
@@ -37,7 +37,7 @@ func getDeploymentTargetIDByName(t *testing.T, ctx context.Context, apiClient *p
 
 func getNamespaceIDByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, namespaceName string) (string, error) {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	for _, namespace := range namespaces.GetData() {
 		if namespace.GetName() == namespaceName {
 			return namespace.GetId(), nil
@@ -48,7 +48,7 @@ func getNamespaceIDByName(t *testing.T, ctx context.Context, apiClient *pds.APIC
 
 func isDeploymentHealthy(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentID string) bool {
 	deployment, resp, err := apiClient.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	return deployment.GetHealth() == pdsDeploymentHealthState
 }
 
@@ -56,7 +56,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	var records []PDSImageReferenceSpec
 
 	dataServices, resp, err := apiClient.DataServicesApi.ApiDataServicesGet(ctx).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 
 	dataServicesByID := make(map[string]pds.ModelsDataService)
 	for i := range dataServices.GetData() {
@@ -65,7 +65,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	}
 
 	images, resp, err := apiClient.ImagesApi.ApiImagesGet(ctx).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 
 	for _, image := range images.GetData() {
 		dataService := dataServicesByID[image.GetDataServiceId()]
@@ -101,7 +101,7 @@ func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImag
 
 func getResourceSettingsTemplateByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, templateName, dataServiceID string) (*pds.ModelsResourceSettingsTemplate, error) {
 	resources, resp, err := apiClient.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	for _, r := range resources.GetData() {
 		if r.GetDataServiceId() == dataServiceID {
 			return &r, nil
@@ -112,7 +112,7 @@ func getResourceSettingsTemplateByName(t *testing.T, ctx context.Context, apiCli
 
 func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, templateName, dataServiceID string) (*pds.ModelsApplicationConfigurationTemplate, error) {
 	appConfigurations, resp, err := apiClient.ApplicationConfigurationTemplatesApi.ApiTenantsIdApplicationConfigurationTemplatesGet(ctx, tenantID).Name(templateName).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 	for _, c := range appConfigurations.GetData() {
 		if c.GetDataServiceId() == dataServiceID {
 			return &c, nil
@@ -133,7 +133,7 @@ func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	}
 
 	storages, resp, err := apiClient.StorageOptionsTemplatesApi.ApiTenantsIdStorageOptionsTemplatesGet(ctx, tenantID).Name(deployment.StorageOptionName).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 
 	if len(storages.GetData()) == 0 {
 		return "", fmt.Errorf("storage option template %s not found", deployment.StorageOptionName)
@@ -146,7 +146,7 @@ func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	var backupPolicy *pds.ModelsBackupPolicy
 	if len(deployment.BackupPolicyname) > 0 {
 		backupPolicies, resp, err := apiClient.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(ctx, tenantID).Name(deployment.BackupPolicyname).Execute()
-		handleAPIError(t, resp, err)
+		requireNoAPIError(t, resp, err)
 		if len(backupPolicies.GetData()) == 0 {
 			return "", fmt.Errorf("backup policy %s not found", deployment.BackupPolicyname)
 		}
@@ -157,7 +157,7 @@ func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *pds.APICl
 	}
 
 	dns, resp, err := apiClient.TenantsApi.ApiTenantsIdDnsDetailsGet(ctx, tenantID).Execute()
-	handleAPIError(t, resp, err)
+	requireNoAPIError(t, resp, err)
 
 	pdsDeployment := pds.NewControllersCreateProjectDeployment()
 	pdsDeployment.SetApplicationConfigurationTemplateId(appConfig.GetId())
@@ -202,7 +202,7 @@ func isBackupFailed(backup *backupsv1.Backup) bool {
 	return backup.Status.Failed > 0
 }
 
-func handleAPIError(t *testing.T, resp *http.Response, err error) {
+func requireNoAPIError(t *testing.T, resp *http.Response, err error) {
 	t.Helper()
 
 	if err != nil {
@@ -212,7 +212,7 @@ func handleAPIError(t *testing.T, resp *http.Response, err error) {
 	}
 }
 
-func handleAPIErrorf(t *testing.T, resp *http.Response, err error, msg string, args ...any) {
+func requireNoAPIErrorf(t *testing.T, resp *http.Response, err error, msg string, args ...any) {
 	t.Helper()
 
 	if err != nil {
