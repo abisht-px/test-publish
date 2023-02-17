@@ -198,7 +198,7 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 
 func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 	var err error
-	s.nowOrEventually(
+	s.requireNowOrEventually(
 		func() bool {
 			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
 			return err == nil
@@ -207,7 +207,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 		"PDS deployment target %q does not exist: %v.", env.pdsDeploymentTargetName, err,
 	)
 
-	s.nowOrEventually(
+	s.requireNowOrEventually(
 		func() bool { return isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %q is not healthy.", s.testPDSDeploymentTargetID,
@@ -215,7 +215,7 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 }
 
 func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
-	s.nowOrEventually(
+	s.requireNowOrEventually(
 		func() bool { return !isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
@@ -226,7 +226,7 @@ func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
 }
 
 func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
-	s.nowOrEventually(
+	s.requireNowOrEventually(
 		func() bool {
 			var err error
 			s.testPDSNamespaceID, err = getNamespaceIDByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
@@ -326,8 +326,10 @@ func (s *PDSTestSuite) mustUninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete storage classes.")
 	err = s.targetCluster.DeleteReleasedPVs(s.ctx)
 	s.NoError(err, "Cannot delete released PVs.")
-	err = s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
-	s.NoError(err, "Cannot delete detached PX volumes.")
+	s.nowOrEventually(func() bool {
+		err := s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
+		return err != nil
+	}, 5*time.Minute, 10*time.Second, "Cannot delete detached PX volumes.")
 	err = s.targetCluster.DeletePXCloudCredentials(s.ctx)
 	s.NoError(err, "Cannot delete PX cloud credentials.")
 }
@@ -1121,11 +1123,21 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
 }
 
-// nowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
+// requireNowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
 // This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
-func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
-	if condition() {
+func (s *PDSTestSuite) requireNowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
+	if s.nowOrEventually(condition, waitFor, tick, msgAndArgs) {
 		return
 	}
-	s.Require().Eventually(condition, waitFor, tick, msgAndArgs)
+
+	s.T().FailNow()
+}
+
+// nowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
+// This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
+func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
+	if condition() {
+		return true
+	}
+	return s.Eventually(condition, waitFor, tick, msgAndArgs)
 }
