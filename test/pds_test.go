@@ -118,11 +118,12 @@ func (s *PDSTestSuite) SetupSuite() {
 
 func (s *PDSTestSuite) TearDownSuite() {
 	env := mustHaveEnvVariables(s.T())
-	s.mustDeleteApplicationTemplates()
-	s.mustDeleteStorageOptions()
+	// Do not fail fast on cleanups - we want to clean up as much as possible even on failures.
+	s.deleteApplicationTemplates()
+	s.deleteStorageOptions()
 	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {
-		s.mustUninstallAgent(env)
-		s.mustDeletePDStestDeploymentTarget()
+		s.uninstallAgent(env)
+		s.deletePDStestDeploymentTarget()
 	}
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
@@ -214,15 +215,15 @@ func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
 	)
 }
 
-func (s *PDSTestSuite) mustDeletePDStestDeploymentTarget() {
-	s.requireNowOrEventually(
+func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
+	s.nowOrEventually(
 		func() bool { return !isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
 		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
 		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
 	)
 	resp, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().Equal(204, resp.StatusCode, "PDS API must return HTTP 204")
+	api.NoErrorf(s.T(), resp, err, "Deleting deployment target %s.", s.testPDSDeploymentTargetID)
+	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
 
 func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
@@ -313,7 +314,7 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	s.pdsAgentInstallable = installer
 }
 
-func (s *PDSTestSuite) mustUninstallAgent(env environment) {
+func (s *PDSTestSuite) uninstallAgent(env environment) {
 	err := s.targetCluster.DeleteCRDs(s.ctx)
 	s.NoError(err, "Cannot delete CRDs.")
 	err = s.pdsAgentInstallable.Uninstall(s.ctx)
@@ -814,21 +815,21 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 	s.testPDSTemplatesMap = dataServicesTemplates
 }
 
-func (s *PDSTestSuite) mustDeleteStorageOptions() {
+func (s *PDSTestSuite) deleteStorageOptions() {
 	resp, err := s.apiClient.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.testPDSStorageTemplateID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.NoErrorf(s.T(), resp, err, "Deleting test storage options template (%s)", s.testPDSStorageTemplateID)
 }
 
-func (s *PDSTestSuite) mustDeleteApplicationTemplates() {
+func (s *PDSTestSuite) deleteApplicationTemplates() {
 	for _, dsTemplate := range s.testPDSTemplatesMap {
 		for _, configTemplateInfo := range dsTemplate.AppConfigTemplates {
 			resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, configTemplateInfo.ID).Execute()
-			api.RequireNoError(s.T(), resp, err)
+			api.NoErrorf(s.T(), resp, err, "Deleting configuration template (ID=%s, name=%s).", configTemplateInfo.ID, configTemplateInfo.Name)
 		}
 
 		for _, resourceTemplateInfo := range dsTemplate.ResourceTemplates {
 			resp, err := s.apiClient.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateInfo.ID).Execute()
-			api.RequireNoError(s.T(), resp, err)
+			api.NoErrorf(s.T(), resp, err, "Deleting resource settings template (ID=%s, name=%s)", resourceTemplateInfo.ID, resourceTemplateInfo.Name)
 		}
 	}
 }
