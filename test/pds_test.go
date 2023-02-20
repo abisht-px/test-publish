@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/random"
@@ -128,6 +129,20 @@ func (s *PDSTestSuite) TearDownSuite() {
 	if s.T().Failed() {
 		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
 	}
+}
+
+func (s *PDSTestSuite) mustCreateUserAPIKey(
+	ctx context.Context, apiClient *pds.APIClient, expiresAt time.Time, name string) *pds.ModelsUserAPIKey {
+	expirationDate := expiresAt.Format(time.RFC3339)
+	requestBody := pds.RequestsCreateUserAPIKeyRequest{
+		ExpiresAt: &expirationDate,
+		Name:      &name,
+	}
+	userApiKey, response, err := apiClient.UserAPIKeyApi.ApiUserApiKeyPost(ctx).Body(requestBody).Execute()
+	api.RequireNoError(s.T(), response, err)
+	s.Require().Equal(response.StatusCode, http.StatusCreated, "user api key was not created as expected")
+
+	return userApiKey
 }
 
 // mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
