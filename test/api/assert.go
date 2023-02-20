@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"testing"
 
@@ -11,25 +10,15 @@ import (
 
 func NoError(t *testing.T, resp *http.Response, err error) bool {
 	t.Helper()
-	if err == nil {
-		return true
-	}
-	rawbody, parseErr := io.ReadAll(resp.Body)
-	assert.NoError(t, parseErr, "Error calling PDS API: failed to read response body")
-	assert.NoErrorf(t, err, "Error calling PDS API: %s", rawbody)
-	return false
+	apierr := ExtractErrorDetails(resp, err)
+	return assert.NoError(t, apierr, "Error calling PDS API.")
 }
 
 func NoErrorf(t *testing.T, resp *http.Response, err error, msg string, args ...any) bool {
 	t.Helper()
-	if err == nil {
-		return true
-	}
-	rawbody, parseErr := io.ReadAll(resp.Body)
-	assert.NoError(t, parseErr, "Error calling PDS API: failed to read response body")
+	apierr := ExtractErrorDetails(resp, err)
 	details := fmt.Sprintf(msg, args...)
-	assert.NoErrorf(t, err, "Error calling PDS API: %s: %s", details, rawbody)
-	return false
+	return assert.NoErrorf(t, apierr, "Error calling PDS API: %s", details)
 }
 
 func RequireNoError(t *testing.T, resp *http.Response, err error) {
