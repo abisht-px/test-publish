@@ -11,6 +11,7 @@ require (
 	github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
+	golang.org/x/tools v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.7.1
 	k8s.io/api v0.22.7
@@ -260,7 +261,6 @@ require (
 	golang.org/x/term v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
 	google.golang.org/grpc v1.46.2 // indirect
