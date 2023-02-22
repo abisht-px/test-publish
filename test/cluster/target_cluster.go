@@ -17,7 +17,10 @@ import (
 	"github.com/portworx/pds-integration-test/internal/portworx"
 )
 
-const pdsEnvironmentLabel = "pds/environment"
+const (
+	pdsEnvironmentLabel = "pds/environment"
+	pdsSystemNamespace  = "pds-system"
+)
 
 // TargetCluster wraps a PDS target cluster.
 type TargetCluster struct {
