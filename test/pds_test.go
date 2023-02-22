@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -93,6 +94,12 @@ func TestPDSSuite(t *testing.T) {
 func (s *PDSTestSuite) SetupSuite() {
 	s.startTime = time.Now()
 	s.ctx = context.Background()
+
+	// Try to load .env file from the root of the project.
+	err := godotenv.Load("../.env")
+	if err == nil {
+		s.T().Log("successfully loaded .env file")
+	}
 
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())

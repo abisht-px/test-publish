@@ -6,10 +6,7 @@ The test is intended to be run inside a Jenkins pipeline against a Docker image.
 Control plane and a target cluster is required, but not spawned by the test - these must be provisioned separately
 and their connection details injected via environment variables.
 
-Running locally (`make test`) is also possible if:
-
-- your environment is authorized to talk to the control plane and target cluster.
-- you provide the required environment variables to the test.
+For instructions how to run tests locally, see [Running tests locally](#running-tests-locally).
 
 ## Environment Configuration
 
@@ -66,29 +63,37 @@ repositories:
 EOT
 ```
 
-## Example run
+## Running tests locally
 
-this example loads one deployment specification and starts all test cases
+In order to run test locally, you can optionally create a `.env` file at the root of the project to override your
+environment variables in one place. A template of the `.env` file:
 
-```bash
-HELM_NAMESPACE='pds-system' \
-TARGET_CLUSTER_KUBECONFIG='pds-tc-large-01.yaml' \
-CONTROL_PLANE_API='https://staging.pds.portworx.com/api' \
-SECRET_TOKEN_ISSUER_URL='https://apicentral.portworx.com/api' \
-SECRET_ISSUER_CLIENT_ID='...' \
-SECRET_ISSUER_CLIENT_SECRET='...' \
-SECRET_PDS_USERNAME='...' \
-SECRET_PDS_PASSWORD='...' \
-PDS_ACCOUNT_NAME='Portworx' \
-PDS_BACKUPTARGET_BUCKET='...' \
-PDS_BACKUPTARGET_REGION='...' \
-PDS_S3CREDENTIALS_ACCESSKEY='...' \
-PDS_S3CREDENTIALS_ENDPOINT='...' \
-PDS_S3CREDENTIALS_SECRETKEY='...' \
-go test -test.v -test.run=Test ./...
+```dotenv
+# Control plane and target cluster config.
+CONTROL_PLANE_API='https://<environment url>/api'
+TARGET_CLUSTER_KUBECONFIG=''
+
+# OIDC config.
+SECRET_TOKEN_ISSUER_URL='<environment/px-central/token-issuer secret in AWS secret manager>'
+SECRET_ISSUER_CLIENT_ID='<environment/px-central/token-issuer secret in AWS secret manager>'
+SECRET_ISSUER_CLIENT_SECRET='<environment/px-central/token-issuer secret in AWS secret manager>'
+
+# Authentication credentials for PDS.
+SECRET_PDS_USERNAME='<environment/px-central/admin-credentials secret in AWS secret manager>'
+SECRET_PDS_PASSWORD='<environment/px-central/admin-credentials secret in AWS secret manager>'
+
+# Disable Helm chart installation and specify deployment target name.
+PDS_HELM_CHART_VERSION=0
+PDS_DEPTARGET_NAME=''
+
+# (optional) S3 Backup target configuration.
+PDS_BACKUPTARGET_BUCKET=''
+PDS_BACKUPTARGET_REGION=''
+PDS_S3CREDENTIALS_ACCESSKEY=''
+PDS_S3CREDENTIALS_SECRETKEY=''
 ```
 
-the following command only runs a single test from the suite.
+The following command only runs a single test from the suite.
 
 ```bash
 go test -test.v ./... -testify.m {put_test_name_here}

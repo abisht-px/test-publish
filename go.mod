@@ -7,6 +7,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/joho/godotenv v1.5.1
 	github.com/portworx/pds-api-go-client v0.0.0-20230112132458-c195ccb1dc84
 	github.com/portworx/pds-operator-backups v0.4.5-0.20220914080300-97b516d77e8f
 	github.com/stretchr/testify v1.8.0
