@@ -707,3 +707,86 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		})
 	}
 }
+
+func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
+	deployments := []ShortDeploymentSpec{
+		{
+			DataServiceName: dbPostgres,
+			ImageVersionTag: "14.6",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbConsul,
+			ImageVersionTag: "1.14.0",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbCassandra,
+			ImageVersionTag: "4.0.6",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbRedis,
+			ImageVersionTag: "7.0.5",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbZooKeeper,
+			ImageVersionTag: "3.8.0",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbKafka,
+			ImageVersionTag: "3.2.3",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbRabbitMQ,
+			ImageVersionTag: "3.10.9",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbMySQL,
+			ImageVersionTag: "8.0.31",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbMongoDB,
+			ImageVersionTag: "6.0.3",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbElasticSearch,
+			ImageVersionTag: "8.5.2",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dbCouchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       3,
+		},
+	}
+
+	for _, deployment := range deployments {
+		s.Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
+			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
+			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			s.T().Cleanup(func() {
+				s.mustRemoveDeployment(deploymentID)
+				s.mustEnsureDeploymentRemoved(deploymentID)
+			})
+			s.mustEnsureDeploymentHealthy(deploymentID)
+			s.mustEnsureDeploymentInitialized(deploymentID)
+			s.mustEnsureStatefulSetReady(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
+			//Delete pods and load test
+			s.deletePods(deploymentID)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+			s.mustRunBasicSmokeTest(deploymentID)
+		})
+	}
+}

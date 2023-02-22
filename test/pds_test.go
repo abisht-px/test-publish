@@ -1157,3 +1157,9 @@ func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Durat
 	}
 	return s.Eventually(condition, waitFor, tick, msgAndArgs...)
 }
+
+func (s *PDSTestSuite) deletePods(deploymentID string) {
+	m := map[string]string{"pds/deployment-id": deploymentID}
+	err := s.targetCluster.DeletePodsBySelector(s.ctx, defaultPDSNamespaceName, m)
+	s.NoError(err, "Cannot delete pods.")
+}
