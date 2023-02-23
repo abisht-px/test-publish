@@ -38,7 +38,7 @@ func NewHelmProvider() (*ArtifactProviderHelmPDS, error) {
 	var err error
 	var client minihelm.Client
 	if client, err = minihelm.New(&minihelm.ClientOptions{Namespace: pdsNamespace}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating minihelm client: %w", err)
 	}
 
 	if !client.HasRepoWithNameAndURL(pdsRepoName, pdsRepoURL) {
@@ -47,12 +47,12 @@ func NewHelmProvider() (*ArtifactProviderHelmPDS, error) {
 
 	err = client.UpdateRepo(pdsRepoName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("updating %s repo: %w", pdsRepoName, err)
 	}
 
 	versions, err := client.GetChartVersions(pdsRepoName, pdsChartName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting versions of chart %s from repo %s: %w", pdsChartName, pdsRepoName, err)
 	}
 	if len(versions) == 0 {
 		return nil, fmt.Errorf("repository %s does not have chart %s", pdsRepoName, pdsChartName)

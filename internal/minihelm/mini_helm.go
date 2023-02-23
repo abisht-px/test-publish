@@ -91,10 +91,13 @@ func (m *miniHelm) UpdateRepo(repoName string) error {
 	entry := m.storage.Get(repoName)
 	repo, err := repo.NewChartRepository(entry, getter.All(m.settings))
 	if err != nil {
-		return err
+		return fmt.Errorf("creating repository for %s repo: %w", entry.Name, err)
 	}
 	_, err = repo.DownloadIndexFile()
-	return err
+	if err != nil {
+		return fmt.Errorf("downloading index file for %s repo: %w", entry.Name, err)
+	}
+	return nil
 }
 
 func (m *miniHelm) GetChartVersions(repoName, chartName string) ([]string, error) {
