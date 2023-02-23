@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -26,8 +27,8 @@ type Client interface {
 	HasRepoWithNameAndURL(repoName, url string) bool
 	UpdateRepo(repoName string) error
 	GetChartVersions(repoName, chartName string) ([]string, error)
-	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
-	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, chartName string, logger action.DebugLog) error
+	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
+	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, releaseName string, logger action.DebugLog) error
 }
 
 // miniHelm is a partial implementation of HelmCmd, w/o Helm storage mutating features (Add Chart, Add Repo etc.).
@@ -37,9 +38,24 @@ type miniHelm struct {
 	storage   *repo.File
 }
 
-func New() (Client, error) {
+type ClientOptions struct {
+	// The kubernetes namespace in which the client works.
+	Namespace string
+}
+
+func New(options *ClientOptions) (Client, error) {
 	client := miniHelm{}
 	client.settings = cli.New()
+
+	if options.Namespace != "" {
+		pflags := pflag.NewFlagSet("", pflag.ContinueOnError)
+		client.settings.AddFlags(pflags)
+		err := pflags.Parse([]string{"-n", options.Namespace})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	client.providers = getter.All(client.settings)
 
 	repoFile := client.settings.RepositoryConfig
@@ -102,8 +118,8 @@ func (m *miniHelm) GetChartVersions(repoName, chartName string) ([]string, error
 	return nil, fmt.Errorf("chart %s not found", chartName)
 }
 
-func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
-	_, err := installPDSChartVersionWithContext(ctx, m.settings, restGetter, repoName, chartName, chartVersion, chartVals, logger)
+func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
+	_, err := installPDSChartVersionWithContext(ctx, m.settings, restGetter, repoName, releaseName, chartName, chartVersion, chartVals, logger)
 	return err
 }
 
@@ -113,7 +129,7 @@ func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter generic
 	return err
 }
 
-func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
+func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
 	namespace := setGetterNamespace(settings, restGetter)
 
 	var actionConfig action.Configuration
@@ -122,8 +138,7 @@ func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSet
 	}
 	client := action.NewInstall(&actionConfig)
 
-	// Not using variable release name in the context of the usecase of the package.
-	client.ReleaseName = chartName
+	client.ReleaseName = releaseName
 	client.Version = chartVer
 	if client.Version == "" {
 		client.Version = ">0.0.0-0"

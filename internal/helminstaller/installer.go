@@ -13,6 +13,7 @@ const (
 	pdsRepoName    = "pds"
 	pdsReleaseName = "pds"
 	pdsChartName   = "pds-target"
+	pdsNamespace   = "pds-system"
 	pdsRepoURL     = "https://portworx.github.io/pds-charts"
 )
 
@@ -36,7 +37,7 @@ func nullWriter(format string, v ...interface{}) {}
 func NewHelmProvider() (*ArtifactProviderHelmPDS, error) {
 	var err error
 	var client minihelm.Client
-	if client, err = minihelm.New(); err != nil {
+	if client, err = minihelm.New(&minihelm.ClientOptions{Namespace: pdsNamespace}); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +85,7 @@ func (p *ArtifactProviderHelmPDS) Installer(kubeconfig string, pdsChartConfig *p
 }
 
 func (i *InstallableHelmPDS) Install(ctx context.Context) error {
-	return i.helmClient.InstallChartVersion(ctx, i.restGetter, i.pdsRepoName, i.pdsChartName, i.pdsChartVersion, i.helmChartValsString, nullWriter)
+	return i.helmClient.InstallChartVersion(ctx, i.restGetter, i.pdsRepoName, i.pdsReleaseName, i.pdsChartName, i.pdsChartVersion, i.helmChartValsString, nullWriter)
 }
 
 func (i *InstallableHelmPDS) Version() string {
@@ -92,5 +93,5 @@ func (i *InstallableHelmPDS) Version() string {
 }
 
 func (i *InstallableHelmPDS) Uninstall(ctx context.Context) error {
-	return i.helmClient.UninstallChartVersion(ctx, i.restGetter, i.pdsChartName, nullWriter)
+	return i.helmClient.UninstallChartVersion(ctx, i.restGetter, i.pdsReleaseName, nullWriter)
 }
