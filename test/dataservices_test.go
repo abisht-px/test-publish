@@ -123,8 +123,11 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 		},
 	}
 
-	for _, deployment := range deployments {
+	for _, d := range deployments {
+		deployment := d
 		s.Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
+			s.T().Parallel()
+
 			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
@@ -209,8 +212,11 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 		},
 	}
 
-	for _, deployment := range deployments {
+	for _, d := range deployments {
+		deployment := d
 		s.Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.getImageVersionString()), func() {
+			s.T().Parallel()
+
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {
@@ -380,9 +386,13 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 	}
 
-	for _, tt := range testCases {
-		for _, targetVersionTag := range tt.targetVersions {
+	for _, testCase := range testCases {
+		for _, tvt := range testCase.targetVersions {
+			tt := testCase
+			targetVersionTag := tvt
 			s.Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.getImageVersionString(), targetVersionTag), func() {
+				s.T().Parallel()
+
 				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.getImageVersionString())
 				deploymentID := s.mustDeployDeploymentSpec(tt.spec)
 				s.T().Cleanup(func() {
@@ -571,8 +581,11 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		},
 	}
 
-	for _, tt := range testCases {
+	for _, testCase := range testCases {
+		tt := testCase
 		s.Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.getImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func() {
+			s.T().Parallel()
+
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
 			s.T().Cleanup(func() {
@@ -679,8 +692,11 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		},
 	}
 
-	for _, tt := range testCases {
+	for _, testCase := range testCases {
+		tt := testCase
 		s.Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.getImageVersionString()), func() {
+			s.T().Parallel()
+
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
 			s.T().Cleanup(func() {
@@ -767,8 +783,11 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 	}
 
-	for _, deployment := range deployments {
+	for _, d := range deployments {
+		deployment := d
 		s.Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
+			s.T().Parallel()
+
 			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(deployment)
 			s.T().Cleanup(func() {

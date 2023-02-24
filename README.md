@@ -99,5 +99,12 @@ The following command only runs a single test from the suite.
 go test -test.v ./... -testify.m {put_test_name_here}
 
 #for instance
+go test -parallel 1 -test.v ./... -testify.m TestDataService_UpdateImage
+
+# run 2 parallel tests at once:
+go test -parallel 2 -test.v ./... -testify.m TestDataService_UpdateImage
+
+# as parallel uses GOMAXPROCS value, the following is the same:
+export GOMAXPROCS=2
 go test -test.v ./... -testify.m TestDataService_UpdateImage
 ```
