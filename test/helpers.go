@@ -10,6 +10,7 @@ import (
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
+	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/test/api"
 )
 
@@ -238,4 +239,9 @@ func (l *TestLogger) Printf(format string, v ...interface{}) {
 
 func shouldInstallPDSHelmChart(versionConstraints string) bool {
 	return versionConstraints != "0"
+}
+
+func generateRandomName(prefix string) string {
+	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
+	return fmt.Sprintf("%s-integration-test-s3-%s", prefix, nameSuffix)
 }

@@ -682,26 +682,6 @@ func (s *PDSTestSuite) mustDeleteBackup(backupID string) {
 	api.RequireNoError(s.T(), resp, err)
 }
 
-func (s *PDSTestSuite) mustCreateS3BackupCredentials(endpoint, accessKey, secretKey string) *pds.ModelsBackupCredentials {
-	tenantID := s.testPDSTenantID
-	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
-	name := fmt.Sprintf("integration-test-s3-%s", nameSuffix)
-
-	requestBody := pds.ControllersCreateBackupCredentialsRequest{
-		Name: &name,
-		Credentials: &pds.ControllersCredentials{
-			S3: &pds.ModelsS3Credentials{
-				Endpoint:  &endpoint,
-				AccessKey: &accessKey,
-				SecretKey: &secretKey,
-			},
-		},
-	}
-	backupCredentials, resp, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, tenantID).Body(requestBody).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	return backupCredentials
-}
-
 func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
 	tenantID := s.testPDSTenantID
 	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
@@ -755,19 +735,6 @@ func (s *PDSTestSuite) mustGetBackupTargetState(backupTargetID, deploymentTarget
 	}
 	s.Require().Fail("Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, deploymentTargetID)
 	return pds.ModelsBackupTargetState{}
-}
-
-func (s *PDSTestSuite) deleteBackupCredentialsIfExists(backupCredentialsID string) {
-	resp, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, backupCredentialsID).Execute()
-	if resp.StatusCode == http.StatusNotFound {
-		return
-	}
-	api.NoError(s.T(), resp, err)
-}
-
-func (s *PDSTestSuite) mustDeleteBackupCredentials(backupCredentialsID string) {
-	resp, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, backupCredentialsID).Execute()
-	api.RequireNoError(s.T(), resp, err)
 }
 
 func (s *PDSTestSuite) mustDeleteBackupTarget(backupTargetID string) {

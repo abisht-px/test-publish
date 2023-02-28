@@ -15,7 +15,7 @@ func (s *PDSTestSuite) TestBackupTarget_EmptyBackupTarget_Fail() {
 		credentials: s.config.backupTarget.credentials,
 	}
 	backupCredentialsConfig := backupTargetConfig.credentials.s3
-	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig.endpoint, backupCredentialsConfig.accessKey, backupCredentialsConfig.secretKey)
+	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig, generateRandomName(backupCredPrefix))
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
@@ -43,7 +43,7 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 	}
 
 	backupCredentialsConfig := backupTargetConfig.credentials.s3
-	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig.endpoint, backupCredentialsConfig.accessKey, backupCredentialsConfig.secretKey)
+	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig, generateRandomName(backupCredPrefix))
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
@@ -66,7 +66,7 @@ func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 	backupTargetConfig := s.config.backupTarget
 	backupCredentialsConfig := backupTargetConfig.credentials.s3
 
-	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig.endpoint, backupCredentialsConfig.accessKey, backupCredentialsConfig.secretKey)
+	backupCredentials := s.mustCreateS3BackupCredentials(backupCredentialsConfig, generateRandomName(backupCredPrefix))
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
