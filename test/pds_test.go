@@ -14,15 +14,16 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
+	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/test/api"
 	"github.com/portworx/pds-integration-test/test/auth"
-	"github.com/portworx/pds-integration-test/test/cluster"
 )
 
 const (
@@ -49,6 +50,8 @@ const (
 var (
 	namePrefix                 = fmt.Sprintf("integration-test-%d", time.Now().Unix())
 	pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
+	pdsNamespaceLabelKey       = "pds.portworx.com/available"
+	pdsNamespaceLabelValue     = "true"
 )
 
 // Info for a single template.
@@ -68,7 +71,7 @@ type PDSTestSuite struct {
 	ctx       context.Context
 	startTime time.Time
 
-	targetCluster              *cluster.TargetCluster
+	targetCluster              *targetcluster.TargetCluster
 	targetClusterKubeconfig    string
 	apiClient                  *pds.APIClient
 	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
@@ -106,7 +109,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.config = env
 	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.mustHaveTargetCluster(env)
-	s.mustHaveTargetClusterNamespaces(env)
+	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHaveAPIClient(env)
 	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
@@ -317,7 +320,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 }
 
 func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
-	tc, err := cluster.NewTargetCluster(s.ctx, env.targetKubeconfig)
+	tc, err := targetcluster.NewTargetCluster(s.ctx, env.targetKubeconfig)
 	s.Require().NoError(err, "Cannot create target cluster.")
 	s.targetCluster = tc
 }
@@ -1104,9 +1107,28 @@ func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(env environment) {
-	nss := []string{env.pdsNamespaceName}
-	s.targetCluster.EnsureNamespaces(s.T(), s.ctx, nss)
+func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {
+	namespace, err := s.targetCluster.GetNamespace(s.ctx, name)
+	if err != nil {
+		k8sns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+				Labels: map[string]string{
+					pdsNamespaceLabelKey: pdsNamespaceLabelValue,
+				},
+			},
+		}
+		_, err := s.targetCluster.CreateNamespace(s.ctx, k8sns)
+		s.Require().NoError(err, "Creating namespace %s", k8sns.Name)
+	}
+	labelValue, ok := namespace.Labels[pdsNamespaceLabelKey]
+	if !ok || labelValue != pdsNamespaceLabelValue {
+		namespace.Labels = map[string]string{
+			pdsNamespaceLabelKey: pdsNamespaceLabelValue,
+		}
+		_, err = s.targetCluster.UpdateNamespace(s.ctx, namespace)
+		s.Require().NoError(err, "Updating namespace %s", namespace.Name)
+	}
 }
 
 func (s *PDSTestSuite) mustGetDBPassword(namespace, deploymentName string) string {

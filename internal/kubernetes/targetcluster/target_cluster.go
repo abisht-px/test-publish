@@ -1,4 +1,4 @@
-package cluster
+package targetcluster
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/portworx/pds-integration-test/internal/kubernetes/cluster"
 	"github.com/portworx/pds-integration-test/internal/portworx"
 )
 
@@ -24,7 +25,7 @@ const (
 
 // TargetCluster wraps a PDS target cluster.
 type TargetCluster struct {
-	*cluster
+	*cluster.Cluster
 	portworx.Portworx
 }
 
@@ -50,12 +51,12 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 	}
 	px := portworx.New(clientset.CoreV1().RESTClient(), pxNamespace)
 
-	cluster, err := newCluster(config, clientset, metaClient)
+	cluster, err := cluster.NewCluster(config, clientset, metaClient)
 	if err != nil {
 		return nil, err
 	}
 	return &TargetCluster{
-		cluster:  cluster,
+		Cluster:  cluster,
 		Portworx: px,
 	}, nil
 }
@@ -63,19 +64,14 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 // LogComponents extracts the logs of all relevant PDS components, beginning at the specified time.
 func (tc *TargetCluster) LogComponents(t *testing.T, ctx context.Context, since time.Time) {
 	t.Helper()
-	components := []componentSelector{
-		{pdsSystemNamespace, "app=pds-agent"},
+	components := []cluster.ComponentSelector{
+		{Namespace: pdsSystemNamespace, LabelSelector: "app=pds-agent"},
 		// TODO (fmilichovsky): Fix log extraction
 		// (the operator pods consist of two containers, so this isn't enough to qualify the one we need).
-		{pdsSystemNamespace, "control-plane=controller-manager"}, // Deployment + Backup operators.
+		{Namespace: pdsSystemNamespace, LabelSelector: "control-plane=controller-manager"}, // Deployment + Backup operators.
 	}
 	t.Log("Target cluster:")
-	tc.getLogsForComponents(t, ctx, components, since)
-}
-
-func (tc *TargetCluster) EnsureNamespaces(t *testing.T, ctx context.Context, namespaces []string) {
-	t.Helper()
-	tc.ensurePDSNamespaceLabels(t, ctx, namespaces)
+	tc.GetLogsForComponents(t, ctx, components, since)
 }
 
 // DeleteCRDs deletes all pds in the target cluster. Used in the test cleanup.
@@ -86,10 +82,10 @@ func (tc *TargetCluster) DeleteCRDs(ctx context.Context) error {
 		Version:  "v1",
 		Resource: "customresourcedefinitions",
 	}
-	crdList, err := tc.metaClient.Resource(crdGroupVersionResource).List(ctx, listOptions)
+	crdList, err := tc.MetaClient.Resource(crdGroupVersionResource).List(ctx, listOptions)
 	for _, crd := range crdList.Items {
 		if strings.HasSuffix(crd.Name, "pds.io") {
-			crdDelErr := tc.metaClient.Resource(crdGroupVersionResource).Delete(ctx, crd.Name, metav1.DeleteOptions{})
+			crdDelErr := tc.MetaClient.Resource(crdGroupVersionResource).Delete(ctx, crd.Name, metav1.DeleteOptions{})
 			if crdDelErr != nil {
 				err = multierror.Append(err, crdDelErr)
 			}
@@ -100,7 +96,7 @@ func (tc *TargetCluster) DeleteCRDs(ctx context.Context) error {
 
 // DeleteClusterRoles deletes all TC cluster roles in the target cluster. Used in the test cleanup.
 func (tc *TargetCluster) DeleteClusterRoles(ctx context.Context) error {
-	return tc.clientset.RbacV1().ClusterRoles().DeleteCollection(
+	return tc.Clientset.RbacV1().ClusterRoles().DeleteCollection(
 		ctx,
 		metav1.DeleteOptions{},
 		metav1.ListOptions{LabelSelector: pdsEnvironmentLabel},
@@ -109,7 +105,7 @@ func (tc *TargetCluster) DeleteClusterRoles(ctx context.Context) error {
 
 // DeletePVCs deletes all TC PVCs in the target cluster. Used in the test cleanup.
 func (tc *TargetCluster) DeletePVCs(ctx context.Context, namespace string) error {
-	return tc.clientset.CoreV1().PersistentVolumeClaims(namespace).DeleteCollection(
+	return tc.Clientset.CoreV1().PersistentVolumeClaims(namespace).DeleteCollection(
 		ctx,
 		metav1.DeleteOptions{},
 		metav1.ListOptions{LabelSelector: pdsEnvironmentLabel},
@@ -118,7 +114,7 @@ func (tc *TargetCluster) DeletePVCs(ctx context.Context, namespace string) error
 
 // DeleteStorageClasses deletes all TC storage classes in the target cluster. Used in the test cleanup.
 func (tc *TargetCluster) DeleteStorageClasses(ctx context.Context) error {
-	return tc.clientset.StorageV1().StorageClasses().DeleteCollection(
+	return tc.Clientset.StorageV1().StorageClasses().DeleteCollection(
 		ctx,
 		metav1.DeleteOptions{},
 		metav1.ListOptions{LabelSelector: pdsEnvironmentLabel},
@@ -127,14 +123,14 @@ func (tc *TargetCluster) DeleteStorageClasses(ctx context.Context) error {
 
 // DeleteReleasedPVs deletes all released TC PVs in the target cluster. Used in the test cleanup.
 func (tc *TargetCluster) DeleteReleasedPVs(ctx context.Context) error {
-	pvs, err := tc.clientset.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
+	pvs, err := tc.Clientset.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 	for _, item := range pvs.Items {
 		if item.Status.Phase == "Released" {
 			item.Spec.PersistentVolumeReclaimPolicy = "Delete"
-			_, updatePVErr := tc.clientset.CoreV1().PersistentVolumes().Update(ctx, &item, metav1.UpdateOptions{})
+			_, updatePVErr := tc.Clientset.CoreV1().PersistentVolumes().Update(ctx, &item, metav1.UpdateOptions{})
 			if updatePVErr != nil {
 				err = multierror.Append(err, updatePVErr)
 			}
