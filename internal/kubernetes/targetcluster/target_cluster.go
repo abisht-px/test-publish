@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -72,6 +73,16 @@ func (tc *TargetCluster) LogComponents(t *testing.T, ctx context.Context, since 
 	}
 	t.Log("Target cluster:")
 	tc.GetLogsForComponents(t, ctx, components, since)
+}
+
+// RemoveNamespaceFinalizers removes all finalizers from a namespace.
+func (tc *TargetCluster) RemoveNamespaceFinalizers(ctx context.Context, name string) (*corev1.Namespace, error) {
+	namespace, err := tc.GetNamespace(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	namespace.Finalizers = []string{}
+	return tc.UpdateNamespace(ctx, namespace)
 }
 
 // DeleteCRDs deletes all pds in the target cluster. Used in the test cleanup.

@@ -122,7 +122,8 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustInstallAgent(env)
 	}
 	s.mustHavePDStestDeploymentTarget(env)
-	s.mustHavePDStestNamespace(env)
+	namespace := s.mustEventuallyGetNamespaceByName(env.pdsNamespaceName, "available")
+	s.testPDSNamespaceID = namespace.GetId()
 	s.mustCreateApplicationTemplates()
 	s.mustCreateStorageOptions()
 }
@@ -251,15 +252,31 @@ func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
 
-func (s *PDSTestSuite) mustHavePDStestNamespace(env environment) {
+func (s *PDSTestSuite) mustEventuallyGetNamespaceByName(name, expectedStatus string) *pds.ModelsNamespace {
+	var foundNamespace *pds.ModelsNamespace
 	s.requireNowOrEventually(
 		func() bool {
-			var err error
-			s.testPDSNamespaceID, err = getNamespaceIDByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, env.pdsNamespaceName)
-			return err == nil
+			namespace := getNamespaceByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+			found := namespace != nil && namespace.GetStatus() == expectedStatus
+			if found {
+				foundNamespace = namespace
+			}
+			return found
 		},
-		waiterNamespaceExistsTimeout, waiterRetryInterval,
-		"PDS Namespace %s does not exist.", env.pdsNamespaceName,
+		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
+		"Namespace %s with status %s does not exist.", name, expectedStatus,
+	)
+	return foundNamespace
+}
+
+func (s *PDSTestSuite) mustNeverGetNamespaceByName(name string) {
+	s.Require().Never(
+		func() bool {
+			namespace := getNamespaceByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+			return namespace != nil
+		},
+		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
+		"Namespace %s was not expected to be found in control plane.", name,
 	)
 }
 

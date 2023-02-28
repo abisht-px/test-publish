@@ -40,17 +40,15 @@ func getDeploymentTargetIDByName(t *testing.T, ctx context.Context, apiClient *p
 	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
 }
 
-func getNamespaceIDByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, namespaceName string) (string, error) {
+func getNamespaceByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) *pds.ModelsNamespace {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return "", fmt.Errorf("getting namespaces for deployment target %s: %w", deploymentTargetID, err)
-	}
+	api.NoError(t, resp, err)
 	for _, namespace := range namespaces.GetData() {
-		if namespace.GetName() == namespaceName {
-			return namespace.GetId(), nil
+		if namespace.GetName() == name {
+			return &namespace
 		}
 	}
-	return "", fmt.Errorf("namespace %s not found", namespaceName)
+	return nil
 }
 
 func isDeploymentHealthy(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentID string) bool {

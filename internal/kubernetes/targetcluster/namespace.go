@@ -18,3 +18,7 @@ func (tc *TargetCluster) GetNamespace(ctx context.Context, name string) (*corev1
 func (tc *TargetCluster) UpdateNamespace(ctx context.Context, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	return tc.Clientset.CoreV1().Namespaces().Update(ctx, namespace, metav1.UpdateOptions{})
 }
+
+func (tc *TargetCluster) DeleteNamespace(ctx context.Context, name string) error {
+	return tc.Clientset.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
+}
