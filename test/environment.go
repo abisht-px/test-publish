@@ -55,7 +55,7 @@ type secrets struct {
 	pdsPassword        string
 }
 
-type credentials struct {
+type backupCredentials struct {
 	s3 s3Credentials
 }
 
@@ -65,10 +65,10 @@ type s3Credentials struct {
 	secretKey string
 }
 
-type backupTarget struct {
-	bucket string
-	region string
-	credentials
+type backupTargetConfig struct {
+	bucket      string
+	region      string
+	credentials backupCredentials
 }
 
 type environment struct {
@@ -82,7 +82,7 @@ type environment struct {
 	pdsServiceAccountName   string
 	pdsToken                string
 	secrets                 secrets
-	backupTarget            backupTarget
+	backupTarget            backupTargetConfig
 	pdsHelmChartVersion     string
 }
 
@@ -112,10 +112,10 @@ func mustHaveEnvVariables(t *testing.T) environment {
 		pdsServiceAccountName:   getEnvVariableWithDefault(envPDSServiceAccountName, defaultPDSServiceAccountName),
 		pdsToken:                pdsToken,
 		secrets:                 authConf,
-		backupTarget: backupTarget{
+		backupTarget: backupTargetConfig{
 			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
 			region: mustGetEnvVariable(t, envBackupTargetRegion),
-			credentials: credentials{
+			credentials: backupCredentials{
 				s3: s3Credentials{
 					accessKey: mustGetEnvVariable(t, envS3CredentialsAccessKey),
 					endpoint:  getEnvVariableWithDefault(envS3CredentialsEndpoint, defaultS3Endpoint),

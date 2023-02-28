@@ -233,7 +233,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(backupCredentials.GetId()) })
 
 			backupTarget := s.mustCreateS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-			s.mustEnsureBackupTargetSynced(backupTarget.GetId(), s.testPDSDeploymentTargetID)
+			s.mustEnsureBackupTargetCreatedInTC(backupTarget.GetId(), s.testPDSDeploymentTargetID)
 			s.T().Cleanup(func() { s.mustDeleteBackupTarget(backupTarget.GetId()) })
 
 			backup := s.mustCreateBackup(deploymentID, backupTarget.GetId())
