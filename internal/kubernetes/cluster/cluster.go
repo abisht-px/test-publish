@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"testing"
 	"time"
 
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
-	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,15 +30,6 @@ type Cluster struct {
 	config     *rest.Config
 	Clientset  *kubernetes.Clientset
 	MetaClient metadata.Interface
-}
-
-type ComponentSelector struct {
-	Namespace     string
-	LabelSelector string
-}
-
-func (s ComponentSelector) String() string {
-	return fmt.Sprintf("%s/%s", s.Namespace, s.LabelSelector)
 }
 
 func NewCluster(config *rest.Config, clientset *kubernetes.Clientset, metaClient metadata.Interface) (*Cluster, error) {
@@ -162,7 +151,7 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 	return job, nil
 }
 
-func (c *Cluster) GetJobLogs(t *testing.T, ctx context.Context, namespace, jobName string, since time.Time) (string, error) {
+func (c *Cluster) GetJobLogs(ctx context.Context, namespace, jobName string, since time.Time) (string, error) {
 	pods, err := c.Clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(map[string]string{
 			jobNameLabel: jobName,
@@ -177,7 +166,10 @@ func (c *Cluster) GetJobLogs(t *testing.T, ctx context.Context, namespace, jobNa
 	}
 	var logs []string
 	for _, pod := range pods.Items {
-		podLogs := c.getPodLogs(t, ctx, pod, since)
+		podLogs, err := c.GetPodLogs(ctx, &pod, since)
+		if err != nil {
+			return "", err
+		}
 		if len(podLogs) > 0 {
 			logs = append(logs, podLogs)
 		}
@@ -186,40 +178,19 @@ func (c *Cluster) GetJobLogs(t *testing.T, ctx context.Context, namespace, jobNa
 	return strings.Join(logs[:], "\n--------\n"), nil
 }
 
-func (c *Cluster) GetLogsForComponents(t *testing.T, ctx context.Context, components []ComponentSelector, since time.Time) {
-	t.Helper()
-	for _, component := range components {
-		c.getComponentLogs(t, ctx, component, since)
-	}
-}
-
-func (c *Cluster) getComponentLogs(t *testing.T, ctx context.Context, component ComponentSelector, since time.Time) {
-	t.Helper()
-	opts := metav1.ListOptions{
-		LabelSelector: component.LabelSelector,
-	}
-	podList, err := c.Clientset.CoreV1().Pods(component.Namespace).List(ctx, opts)
-	require.NoErrorf(t, err, "Listing deployment pods.")
-	for _, pod := range podList.Items {
-		podLogs := c.getPodLogs(t, ctx, pod, since)
-		t.Logf("%s/%s:", pod.Namespace, pod.Name)
-		t.Log(podLogs)
-	}
-}
-
-func (c *Cluster) getPodLogs(t *testing.T, ctx context.Context, pod corev1.Pod, since time.Time) string {
-	t.Helper()
+func (c *Cluster) GetPodLogs(ctx context.Context, pod *corev1.Pod, since time.Time) (string, error) {
 	metaSince := metav1.NewTime(since)
 	logOpts := &corev1.PodLogOptions{
 		SinceTime: &metaSince,
 	}
 	req := c.Clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOpts)
 	podLogs, err := req.Stream(ctx)
-	require.NoError(t, err, "Streaming pod logs.")
-	defer podLogs.Close()
+	defer func() { _ = podLogs.Close() }()
+	if err != nil {
+		return "", err
+	}
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
-	require.NoError(t, err, "Copying logs buffer.")
-	return buf.String()
+	return buf.String(), err
 }

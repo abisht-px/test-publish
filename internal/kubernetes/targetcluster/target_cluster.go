@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
-	"testing"
-	"time"
 
 	"github.com/hashicorp/go-multierror"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -60,29 +57,6 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 		Cluster:  cluster,
 		Portworx: px,
 	}, nil
-}
-
-// LogComponents extracts the logs of all relevant PDS components, beginning at the specified time.
-func (tc *TargetCluster) LogComponents(t *testing.T, ctx context.Context, since time.Time) {
-	t.Helper()
-	components := []cluster.ComponentSelector{
-		{Namespace: pdsSystemNamespace, LabelSelector: "app=pds-agent"},
-		// TODO (fmilichovsky): Fix log extraction
-		// (the operator pods consist of two containers, so this isn't enough to qualify the one we need).
-		{Namespace: pdsSystemNamespace, LabelSelector: "control-plane=controller-manager"}, // Deployment + Backup operators.
-	}
-	t.Log("Target cluster:")
-	tc.GetLogsForComponents(t, ctx, components, since)
-}
-
-// RemoveNamespaceFinalizers removes all finalizers from a namespace.
-func (tc *TargetCluster) RemoveNamespaceFinalizers(ctx context.Context, name string) (*corev1.Namespace, error) {
-	namespace, err := tc.GetNamespace(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	namespace.Finalizers = []string{}
-	return tc.UpdateNamespace(ctx, namespace)
 }
 
 // DeleteCRDs deletes all pds in the target cluster. Used in the test cleanup.

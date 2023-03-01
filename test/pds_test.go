@@ -137,9 +137,6 @@ func (s *PDSTestSuite) TearDownSuite() {
 		s.uninstallAgent(env)
 		s.deletePDStestDeploymentTarget()
 	}
-	if s.T().Failed() {
-		s.targetCluster.LogComponents(s.T(), s.ctx, s.startTime)
-	}
 }
 
 func (s *PDSTestSuite) mustCreateUserAPIKey(
@@ -917,7 +914,7 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 		if len(backupJobs) > 0 {
 			backupJobName = backupJobs[0].Name
 		}
-		logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, backupJobName, s.startTime)
+		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, backupJobName, s.startTime)
 		if err != nil {
 			s.Require().Fail(fmt.Sprintf("Backup '%s' failed.", backupName))
 		} else {
@@ -976,7 +973,7 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string)
 
 	if job.Status.Failed > 0 {
 		// Job failed.
-		logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, jobName, s.startTime)
+		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
 		if err != nil {
 			s.Require().Fail(fmt.Sprintf("Job '%s' failed.", jobName))
 		} else {
@@ -987,7 +984,7 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string)
 }
 
 func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(namespace, jobName, rePattern string) {
-	logs, err := s.targetCluster.GetJobLogs(s.T(), s.ctx, namespace, jobName, s.startTime)
+	logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
 	s.Require().NoError(err)
 	re := regexp.MustCompile(rePattern)
 	s.Require().Nil(re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)

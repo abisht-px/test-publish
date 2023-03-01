@@ -22,3 +22,13 @@ func (tc *TargetCluster) UpdateNamespace(ctx context.Context, namespace *corev1.
 func (tc *TargetCluster) DeleteNamespace(ctx context.Context, name string) error {
 	return tc.Clientset.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
 }
+
+// RemoveNamespaceFinalizers removes all finalizers from a namespace.
+func (tc *TargetCluster) RemoveNamespaceFinalizers(ctx context.Context, name string) (*corev1.Namespace, error) {
+	namespace, err := tc.GetNamespace(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	namespace.Finalizers = []string{}
+	return tc.UpdateNamespace(ctx, namespace)
+}
