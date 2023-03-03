@@ -396,7 +396,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) 
 
 func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
 	if deployment.ServiceType == "" {
-		deployment.ServiceType = "LoadBalancer"
+		deployment.ServiceType = "ClusterIP"
 	}
 	if deployment.StorageOptionName == "" {
 		deployment.StorageOptionName = s.testPDSStorageTemplateName
