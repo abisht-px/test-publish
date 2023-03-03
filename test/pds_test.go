@@ -1132,7 +1132,7 @@ func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {
 				},
 			},
 		}
-		_, err := s.targetCluster.CreateNamespace(s.ctx, k8sns)
+		namespace, err = s.targetCluster.CreateNamespace(s.ctx, k8sns)
 		s.Require().NoError(err, "Creating namespace %s", k8sns.Name)
 	}
 	labelValue, ok := namespace.Labels[pdsNamespaceLabelKey]
