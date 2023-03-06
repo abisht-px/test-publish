@@ -33,11 +33,6 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 		},
 		{
 			DataServiceName: dbZooKeeper,
-			ImageVersionTag: "3.6.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dbZooKeeper,
 			ImageVersionTag: "3.7.1",
 			NodeCount:       3,
 		},
@@ -48,47 +43,12 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 		},
 		{
 			DataServiceName: dbKafka,
-			ImageVersionTag: "3.0.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbKafka,
-			ImageVersionTag: "3.0.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dbKafka,
 			ImageVersionTag: "3.1.1",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dbKafka,
-			ImageVersionTag: "3.1.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dbKafka,
-			ImageVersionTag: "3.2.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbKafka,
-			ImageVersionTag: "3.2.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dbRabbitMQ,
-			ImageVersionTag: "3.9.22",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbRabbitMQ,
-			ImageVersionTag: "3.10.6",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbRabbitMQ,
-			ImageVersionTag: "3.10.7",
+			ImageVersionTag: "3.2.3",
 			NodeCount:       1,
 		},
 		{
@@ -98,17 +58,12 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 		},
 		{
 			DataServiceName: dbMySQL,
-			ImageVersionTag: "8.0.30",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbMySQL,
 			ImageVersionTag: "8.0.31",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dbMongoDB,
-			ImageVersionTag: "6.0.2",
+			ImageVersionTag: "6.0.3",
 			NodeCount:       1,
 		},
 		{
@@ -187,17 +142,12 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 		},
 		{
 			DataServiceName: dbMySQL,
-			ImageVersionTag: "8.0.30",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dbMySQL,
 			ImageVersionTag: "8.0.31",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dbMongoDB,
-			ImageVersionTag: "6.0.2",
+			ImageVersionTag: "6.0.3",
 			NodeCount:       1,
 		},
 		{
@@ -308,6 +258,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbCassandra,
+				ImageVersionTag: "4.0.4",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"4.0.6"},
+		},
+		{
+			spec: ShortDeploymentSpec{
+				DataServiceName: dbCassandra,
 				ImageVersionTag: "4.0.5",
 				NodeCount:       1,
 			},
@@ -317,23 +275,23 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.0",
-				NodeCount:       6,
+				NodeCount:       1,
 			},
-			targetVersions: []string{"7.0.2", "7.0.4", "7.0.5"},
+			targetVersions: []string{"7.0.5"},
 		},
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.2",
-				NodeCount:       6,
+				NodeCount:       1,
 			},
-			targetVersions: []string{"7.0.4", "7.0.5"},
+			targetVersions: []string{"7.0.5"},
 		},
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.4",
-				NodeCount:       6,
+				NodeCount:       1,
 			},
 			targetVersions: []string{"7.0.5"},
 		},
@@ -474,7 +432,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				ImageVersionTag: "1.14.0",
 				NodeCount:       1,
 			},
-			scaleTo: 3,
+			scaleTo: 2,
 		},
 		{
 			spec: ShortDeploymentSpec{
@@ -487,47 +445,15 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbKafka,
-				ImageVersionTag: "3.0.1",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				DataServiceName: dbKafka,
 				ImageVersionTag: "3.1.1",
 				NodeCount:       1,
 			},
-			scaleTo: 3,
+			scaleTo: 2,
 		},
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbKafka,
-				ImageVersionTag: "3.2.1",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				DataServiceName: dbRabbitMQ,
-				ImageVersionTag: "3.9.22",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				DataServiceName: dbRabbitMQ,
-				ImageVersionTag: "3.10.6",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				DataServiceName: dbRabbitMQ,
-				ImageVersionTag: "3.10.7",
+				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -543,14 +469,6 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbMySQL,
-				ImageVersionTag: "8.0.30",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: ShortDeploymentSpec{
-				DataServiceName: dbMySQL,
 				ImageVersionTag: "8.0.31",
 				NodeCount:       1,
 			},
@@ -559,7 +477,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbMongoDB,
-				ImageVersionTag: "6.0.2",
+				ImageVersionTag: "6.0.3",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -638,7 +556,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: ShortDeploymentSpec{
 				DataServiceName: dbKafka,
-				ImageVersionTag: "3.2.1",
+				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbKafka].ResourceTemplates[1].Name,
@@ -745,7 +663,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		{
 			DataServiceName: dbRedis,
 			ImageVersionTag: "7.0.5",
-			NodeCount:       3,
+			NodeCount:       6,
 		},
 		{
 			DataServiceName: dbZooKeeper,

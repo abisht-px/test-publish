@@ -993,7 +993,7 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(namespace, jobName,
 func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
 	switch dataServiceType {
 	case dbCassandra:
-		return "portworx/pds-loadtests:cassandra-0.0.3", nil
+		return "portworx/pds-loadtests:cassandra-0.0.4", nil
 	case dbCouchbase:
 		return "portworx/pds-loadtests:couchbase-0.0.3", nil
 	case dbRedis:
