@@ -44,7 +44,7 @@ Make sure you have added helm chart manually to your local.
 Since minihelm looks for this entry it fails if you do not define this.
 See this slack [thread](https://purestorage.slack.com/archives/C04CQSSMFPC/p1669717983272019)
 
-Add the following entry to `/home/nonroot/.config/helm/repositories.yaml`:
+Add the following entry to `/home/nonroot/.config/helm/repositories.yaml` (for Mac users `~/Library/Preferences/helm/repositories.yaml`):
 
 ```bash
 cat <<EOT >> /home/nonroot/.config/helm/repositories.yaml
