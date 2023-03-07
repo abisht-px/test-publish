@@ -555,6 +555,14 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		},
 		{
 			spec: ShortDeploymentSpec{
+				DataServiceName: dbConsul,
+				ImageVersionTag: "1.14.0",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbConsul].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
@@ -608,6 +616,14 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbRedis].ResourceTemplates[1].Name,
+		},
+		{
+			spec: ShortDeploymentSpec{
+				DataServiceName: dbZooKeeper,
+				ImageVersionTag: "3.8.0",
+				NodeCount:       3,
+			},
+			scaleToResourceTemplate: s.testPDSTemplatesMap[dbZooKeeper].ResourceTemplates[1].Name,
 		},
 	}
 
