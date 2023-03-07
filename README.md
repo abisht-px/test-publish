@@ -12,7 +12,7 @@ For instructions how to run tests locally, see [Running tests locally](#running-
 
 | Key                        | Default value                              | Description                                                                                                       |
 |----------------------------|--------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| CONTROL_PLANE_API          |                                            | URL of the publicly accessible control plane PDS API.                                                             |
+| CONTROL_PLANE_ADDRESS          |                                            | Domain name or ip address of the publicly accessible control plane endpoint.                                                             |
 | TARGET_CLUSTER_KUBECONFIG  |                                            | Path to the kubeconfig file that allows the test to access the target cluster.                                    |
 | PDS_ACCOUNT_NAME           | PDS Integration Test                       | Name of the PDS account to be used for the test.                                                                  |
 | PDS_TENANT_NAME            | Default                                    | Name of the PDS tenant to be used for the test.                                                                   |
@@ -70,7 +70,7 @@ environment variables in one place. A template of the `.env` file:
 
 ```dotenv
 # Control plane and target cluster config.
-CONTROL_PLANE_API='https://<environment url>/api'
+CONTROL_PLANE_ADDRESS='<domain name or ip address>'
 TARGET_CLUSTER_KUBECONFIG=''
 
 # OIDC config.

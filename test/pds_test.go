@@ -11,6 +11,10 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +28,7 @@ import (
 	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/test/api"
 	"github.com/portworx/pds-integration-test/test/auth"
+	"github.com/portworx/pds-integration-test/test/prometheus"
 )
 
 const (
@@ -74,6 +79,7 @@ type PDSTestSuite struct {
 	targetCluster              *targetcluster.TargetCluster
 	targetClusterKubeconfig    string
 	apiClient                  *pds.APIClient
+	prometheusClient           prometheusv1.API
 	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
 	pdsHelmChartVersion        string
 	testPDSAccountID           string
@@ -114,6 +120,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
+	s.mustHavePrometheusClient(env)
 	s.mustHavePDStestProject(env)
 	s.mustLoadImageVersions()
 	if shouldInstallPDSHelmChart(s.pdsHelmChartVersion) {
@@ -322,6 +329,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 			env.secrets.pdsPassword,
 		)
 		s.Require().NoError(err, "Cannot get bearer token.")
+		env.pdsToken = bearerToken
 	}
 
 	s.ctx = context.WithValue(s.ctx,
@@ -331,6 +339,13 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 		})
 
 	s.apiClient = pds.NewAPIClient(apiConf)
+}
+
+func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
+	promAPI, err := prometheus.NewClient(s.config.prometheusAPI, s.testPDSTenantID, s.config.pdsToken)
+	s.Require().NoError(err)
+
+	s.prometheusClient = promAPI
 }
 
 func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
@@ -1216,4 +1231,35 @@ func (s *PDSTestSuite) deletePods(deploymentID string) {
 	m := map[string]string{"pds/deployment-id": deploymentID}
 	err := s.targetCluster.DeletePodsBySelector(s.ctx, defaultPDSNamespaceName, m)
 	s.NoError(err, "Cannot delete pods.")
+}
+
+func (s *PDSTestSuite) mustVerifyMetrics(deploymentID string) {
+	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	api.RequireNoError(s.T(), resp, err)
+
+	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	api.RequireNoError(s.T(), resp, err)
+	dataServiceType := dataService.GetName()
+
+	s.Require().Contains(dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics")
+	expectedMetrics := dataServiceExpectedMetrics[dataServiceType]
+
+	var missingMetrics []model.LabelValue
+	for _, expectedMetric := range expectedMetrics {
+		// Add deployment ID to the metric label filter.
+		pdsDeploymentIDMatch := parser.MustLabelMatcher(labels.MatchEqual, "pds_deployment_id", deploymentID)
+		expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
+
+		queryResult, _, err := s.prometheusClient.Query(s.ctx, expectedMetric.String(), time.Now())
+		s.Require().NoError(err, "prometheus: query error")
+
+		s.Require().IsType(model.Vector{}, queryResult, "prometheus: wrong result model")
+		queryResultMetrics := queryResult.(model.Vector)
+
+		if len(queryResultMetrics) == 0 {
+			missingMetrics = append(missingMetrics, model.LabelValue(expectedMetric.Name))
+		}
+	}
+
+	s.Require().Equalf(len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
 }

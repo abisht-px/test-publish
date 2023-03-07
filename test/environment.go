@@ -1,6 +1,8 @@
 package test
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -9,7 +11,7 @@ import (
 )
 
 const (
-	envControlPlaneAPI          = "CONTROL_PLANE_API"
+	envControlPlaneAddress      = "CONTROL_PLANE_ADDRESS"
 	envPDSAccountName           = "PDS_ACCOUNT_NAME"
 	envPDSTenantName            = "PDS_TENANT_NAME"
 	envPDSProjectName           = "PDS_PROJECT_NAME"
@@ -73,6 +75,7 @@ type backupTargetConfig struct {
 
 type environment struct {
 	controlPlaneAPI         string
+	prometheusAPI           string
 	targetKubeconfig        string
 	pdsAccountName          string
 	pdsTenantName           string
@@ -101,8 +104,12 @@ func mustHaveEnvVariables(t *testing.T) environment {
 		}
 	}
 
+	controlPlaneAddress := mustGetEnvVariable(t, envControlPlaneAddress)
+	controlPlaneAddress = mustCleanAddress(t, controlPlaneAddress)
+
 	return environment{
-		controlPlaneAPI:         mustGetEnvVariable(t, envControlPlaneAPI),
+		controlPlaneAPI:         fmt.Sprintf("https://%s/api", controlPlaneAddress),
+		prometheusAPI:           fmt.Sprintf("https://%s/prometheus", controlPlaneAddress),
 		targetKubeconfig:        mustGetEnvVariable(t, envTargetKubeconfig),
 		pdsAccountName:          getEnvVariableWithDefault(envPDSAccountName, defaultPDSAccountName),
 		pdsTenantName:           getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
@@ -132,6 +139,15 @@ func mustGetEnvVariable(t *testing.T, key string) string {
 	value := os.Getenv(key)
 	require.NotEmptyf(t, value, "Env variable %q is empty.", key)
 	return value
+}
+
+func mustCleanAddress(t *testing.T, address string) string {
+	url, err := url.Parse(address)
+	require.NoError(t, err, "failed to parse address")
+	if url.Hostname() == "" {
+		return url.String()
+	}
+	return url.Hostname()
 }
 
 func getEnvVariableWithDefault(key, fallback string) string {
