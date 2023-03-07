@@ -24,3 +24,11 @@ jobs:
 
     - name: Push image
       run: make docker-push
+
+    - name: Build image with master tag
+      if: ${{ github.ref == 'refs/heads/master' }}
+      run: make docker-build IMG_TAG=master
+    
+    - name: Push image with master tag
+      if: ${{ github.ref == 'refs/heads/master' }}
+      run: make docker-push IMG_TAG=master
