@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/portworx/pds-integration-test/internal/pds"
 )
 
 const (
@@ -49,14 +51,6 @@ var (
 	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster " + runTimestamp
 )
 
-type secrets struct {
-	tokenIssuerURL     string
-	issuerClientID     string
-	issuerClientSecret string
-	pdsUsername        string
-	pdsPassword        string
-}
-
 type backupCredentials struct {
 	s3 s3Credentials
 }
@@ -73,34 +67,61 @@ type backupTargetConfig struct {
 	credentials backupCredentials
 }
 
+type controlPlaneEnvironment struct {
+	ControlPlaneAPI  string
+	AccountName      string
+	TenantName       string
+	ProjectName      string
+	LoginCredentials pds.LoginCredentials
+	PrometheusAPI    string
+}
+
 type environment struct {
-	controlPlaneAPI         string
-	prometheusAPI           string
+	controlPlane            controlPlaneEnvironment
 	targetKubeconfig        string
-	pdsAccountName          string
-	pdsTenantName           string
-	pdsProjectName          string
 	pdsNamespaceName        string
 	pdsDeploymentTargetName string
 	pdsServiceAccountName   string
 	pdsToken                string
-	secrets                 secrets
 	backupTarget            backupTargetConfig
 	pdsHelmChartVersion     string
+}
+
+func MustHaveControlPlaneEnvVariables(t *testing.T) controlPlaneEnvironment {
+	credentials := pds.LoginCredentials{
+		BearerToken: os.Getenv(envPDSToken),
+	}
+	if credentials.BearerToken == "" {
+		credentials.TokenIssuerURL = mustGetEnvVariable(t, envSecretTokenIssuerURL)
+		credentials.IssuerClientID = mustGetEnvVariable(t, envSecretIssuerClientID)
+		credentials.IssuerClientSecret = mustGetEnvVariable(t, envSecretIssuerClientSecret)
+		credentials.Username = mustGetEnvVariable(t, envSecretPDSUsername)
+		credentials.Password = mustGetEnvVariable(t, envSecretPDSPassword)
+	}
+
+	controlPlaneAddress := mustCleanAddress(t, mustGetEnvVariable(t, envControlPlaneAddress))
+	return controlPlaneEnvironment{
+		ControlPlaneAPI:  fmt.Sprintf("https://%s/api", controlPlaneAddress),
+		AccountName:      getEnvVariableWithDefault(envPDSAccountName, defaultPDSAccountName),
+		TenantName:       getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
+		ProjectName:      getEnvVariableWithDefault(envPDSProjectName, defaultPDSProjectName),
+		LoginCredentials: credentials,
+		PrometheusAPI:    fmt.Sprintf("https://%s/prometheus", controlPlaneAddress),
+	}
 }
 
 func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
 
 	pdsToken := os.Getenv(envPDSToken)
-	var authConf secrets
+	var authConf pds.LoginCredentials
 	if pdsToken == "" {
-		authConf = secrets{
-			tokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
-			issuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
-			issuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
-			pdsUsername:        mustGetEnvVariable(t, envSecretPDSUsername),
-			pdsPassword:        mustGetEnvVariable(t, envSecretPDSPassword),
+		authConf = pds.LoginCredentials{
+			TokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
+			IssuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
+			IssuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
+			Username:           mustGetEnvVariable(t, envSecretPDSUsername),
+			Password:           mustGetEnvVariable(t, envSecretPDSPassword),
 		}
 	}
 
@@ -108,17 +129,19 @@ func mustHaveEnvVariables(t *testing.T) environment {
 	controlPlaneAddress = mustCleanAddress(t, controlPlaneAddress)
 
 	return environment{
-		controlPlaneAPI:         fmt.Sprintf("https://%s/api", controlPlaneAddress),
-		prometheusAPI:           fmt.Sprintf("https://%s/prometheus", controlPlaneAddress),
+		controlPlane: controlPlaneEnvironment{
+			ControlPlaneAPI:  fmt.Sprintf("https://%s/api", controlPlaneAddress),
+			AccountName:      getEnvVariableWithDefault(envPDSAccountName, defaultPDSAccountName),
+			TenantName:       getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
+			ProjectName:      getEnvVariableWithDefault(envPDSProjectName, defaultPDSProjectName),
+			LoginCredentials: authConf,
+			PrometheusAPI:    fmt.Sprintf("https://%s/prometheus", controlPlaneAddress),
+		},
 		targetKubeconfig:        mustGetEnvVariable(t, envTargetKubeconfig),
-		pdsAccountName:          getEnvVariableWithDefault(envPDSAccountName, defaultPDSAccountName),
-		pdsTenantName:           getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
-		pdsProjectName:          getEnvVariableWithDefault(envPDSProjectName, defaultPDSProjectName),
 		pdsNamespaceName:        getEnvVariableWithDefault(envPDSNamespaceName, defaultPDSNamespaceName),
 		pdsDeploymentTargetName: getEnvVariableWithDefault(envPDSDeploymentTargetName, defaultPDSDeploymentTargetName),
 		pdsServiceAccountName:   getEnvVariableWithDefault(envPDSServiceAccountName, defaultPDSServiceAccountName),
 		pdsToken:                pdsToken,
-		secrets:                 authConf,
 		backupTarget: backupTargetConfig{
 			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
 			region: mustGetEnvVariable(t, envBackupTargetRegion),

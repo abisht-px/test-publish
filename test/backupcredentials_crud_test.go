@@ -5,7 +5,7 @@ import (
 
 	apiv1 "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
-	"github.com/portworx/pds-integration-test/test/api"
+	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 // Helper functions performing CRUD operations on Control Plane API.

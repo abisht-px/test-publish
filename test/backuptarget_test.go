@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/portworx"
-	"github.com/portworx/pds-integration-test/test/api"
 )
 
 func (s *PDSTestSuite) TestBackupTarget_EmptyBackupTarget_Fail() {

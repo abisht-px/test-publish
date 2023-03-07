@@ -10,8 +10,8 @@ import (
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
+	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/random"
-	"github.com/portworx/pds-integration-test/test/api"
 )
 
 const (

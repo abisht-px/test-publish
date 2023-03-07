@@ -5,7 +5,7 @@ import (
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
-	"github.com/portworx/pds-integration-test/test/api"
+	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 func (s *PDSTestSuite) mustCreateBackupPolicy(name, schedule *string, retention *int32) *pds.ModelsBackupPolicy {

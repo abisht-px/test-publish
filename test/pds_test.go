@@ -23,12 +23,12 @@ import (
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
+	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/auth"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
+	"github.com/portworx/pds-integration-test/internal/prometheus"
 	"github.com/portworx/pds-integration-test/internal/random"
-	"github.com/portworx/pds-integration-test/test/api"
-	"github.com/portworx/pds-integration-test/test/auth"
-	"github.com/portworx/pds-integration-test/test/prometheus"
 )
 
 const (
@@ -146,20 +146,6 @@ func (s *PDSTestSuite) TearDownSuite() {
 	}
 }
 
-func (s *PDSTestSuite) mustCreateUserAPIKey(
-	ctx context.Context, apiClient *pds.APIClient, expiresAt time.Time, name string) *pds.ModelsUserAPIKey {
-	expirationDate := expiresAt.Format(time.RFC3339)
-	requestBody := pds.RequestsCreateUserAPIKeyRequest{
-		ExpiresAt: &expirationDate,
-		Name:      &name,
-	}
-	userApiKey, response, err := apiClient.UserAPIKeyApi.ApiUserApiKeyPost(ctx).Body(requestBody).Execute()
-	api.RequireNoError(s.T(), response, err)
-	s.Require().Equal(response.StatusCode, http.StatusCreated, "user api key was not created as expected")
-
-	return userApiKey
-}
-
 // mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
 func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	metadata, resp, err := s.apiClient.MetadataApi.ApiMetadataGet(s.ctx).Execute()
@@ -182,12 +168,12 @@ func (s *PDSTestSuite) mustHavePDStestAccount(env environment) {
 
 	var testPDSAccountID string
 	for _, account := range accounts.GetData() {
-		if account.GetName() == env.pdsAccountName {
+		if account.GetName() == env.controlPlane.AccountName {
 			testPDSAccountID = account.GetId()
 			break
 		}
 	}
-	s.Require().NotEmpty(testPDSAccountID, "PDS account %s not found.", env.pdsAccountName)
+	s.Require().NotEmpty(testPDSAccountID, "PDS account %s not found.", env.controlPlane.AccountName)
 	s.testPDSAccountID = testPDSAccountID
 }
 
@@ -200,12 +186,12 @@ func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 
 	var testPDSTenantID string
 	for _, tenant := range tenants.GetData() {
-		if tenant.GetName() == env.pdsTenantName {
+		if tenant.GetName() == env.controlPlane.TenantName {
 			testPDSTenantID = tenant.GetId()
 			break
 		}
 	}
-	s.Require().NotEmpty(testPDSTenantID, "PDS tenant %s not found.", env.pdsTenantName)
+	s.Require().NotEmpty(testPDSTenantID, "PDS tenant %s not found.", env.controlPlane.TenantName)
 	s.testPDSTenantID = testPDSTenantID
 }
 
@@ -218,12 +204,12 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 
 	var testPDSProjectID string
 	for _, project := range projects.GetData() {
-		if project.GetName() == env.pdsProjectName {
+		if project.GetName() == env.controlPlane.ProjectName {
 			testPDSProjectID = project.GetId()
 			break
 		}
 	}
-	s.Require().NotEmpty(testPDSProjectID, "PDS project %s not found.", env.pdsProjectName)
+	s.Require().NotEmpty(testPDSProjectID, "PDS project %s not found.", env.controlPlane.ProjectName)
 	s.testPDSProjectID = testPDSProjectID
 }
 
@@ -312,7 +298,7 @@ func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
 }
 
 func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
-	endpointUrl, err := url.Parse(env.controlPlaneAPI)
+	endpointUrl, err := url.Parse(env.controlPlane.ControlPlaneAPI)
 	s.Require().NoError(err, "Cannot parse control plane URL.")
 
 	apiConf := pds.NewConfiguration()
@@ -322,11 +308,11 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 	bearerToken := env.pdsToken
 	if bearerToken == "" {
 		bearerToken, err = auth.GetBearerToken(s.ctx,
-			env.secrets.tokenIssuerURL,
-			env.secrets.issuerClientID,
-			env.secrets.issuerClientSecret,
-			env.secrets.pdsUsername,
-			env.secrets.pdsPassword,
+			env.controlPlane.LoginCredentials.TokenIssuerURL,
+			env.controlPlane.LoginCredentials.IssuerClientID,
+			env.controlPlane.LoginCredentials.IssuerClientSecret,
+			env.controlPlane.LoginCredentials.Username,
+			env.controlPlane.LoginCredentials.Password,
 		)
 		s.Require().NoError(err, "Cannot get bearer token.")
 		env.pdsToken = bearerToken
@@ -342,7 +328,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
-	promAPI, err := prometheus.NewClient(s.config.prometheusAPI, s.testPDSTenantID, s.config.pdsToken)
+	promAPI, err := prometheus.NewClient(s.config.controlPlane.PrometheusAPI, s.testPDSTenantID, s.config.pdsToken)
 	s.Require().NoError(err)
 
 	s.prometheusClient = promAPI
@@ -358,7 +344,7 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	provider, err := helminstaller.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlaneAPI, env.pdsDeploymentTargetName)
+	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
 
 	installer, err := provider.Installer(env.targetKubeconfig, pdsChartConfig)
 	s.Require().NoError(err, "Cannot get agent installer for version constraints %s.", pdsChartConfig.VersionConstraints)
