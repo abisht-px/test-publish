@@ -398,7 +398,7 @@ func (s *PDSTestSuite) mustLoadImageVersions() {
 
 func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) string {
 	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
-	s.Require().NotNil(image, "No image found for deployment %s.", deployment.DataServiceName)
+	s.Require().NotNil(image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 
 	s.setDeploymentDefaults(&deployment)
 

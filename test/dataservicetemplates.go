@@ -53,16 +53,16 @@ var (
 			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
-					CpuRequest:     pointer.StringPtr("0.5"),
-					CpuLimit:       pointer.StringPtr("0.75"),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
 					MemoryRequest:  pointer.StringPtr("1G"),
 					MemoryLimit:    pointer.StringPtr("2G"),
 					StorageRequest: pointer.StringPtr("5G"),
 				},
 				templateNameMed: {
 					Name:           pointer.StringPtr(templateNameMed),
-					CpuRequest:     pointer.StringPtr("0.75"),
-					CpuLimit:       pointer.StringPtr("1"),
+					CpuRequest:     pointer.StringPtr("1"),
+					CpuLimit:       pointer.StringPtr("1.25"),
 					MemoryRequest:  pointer.StringPtr("1500M"),
 					MemoryLimit:    pointer.StringPtr("2500M"),
 					StorageRequest: pointer.StringPtr("5G"),

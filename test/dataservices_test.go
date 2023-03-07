@@ -337,7 +337,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: ShortDeploymentSpec{
-				DataServiceName: dbRabbitMQ,
+				DataServiceName: dbMySQL,
 				ImageVersionTag: "8.0.30",
 				NodeCount:       1,
 			},
@@ -372,7 +372,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				newSpec.ImageVersionTag = targetVersionTag
 				s.mustUpdateDeployment(deploymentID, &newSpec)
 				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
-				s.mustEnsureStatefulSetReady(deploymentID)
+				s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
 				s.mustRunBasicSmokeTest(deploymentID)
