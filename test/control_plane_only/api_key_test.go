@@ -19,7 +19,7 @@ import (
 func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	// Create a user api key.
 	keyName := "test-api-key-" + random.AlphaNumericString(10)
-	expireDate := time.Date(2025, time.January, 1, 1, 1, 1, 1, time.UTC)
+	expireDate := time.Now().AddDate(0, 0, 1)
 	key, err := s.ControlPlane.CreateUserAPIKey(expireDate, keyName, s.ControlPlane.GetDefaultActor())
 	s.Require().NoError(err, "could not create api key")
 	apiKeyAuthCtx := context.Background()
