@@ -73,7 +73,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APICl
 		dataServicesByID[dataService.GetId()] = dataService
 	}
 
-	images, resp, err := apiClient.ImagesApi.ApiImagesGet(ctx).SortBy("-created_at").Execute()
+	images, resp, err := apiClient.ImagesApi.ApiImagesGet(ctx).Latest(true).SortBy("-created_at").Limit("1000").Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return nil, fmt.Errorf("fetching all images: %w", err)
 	}

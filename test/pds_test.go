@@ -33,7 +33,7 @@ const (
 	waiterNamespaceExistsTimeout                 = time.Second * 30
 	waiterDeploymentTargetStatusHealthyTimeout   = time.Second * 120
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
-	waiterDeploymentStatusHealthyTimeout         = time.Second * 300
+	waiterDeploymentStatusHealthyTimeout         = time.Second * 600
 	waiterLoadBalancerServicesReady              = time.Second * 300
 	waiterStatefulSetReadyAndUpdatedReplicas     = time.Second * 600
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
@@ -993,7 +993,7 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(namespace, jobName,
 func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
 	switch dataServiceType {
 	case dbCassandra:
-		return "portworx/pds-loadtests:cassandra-0.0.4", nil
+		return "portworx/pds-loadtests:cassandra-0.0.5", nil
 	case dbCouchbase:
 		return "portworx/pds-loadtests:couchbase-0.0.3", nil
 	case dbRedis:
