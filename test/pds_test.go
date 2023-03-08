@@ -116,7 +116,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
-	s.mustHaveAPIClient(env)
+	s.mustHaveAPIClient(&env)
 	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
@@ -297,7 +297,7 @@ func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
 	s.testPDSAgentToken = token.GetToken()
 }
 
-func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
+func (s *PDSTestSuite) mustHaveAPIClient(env *environment) {
 	endpointUrl, err := url.Parse(env.controlPlane.ControlPlaneAPI)
 	s.Require().NoError(err, "Cannot parse control plane URL.")
 
@@ -328,7 +328,7 @@ func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
-	promAPI, err := prometheus.NewClient(s.config.controlPlane.PrometheusAPI, s.testPDSTenantID, s.config.pdsToken)
+	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.testPDSTenantID, env.pdsToken)
 	s.Require().NoError(err)
 
 	s.prometheusClient = promAPI
