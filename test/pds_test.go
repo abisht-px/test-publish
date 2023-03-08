@@ -34,9 +34,9 @@ import (
 const (
 	waiterShortRetryInterval                     = time.Second * 1
 	waiterRetryInterval                          = time.Second * 10
-	waiterDeploymentTargetNameExistsTimeout      = time.Second * 30
+	waiterDeploymentTargetNameExistsTimeout      = time.Second * 90
 	waiterNamespaceExistsTimeout                 = time.Second * 30
-	waiterDeploymentTargetStatusHealthyTimeout   = time.Second * 120
+	waiterDeploymentTargetStatusHealthyTimeout   = time.Minute * 10
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
 	waiterDeploymentStatusHealthyTimeout         = time.Second * 600
 	waiterLoadBalancerServicesReady              = time.Second * 300
