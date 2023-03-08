@@ -3,6 +3,7 @@ package pds
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -27,29 +28,32 @@ type ActorContext struct {
 	AccountID string
 	TenantID  string
 	ProjectID string
-	AuthCtx   context.Context
+	ApiClient *pdsApi.APIClient
 }
 
 type ControlPlane struct {
 	ApiClient    *pdsApi.APIClient
 	actorContext map[string]ActorContext
+	apiUrl       string
 }
 
-func NewControlPlane(apiClient *pdsApi.APIClient, actorContext ActorContext) *ControlPlane {
+func NewControlPlane(controlPlaneApiUrl string, apiClient *pdsApi.APIClient, actorContext ActorContext) *ControlPlane {
 	cp := ControlPlane{
 		ApiClient: apiClient,
 		actorContext: map[string]ActorContext{
 			DefaultActor: actorContext,
 		},
+		apiUrl: controlPlaneApiUrl,
 	}
 
 	return &cp
 }
 
-func CreateActorContextUsingApiClient(credentials LoginCredentials, accountName string, tenantName string,
+func CreateActorContextUsingApiClient(controlPlaneApiUrl string, credentials LoginCredentials, accountName string, tenantName string,
 	projectName string, apiClient *pdsApi.APIClient) (*ActorContext, error) {
 	cp := ControlPlane{
 		ApiClient: apiClient,
+		apiUrl:    controlPlaneApiUrl,
 	}
 	return cp.CreateActorContext(credentials, accountName, tenantName, projectName)
 }
@@ -66,11 +70,12 @@ func (c *ControlPlane) CreateActorContext(credentials LoginCredentials,
 		return nil, fmt.Errorf("project name can be used only when account name and tenant name is provided too")
 	}
 
-	authContext, err := CreateAuthContext(context.Background(), credentials)
+	apiClient, err := CreateAPIClient(context.Background(), c.apiUrl, credentials)
 	if err != nil {
-		return nil, fmt.Errorf("could not authenticate: %w", err)
+		return nil, err
 	}
-	actorContext := ActorContext{AuthCtx: authContext}
+
+	actorContext := ActorContext{ApiClient: apiClient}
 	if accountName == "" {
 		return &actorContext, nil
 	}
@@ -109,7 +114,7 @@ func (c *ControlPlane) CreateUserAPIKey(expiresAt time.Time, name string,
 		ExpiresAt: &expirationDate,
 		Name:      &name,
 	}
-	userApiKey, response, err := c.ApiClient.UserAPIKeyApi.ApiUserApiKeyPost(actor.AuthCtx).Body(requestBody).Execute()
+	userApiKey, response, err := actor.ApiClient.UserAPIKeyApi.ApiUserApiKeyPost(context.Background()).Body(requestBody).Execute()
 	err = api.ExtractErrorDetails(response, err)
 	if err != nil {
 		return nil, fmt.Errorf("could not create user API key: %w", err)
@@ -123,12 +128,17 @@ func (c *ControlPlane) GetDefaultActor() ActorContext {
 	return c.actorContext[DefaultActor]
 }
 
-func CreateAuthContext(
-	ctx context.Context, credentials LoginCredentials) (context.Context, error) {
+func CreateAPIClient(ctx context.Context, controlPlaneApiUrl string, credentials LoginCredentials) (*pdsApi.APIClient, error) {
+	endpointUrl, err := url.Parse(controlPlaneApiUrl)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse the Control Plane API URL: %w", err)
+	}
+
+	var httpClient *http.Client
 	bearerToken := credentials.BearerToken
 	if bearerToken == "" {
 		var err error
-		bearerToken, err = auth.GetBearerToken(ctx,
+		client, err := auth.GetAuthenticatedClientByPassword(ctx,
 			credentials.TokenIssuerURL,
 			credentials.IssuerClientID,
 			credentials.IssuerClientSecret,
@@ -136,34 +146,26 @@ func CreateAuthContext(
 			credentials.Password,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("could not get bearer token: %w", err)
+			return nil, fmt.Errorf("could not creatre authenticated http client: %w", err)
 		}
-	}
 
-	ctx = context.WithValue(ctx,
-		pdsApi.ContextAPIKeys,
-		map[string]pdsApi.APIKey{
-			"ApiKeyAuth": {Key: bearerToken, Prefix: "Bearer"},
-		})
-	return ctx, nil
-}
-
-func CreateAPIClient(controlPlaneApiUrl string) (*pdsApi.APIClient, error) {
-	endpointUrl, err := url.Parse(controlPlaneApiUrl)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse the Control Plane API URL: %w", err)
+		httpClient = client
+	} else {
+		httpClient = auth.GetAuthenticatedClientByToken(ctx, bearerToken)
 	}
 
 	apiConf := pdsApi.NewConfiguration()
 	apiConf.Host = endpointUrl.Host
 	apiConf.Scheme = endpointUrl.Scheme
+	apiConf.HTTPClient = httpClient
+
 	return pdsApi.NewAPIClient(apiConf), nil
 }
 
 func (c *ControlPlane) GetAccount(
 	accountName string, actor ActorContext) (*pdsApi.ModelsAccount, error) {
 
-	accounts, response, err := c.ApiClient.AccountsApi.ApiAccountsGet(actor.AuthCtx).Execute()
+	accounts, response, err := actor.ApiClient.AccountsApi.ApiAccountsGet(context.Background()).Execute()
 	if err := api.ExtractErrorDetails(response, err); err != nil {
 		return nil, fmt.Errorf("could not get PDS Account name: %w", err)
 	}
@@ -178,7 +180,7 @@ func (c *ControlPlane) GetAccount(
 
 func (c *ControlPlane) GetTenant(tenantName string, actor ActorContext) (*pdsApi.ModelsTenant, error) {
 
-	tenants, response, err := c.ApiClient.TenantsApi.ApiAccountsIdTenantsGet(actor.AuthCtx, actor.AccountID).Execute()
+	tenants, response, err := actor.ApiClient.TenantsApi.ApiAccountsIdTenantsGet(context.Background(), actor.AccountID).Execute()
 	if err := api.ExtractErrorDetails(response, err); err != nil {
 		return nil, fmt.Errorf("could not get PDS Tenant name: %w", err)
 	}
@@ -193,7 +195,7 @@ func (c *ControlPlane) GetTenant(tenantName string, actor ActorContext) (*pdsApi
 
 func (c *ControlPlane) GetProject(projectName string, actor ActorContext) (*pdsApi.ModelsProject, error) {
 
-	projects, response, err := c.ApiClient.ProjectsApi.ApiTenantsIdProjectsGet(actor.AuthCtx, actor.TenantID).Execute()
+	projects, response, err := actor.ApiClient.ProjectsApi.ApiTenantsIdProjectsGet(context.Background(), actor.TenantID).Execute()
 	if err := api.ExtractErrorDetails(response, err); err != nil {
 		return nil, fmt.Errorf("could not get PDS Project name: %w", err)
 	}

@@ -1,6 +1,7 @@
 package control_plane_only
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -21,13 +22,13 @@ func TestControlPlaneTestSuite(t *testing.T) {
 func (s *ControlPlaneTestSuite) SetupSuite() {
 	config := test.MustHaveControlPlaneEnvVariables(s.T())
 
-	apiClient, err := pds.CreateAPIClient(config.ControlPlaneAPI)
+	apiClient, err := pds.CreateAPIClient(context.Background(), config.ControlPlaneAPI, config.LoginCredentials)
 	s.Require().NoError(err, "could not create Control Plane API client")
 
 	actorContext, err := pds.CreateActorContextUsingApiClient(
-		config.LoginCredentials, config.AccountName, config.TenantName, config.ProjectName, apiClient)
+		config.ControlPlaneAPI, config.LoginCredentials, config.AccountName, config.TenantName, config.ProjectName, apiClient)
 	s.Require().NoError(err, "could not create default PDS actor")
 
-	cp := pds.NewControlPlane(apiClient, *actorContext)
+	cp := pds.NewControlPlane(config.ControlPlaneAPI, apiClient, *actorContext)
 	s.ControlPlane = cp
 }

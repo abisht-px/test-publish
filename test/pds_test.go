@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/oauth2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,6 +95,7 @@ type PDSTestSuite struct {
 	testPDSTemplatesMap        map[string]dataServiceTemplateInfo
 	config                     environment
 	imageVersionSpecList       []PDSImageReferenceSpec
+	tokenSource                oauth2.TokenSource
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -116,7 +118,8 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
-	s.mustHaveAPIClient(&env)
+	s.mustHaveAuthorization(env)
+	s.mustHaveAPIClient(env)
 	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
@@ -297,38 +300,39 @@ func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
 	s.testPDSAgentToken = token.GetToken()
 }
 
-func (s *PDSTestSuite) mustHaveAPIClient(env *environment) {
-	endpointUrl, err := url.Parse(env.controlPlane.ControlPlaneAPI)
-	s.Require().NoError(err, "Cannot parse control plane URL.")
-
-	apiConf := pds.NewConfiguration()
-	apiConf.Host = endpointUrl.Host
-	apiConf.Scheme = endpointUrl.Scheme
-
-	bearerToken := env.pdsToken
-	if bearerToken == "" {
-		bearerToken, err = auth.GetBearerToken(s.ctx,
+func (s *PDSTestSuite) mustHaveAuthorization(env environment) {
+	var tokenSource oauth2.TokenSource
+	apiToken := env.pdsToken
+	if apiToken == "" {
+		var err error
+		tokenSource, err = auth.GetTokenSourceByPassword(
+			s.ctx,
 			env.controlPlane.LoginCredentials.TokenIssuerURL,
 			env.controlPlane.LoginCredentials.IssuerClientID,
 			env.controlPlane.LoginCredentials.IssuerClientSecret,
 			env.controlPlane.LoginCredentials.Username,
 			env.controlPlane.LoginCredentials.Password,
 		)
-		s.Require().NoError(err, "Cannot get bearer token.")
-		env.pdsToken = bearerToken
+		s.Require().NoError(err, "Cannot create token source")
+	} else {
+		tokenSource = auth.GetTokenSourceByToken(apiToken)
 	}
 
-	s.ctx = context.WithValue(s.ctx,
-		pds.ContextAPIKeys,
-		map[string]pds.APIKey{
-			"ApiKeyAuth": {Key: bearerToken, Prefix: "Bearer"},
-		})
+	s.tokenSource = tokenSource
+}
 
+func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
+	endpointUrl, err := url.Parse(env.controlPlane.ControlPlaneAPI)
+	s.Require().NoError(err, "Cannot parse control plane URL.")
+	apiConf := pds.NewConfiguration()
+	apiConf.Host = endpointUrl.Host
+	apiConf.Scheme = endpointUrl.Scheme
+	apiConf.HTTPClient = oauth2.NewClient(s.ctx, s.tokenSource)
 	s.apiClient = pds.NewAPIClient(apiConf)
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
-	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.testPDSTenantID, env.pdsToken)
+	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.testPDSTenantID, s.tokenSource)
 	s.Require().NoError(err)
 
 	s.prometheusClient = promAPI
