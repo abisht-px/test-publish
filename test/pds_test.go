@@ -30,6 +30,8 @@ import (
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
 	"github.com/portworx/pds-integration-test/internal/random"
+	"github.com/portworx/pds-integration-test/internal/tests"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 const (
@@ -450,13 +452,10 @@ func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDepl
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
-	s.Require().Eventually(
-		func() bool {
-			return isDeploymentHealthy(s.T(), s.ctx, s.apiClient, deploymentID)
-		},
-		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		"Deployment %s is not healthy.", deploymentID,
-	)
+	wait.For(s.T(), waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+		func(t tests.T) {
+			isDeploymentHealthy(t, s.ctx, s.apiClient, deploymentID)
+		})
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
