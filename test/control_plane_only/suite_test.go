@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/portworx/pds-integration-test/internal/pds"
@@ -20,6 +21,12 @@ func TestControlPlaneTestSuite(t *testing.T) {
 }
 
 func (s *ControlPlaneTestSuite) SetupSuite() {
+	// Try to load .env file from the root of the project.
+	err := godotenv.Load("../../.env")
+	if err == nil {
+		s.T().Log("successfully loaded .env file")
+	}
+
 	config := test.MustHaveControlPlaneEnvVariables(s.T())
 
 	apiClient, err := pds.CreateAPIClient(context.Background(), config.ControlPlaneAPI, config.LoginCredentials)
