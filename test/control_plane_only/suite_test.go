@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/portworx/pds-integration-test/internal/api"
-	"github.com/portworx/pds-integration-test/internal/pds"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/test"
 )
 
 type ControlPlaneTestSuite struct {
 	suite.Suite
-	ControlPlane *pds.ControlPlane
+	ControlPlane *controlplane.ControlPlane
 }
 
 func TestControlPlaneTestSuite(t *testing.T) {
@@ -33,5 +33,5 @@ func (s *ControlPlaneTestSuite) SetupSuite() {
 	apiClient, err := api.NewPDSClient(context.Background(), config.ControlPlaneAPI, config.LoginCredentials)
 	s.Require().NoError(err, "could not create Control Plane API client")
 
-	s.ControlPlane = pds.NewControlPlane(apiClient)
+	s.ControlPlane = controlplane.New(apiClient)
 }
