@@ -42,6 +42,29 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	_, response, _ = apiKeyClient.AccountsApi.ApiAccountsGet(context.Background()).Execute()
 	s.Require().Equal(http.StatusUnauthorized, response.StatusCode)
 
+	// Enable the token again.
+	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
+		pdsApi.RequestsPatchUserAPIKeyRequest{
+			Enabled: pointer.Bool(true),
+		}).Execute()
+	api.RequireNoError(s.T(), response, err)
+	s.Require().Equal(http.StatusOK, response.StatusCode)
+
+	// Try the token: list accounts.
+	paginatedResult, response, err = apiKeyClient.AccountsApi.ApiAccountsGet(context.Background()).Execute()
+	accounts = paginatedResult.GetData()
+	api.RequireNoError(s.T(), response, err)
+	s.Require().Equal(http.StatusOK, response.StatusCode)
+	s.Require().NotEmpty(accounts)
+
+	// Disable the token.
+	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
+		pdsApi.RequestsPatchUserAPIKeyRequest{
+			Enabled: pointer.Bool(false),
+		}).Execute()
+	api.RequireNoError(s.T(), response, err)
+	s.Require().Equal(http.StatusOK, response.StatusCode)
+
 	// Delete the token.
 	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdDelete(context.Background(), *key.Id).Execute()
 	api.RequireNoError(s.T(), response, err)
