@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/portworx/pds-integration-test/internal/pds"
+	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 const (
@@ -72,7 +72,7 @@ type controlPlaneEnvironment struct {
 	AccountName      string
 	TenantName       string
 	ProjectName      string
-	LoginCredentials pds.LoginCredentials
+	LoginCredentials api.LoginCredentials
 	PrometheusAPI    string
 }
 
@@ -88,7 +88,7 @@ type environment struct {
 }
 
 func MustHaveControlPlaneEnvVariables(t *testing.T) controlPlaneEnvironment {
-	credentials := pds.LoginCredentials{
+	credentials := api.LoginCredentials{
 		BearerToken: os.Getenv(envPDSToken),
 	}
 	if credentials.BearerToken == "" {
@@ -114,9 +114,9 @@ func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
 
 	pdsToken := os.Getenv(envPDSToken)
-	var authConf pds.LoginCredentials
+	var authConf api.LoginCredentials
 	if pdsToken == "" {
-		authConf = pds.LoginCredentials{
+		authConf = api.LoginCredentials{
 			TokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
 			IssuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
 			IssuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
