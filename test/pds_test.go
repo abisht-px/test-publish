@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -264,10 +265,11 @@ func (s *PDSTestSuite) mustEventuallyGetNamespaceByName(name, expectedStatus str
 	return foundNamespace
 }
 
-func (s *PDSTestSuite) mustNeverGetNamespaceByName(name string) {
-	s.Require().Never(
+func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
+	require.Never(
+		t,
 		func() bool {
-			namespace := getNamespaceByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+			namespace := getNamespaceByName(t, s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
 			return namespace != nil
 		},
 		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
@@ -388,15 +390,15 @@ func (s *PDSTestSuite) mustLoadImageVersions() {
 	s.imageVersionSpecList = imageVersions
 }
 
-func (s *PDSTestSuite) mustDeployDeploymentSpec(deployment ShortDeploymentSpec) string {
+func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment ShortDeploymentSpec) string {
 	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
-	s.Require().NotNil(image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
+	require.NotNil(t, image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := createPDSDeployment(s.T(), s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
-	s.Require().NoError(err, "Error while creating deployment %s.", deployment.DataServiceName)
-	s.Require().NotEmpty(deploymentID, "Deployment ID is empty.")
+	deploymentID, err := createPDSDeployment(t, s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
+	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
 	return deploymentID
 }
@@ -419,11 +421,11 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
 	}
 }
 
-func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDeploymentSpec) {
+func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, spec *ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
 		image := findImageVersionForRecord(spec, s.imageVersionSpecList)
-		s.Require().NotNil(image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
+		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
 		req.ImageId = &image.ImageID
 	}
@@ -433,40 +435,41 @@ func (s *PDSTestSuite) mustUpdateDeployment(deploymentID string, spec *ShortDepl
 	}
 
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
 		resourceTemplate, err := getResourceSettingsTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
-		s.Require().NoError(err)
+		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
 		appConfigTemplate, err := getAppConfigTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
-		s.Require().NoError(err)
+		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
 
 	_, resp, err = s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
-	api.RequireNoErrorf(s.T(), resp, err, "update %s deployment", deploymentID)
+	api.RequireNoErrorf(t, resp, err, "update %s deployment", deploymentID)
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentHealthy(deploymentID string) {
-	wait.For(s.T(), waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
+func (s *PDSTestSuite) mustEnsureDeploymentHealthy(t *testing.T, deploymentID string) {
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
 		func(t tests.T) {
 			isDeploymentHealthy(t, s.ctx, s.apiClient, deploymentID)
 		})
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
 			if err != nil {
@@ -480,15 +483,16 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReady(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			svcs, err := s.targetCluster.ListServices(s.ctx, namespace, map[string]string{
 				"name": deployment.GetClusterResourceName(),
@@ -514,12 +518,12 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(deploymentID string) 
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
 	if !s.loadBalancerAddressRequiredForTest(dataServiceType) {
@@ -528,16 +532,17 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentI
 	}
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	namespace := namespaceModel.GetName()
 
 	// Collect all CNAME hostnames from DNSEndpoints.
 	hostnames, err := s.targetCluster.GetDNSEndpoints(s.ctx, namespace, deployment.GetClusterResourceName(), "CNAME")
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
 	// Wait until all hosts are accessible (DNS server returns an IP address for all hosts).
 	if len(hostnames) > 0 {
-		s.Require().Eventually(
+		require.Eventually(
+			t,
 			func() bool {
 				dnsIPs := s.mustFlushDNSCache()
 				jobNameSuffix := time.Now().Format("0405") // mmss
@@ -583,7 +588,7 @@ func (s *PDSTestSuite) mustRunHostCheckJob(namespace string, jobNamePrefix, jobN
 
 func (s *PDSTestSuite) mustWaitForHostCheckJobResult(namespace, jobName string) bool {
 	// 1. Wait for the job to finish.
-	s.waitForJobToFinish(namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
+	s.waitForJobToFinish(s.T(), namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
@@ -592,8 +597,9 @@ func (s *PDSTestSuite) mustWaitForHostCheckJobResult(namespace, jobName string) 
 	return job.Status.Succeeded > 0
 }
 
-func (s *PDSTestSuite) waitForJobToFinish(namespace string, jobName string, waitFor time.Duration, tick time.Duration) {
-	s.Require().Eventually(
+func (s *PDSTestSuite) waitForJobToFinish(t *testing.T, namespace string, jobName string, waitFor time.Duration, tick time.Duration) {
+	require.Eventually(
+		t,
 		func() bool {
 			job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
 			return err == nil && (job.Status.Succeeded > 0 || job.Status.Failed > 0)
@@ -603,15 +609,16 @@ func (s *PDSTestSuite) waitForJobToFinish(namespace string, jobName string, wait
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
 			if err != nil {
@@ -626,18 +633,19 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageTag string) {
+func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, imageTag string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
 			if err != nil {
@@ -654,18 +662,19 @@ func (s *PDSTestSuite) mustEnsureStatefulSetImage(deploymentID, imageTag string)
 	)
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
+func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
 	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
 	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
 
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
 			if err != nil {
@@ -686,21 +695,21 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(deploymentID string) {
 	)
 }
 
-func (s *PDSTestSuite) mustCreateBackup(deploymentID, backupTargetID string) *pds.ModelsBackup {
+func (s *PDSTestSuite) mustCreateBackup(t *testing.T, deploymentID, backupTargetID string) *pds.ModelsBackup {
 	requestBody := pds.ControllersCreateDeploymentBackup{
 		BackupLevel:    pointer.String("snapshot"),
 		BackupTargetId: pointer.String(backupTargetID),
 		BackupType:     pointer.String("adhoc"),
 	}
 	backup, resp, err := s.apiClient.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(requestBody).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	return backup
 }
 
-func (s *PDSTestSuite) mustDeleteBackup(backupID string) {
+func (s *PDSTestSuite) mustDeleteBackup(t *testing.T, backupID string) {
 	resp, err := s.apiClient.BackupsApi.ApiBackupsIdDelete(s.ctx, backupID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 }
 
 func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
@@ -718,19 +727,19 @@ func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region 
 	return s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(requestBody).Execute()
 }
 
-func (s *PDSTestSuite) mustCreateS3BackupTarget(backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
+func (s *PDSTestSuite) mustCreateS3BackupTarget(t *testing.T, backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
 	backupTarget, resp, err := s.createS3BackupTarget(backupCredentialsID, bucket, region)
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	return backupTarget
 }
 
-func (s *PDSTestSuite) mustEnsureBackupTargetCreatedInTC(backupTargetID, deploymentTargetID string) {
-	s.mustEnsureBackupTargetEndedInState(backupTargetID, deploymentTargetID, "successful")
+func (s *PDSTestSuite) mustEnsureBackupTargetCreatedInTC(t *testing.T, backupTargetID, deploymentTargetID string) {
+	s.mustEnsureBackupTargetEndedInState(t, backupTargetID, deploymentTargetID, "successful")
 }
 
-func (s *PDSTestSuite) mustEnsureBackupTargetEndedInState(backupTargetID, deploymentTargetID, expectedFinalState string) {
+func (s *PDSTestSuite) mustEnsureBackupTargetEndedInState(t *testing.T, backupTargetID, deploymentTargetID, expectedFinalState string) {
 	s.Eventually(func() bool {
-		backupTargetState := s.mustGetBackupTargetState(backupTargetID, deploymentTargetID)
+		backupTargetState := s.mustGetBackupTargetState(t, backupTargetID, deploymentTargetID)
 		switch backupTargetState.GetState() {
 		case "pending":
 			return false
@@ -745,26 +754,27 @@ func (s *PDSTestSuite) mustEnsureBackupTargetEndedInState(backupTargetID, deploy
 	)
 }
 
-func (s *PDSTestSuite) mustGetBackupTargetState(backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
+func (s *PDSTestSuite) mustGetBackupTargetState(t *testing.T, backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
 	backupTargetStates, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	for _, backupTargetState := range backupTargetStates.GetData() {
 		if backupTargetState.GetDeploymentTargetId() == deploymentTargetID {
 			return backupTargetState
 		}
 	}
-	s.Require().Fail("Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, deploymentTargetID)
+	require.Fail(t, "Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, deploymentTargetID)
 	return pds.ModelsBackupTargetState{}
 }
 
-func (s *PDSTestSuite) mustDeleteBackupTarget(backupTargetID string) {
+func (s *PDSTestSuite) mustDeleteBackupTarget(t *testing.T, backupTargetID string) {
 	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
 	resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
 			return err != nil && resp != nil && resp.StatusCode == http.StatusNotFound
@@ -888,17 +898,18 @@ func (s *PDSTestSuite) deleteApplicationTemplates() {
 	}
 }
 
-func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName string) {
+func (s *PDSTestSuite) mustEnsureBackupSuccessful(t *testing.T, deploymentID, backupName string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
 
 	// 1. Wait for the backup to finish.
-	s.Require().Eventually(
+	require.Eventually(
+		t,
 		func() bool {
 			pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
 			return err == nil && isBackupFinished(pdsBackup)
@@ -909,7 +920,7 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 
 	// 2. Check the result.
 	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
 	if isBackupFailed(pdsBackup) {
 		// Backup failed.
@@ -920,78 +931,78 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(deploymentID, backupName strin
 		}
 		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, backupJobName, s.startTime)
 		if err != nil {
-			s.Require().Fail(fmt.Sprintf("Backup '%s' failed.", backupName))
+			require.Fail(t, fmt.Sprintf("Backup '%s' failed.", backupName))
 		} else {
-			s.Require().Fail(fmt.Sprintf("Backup job '%s' failed. See job logs for more details:", backupJobName), logs)
+			require.Fail(t, fmt.Sprintf("Backup job '%s' failed. See job logs for more details:", backupJobName), logs)
 		}
 	}
-	s.Require().True(isBackupSucceeded(pdsBackup))
+	require.True(t, isBackupSucceeded(pdsBackup))
 }
 
-func (s *PDSTestSuite) mustRunBasicSmokeTest(deploymentID string) {
-	s.mustRunLoadTestJob(deploymentID)
+func (s *PDSTestSuite) mustRunBasicSmokeTest(t *testing.T, deploymentID string) {
+	s.mustRunLoadTestJob(t, deploymentID)
 }
 
-func (s *PDSTestSuite) mustRunLoadTestJob(deploymentID string) {
-	jobNamespace, jobName := s.mustCreateLoadTestJob(deploymentID)
-	s.mustEnsureLoadTestJobSucceeded(jobNamespace, jobName)
-	s.mustEnsureLoadTestJobLogsDoNotContain(jobNamespace, jobName, "ERROR|FATAL")
+func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
+	jobNamespace, jobName := s.mustCreateLoadTestJob(t, deploymentID)
+	s.mustEnsureLoadTestJobSucceeded(t, jobNamespace, jobName)
+	s.mustEnsureLoadTestJobLogsDoNotContain(t, jobNamespace, jobName, "ERROR|FATAL")
 }
 
-func (s *PDSTestSuite) mustCreateLoadTestJob(deploymentID string) (string, string) {
+func (s *PDSTestSuite) mustCreateLoadTestJob(t *testing.T, deploymentID string) (string, string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	deploymentName := deployment.GetClusterResourceName()
 
 	namespace, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
 	dsImage, resp, err := s.apiClient.ImagesApi.ApiImagesIdGet(s.ctx, deployment.GetImageId()).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	dsImageCreatedAt := dsImage.GetCreatedAt()
 
 	jobName := fmt.Sprintf("%s-loadtest-%d", deployment.GetClusterResourceName(), time.Now().Unix())
 
 	image, err := s.mustGetLoadTestJobImage(dataServiceType)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
-	env := s.mustGetLoadTestJobEnv(dataService, dsImageCreatedAt, deploymentName, namespace.GetName(), deployment.NodeCount)
+	env := s.mustGetLoadTestJobEnv(t, dataService, dsImageCreatedAt, deploymentName, namespace.GetName(), deployment.NodeCount)
 
 	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env, nil)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
 	return namespace.GetName(), job.GetName()
 }
 
-func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(namespace, jobName string) {
+func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(t *testing.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	s.waitForJobToFinish(namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
+	s.waitForJobToFinish(t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
 	if job.Status.Failed > 0 {
 		// Job failed.
 		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
 		if err != nil {
-			s.Require().Fail(fmt.Sprintf("Job '%s' failed.", jobName))
+			require.Fail(t, fmt.Sprintf("Job '%s' failed.", jobName))
 		} else {
-			s.Require().Fail(fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
+			require.Fail(t, fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
 		}
 	}
-	s.Require().True(job.Status.Succeeded > 0)
+	require.True(t, job.Status.Succeeded > 0)
 }
 
-func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(namespace, jobName, rePattern string) {
+func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(t *testing.T, namespace, jobName, rePattern string) {
 	logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 	re := regexp.MustCompile(rePattern)
-	s.Require().Nil(re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)
+	require.Nil(t, re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)
 }
 
 func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
@@ -1023,9 +1034,9 @@ func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, 
 	}
 }
 
-func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
+func (s *PDSTestSuite) mustGetLoadTestJobEnv(t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
-	password := s.mustGetDBPassword(namespace, deploymentName)
+	password := s.mustGetDBPassword(t, namespace, deploymentName)
 	env := []corev1.EnvVar{
 		{
 			Name:  "HOST",
@@ -1073,9 +1084,9 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(dataService *pds.ModelsDataService,
 	return env
 }
 
-func (s *PDSTestSuite) mustRemoveDeployment(deploymentID string) {
+func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
 	resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 }
 
 func (s *PDSTestSuite) mustFlushDNSCache() []string {
@@ -1114,8 +1125,9 @@ func (s *PDSTestSuite) mustFlushDNSCache() []string {
 	return newPodIPs
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentRemoved(deploymentID string) {
-	s.Require().Eventually(
+func (s *PDSTestSuite) mustEnsureDeploymentRemoved(t *testing.T, deploymentID string) {
+	require.Eventually(
+		t,
 		func() bool {
 			_, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 			return resp != nil && resp.StatusCode == 404 && err != nil
@@ -1149,10 +1161,10 @@ func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {
 	}
 }
 
-func (s *PDSTestSuite) mustGetDBPassword(namespace, deploymentName string) string {
+func (s *PDSTestSuite) mustGetDBPassword(t *testing.T, namespace, deploymentName string) string {
 	secretName := fmt.Sprintf("%s-creds", deploymentName)
 	secret, err := s.targetCluster.GetSecret(s.ctx, namespace, secretName)
-	s.Require().NoError(err)
+	require.NoError(t, err)
 
 	return string(secret.Data["password"])
 }
@@ -1216,21 +1228,21 @@ func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Durat
 	return s.Eventually(condition, waitFor, tick, msgAndArgs...)
 }
 
-func (s *PDSTestSuite) deletePods(deploymentID string) {
+func (s *PDSTestSuite) deletePods(t *testing.T, deploymentID string) {
 	m := map[string]string{"pds/deployment-id": deploymentID}
 	err := s.targetCluster.DeletePodsBySelector(s.ctx, defaultPDSNamespaceName, m)
-	s.NoError(err, "Cannot delete pods.")
+	require.NoError(t, err, "Cannot delete pods.")
 }
 
-func (s *PDSTestSuite) mustVerifyMetrics(deploymentID string) {
+func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 
 	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
-	s.Require().Contains(dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics")
+	require.Contains(t, dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics")
 	expectedMetrics := dataServiceExpectedMetrics[dataServiceType]
 
 	var missingMetrics []model.LabelValue
@@ -1240,9 +1252,9 @@ func (s *PDSTestSuite) mustVerifyMetrics(deploymentID string) {
 		expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
 
 		queryResult, _, err := s.prometheusClient.Query(s.ctx, expectedMetric.String(), time.Now())
-		s.Require().NoError(err, "prometheus: query error")
+		require.NoError(t, err, "prometheus: query error")
 
-		s.Require().IsType(model.Vector{}, queryResult, "prometheus: wrong result model")
+		require.IsType(t, model.Vector{}, queryResult, "prometheus: wrong result model")
 		queryResultMetrics := queryResult.(model.Vector)
 
 		if len(queryResultMetrics) == 0 {
@@ -1250,5 +1262,5 @@ func (s *PDSTestSuite) mustVerifyMetrics(deploymentID string) {
 		}
 	}
 
-	s.Require().Equalf(len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
+	require.Equalf(t, len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
 }

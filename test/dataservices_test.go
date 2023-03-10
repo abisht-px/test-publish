@@ -3,6 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"testing"
 )
 
 var (
@@ -80,22 +81,22 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 		})
 	}
 }
@@ -164,32 +165,32 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.getImageVersionString()), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.getImageVersionString()), func(t *testing.T) {
+			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.getImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
 
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
 			s3Creds := backupTargetConfig.credentials.s3
-			backupCredentials := s.mustCreateS3BackupCredentials(s3Creds, name)
-			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(backupCredentials.GetId()) })
+			backupCredentials := s.mustCreateS3BackupCredentials(t, s3Creds, name)
+			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(t, backupCredentials.GetId()) })
 
-			backupTarget := s.mustCreateS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-			s.mustEnsureBackupTargetCreatedInTC(backupTarget.GetId(), s.testPDSDeploymentTargetID)
-			s.T().Cleanup(func() { s.mustDeleteBackupTarget(backupTarget.GetId()) })
+			backupTarget := s.mustCreateS3BackupTarget(t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+			s.mustEnsureBackupTargetCreatedInTC(t, backupTarget.GetId(), s.testPDSDeploymentTargetID)
+			s.T().Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
 
-			backup := s.mustCreateBackup(deploymentID, backupTarget.GetId())
-			s.mustEnsureBackupSuccessful(deploymentID, backup.GetClusterResourceName())
-			s.T().Cleanup(func() { s.mustDeleteBackup(backup.GetId()) })
+			backup := s.mustCreateBackup(t, deploymentID, backupTarget.GetId())
+			s.mustEnsureBackupSuccessful(t, deploymentID, backup.GetClusterResourceName())
+			s.T().Cleanup(func() { s.mustDeleteBackup(t, backup.GetId()) })
 		})
 	}
 }
@@ -349,33 +350,33 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		for _, tvt := range testCase.targetVersions {
 			tt := testCase
 			targetVersionTag := tvt
-			s.Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.getImageVersionString(), targetVersionTag), func() {
-				s.T().Parallel()
+			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.getImageVersionString(), targetVersionTag), func(t *testing.T) {
+				t.Parallel()
 
 				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.getImageVersionString())
-				deploymentID := s.mustDeployDeploymentSpec(tt.spec)
+				deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 				s.T().Cleanup(func() {
-					s.mustRemoveDeployment(deploymentID)
-					s.mustEnsureDeploymentRemoved(deploymentID)
+					s.mustRemoveDeployment(t, deploymentID)
+					s.mustEnsureDeploymentRemoved(t, deploymentID)
 				})
 
 				// Create.
-				s.mustEnsureDeploymentHealthy(deploymentID)
-				s.mustEnsureDeploymentInitialized(deploymentID)
-				s.mustEnsureStatefulSetReady(deploymentID)
-				s.mustEnsureLoadBalancerServicesReady(deploymentID)
-				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-				s.mustRunBasicSmokeTest(deploymentID)
+				s.mustEnsureDeploymentHealthy(t, deploymentID)
+				s.mustEnsureDeploymentInitialized(t, deploymentID)
+				s.mustEnsureStatefulSetReady(t, deploymentID)
+				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+				s.mustRunBasicSmokeTest(t, deploymentID)
 
 				// Update.
 				newSpec := tt.spec
 				newSpec.ImageVersionTag = targetVersionTag
-				s.mustUpdateDeployment(deploymentID, &newSpec)
-				s.mustEnsureStatefulSetImage(deploymentID, targetVersionTag)
-				s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
-				s.mustEnsureLoadBalancerServicesReady(deploymentID)
-				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-				s.mustRunBasicSmokeTest(deploymentID)
+				s.mustUpdateDeployment(t, deploymentID, &newSpec)
+				s.mustEnsureStatefulSetImage(t, deploymentID, targetVersionTag)
+				s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+				s.mustRunBasicSmokeTest(t, deploymentID)
 			})
 		}
 	}
@@ -502,32 +503,32 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 
 	for _, testCase := range testCases {
 		tt := testCase
-		s.Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.getImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.getImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func(t *testing.T) {
+			t.Parallel()
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
+			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
-			s.mustUpdateDeployment(deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustUpdateDeployment(t, deploymentID, &updateSpec)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 		})
 	}
 }
@@ -629,32 +630,32 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 
 	for _, testCase := range testCases {
 		tt := testCase
-		s.Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.getImageVersionString()), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.getImageVersionString()), func(t *testing.T) {
+			t.Parallel()
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(tt.spec)
+			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
 			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
-			s.mustUpdateDeployment(deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustUpdateDeployment(t, deploymentID, &updateSpec)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 		})
 	}
 }
@@ -720,27 +721,27 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 			//Delete pods and load test
-			s.deletePods(deploymentID)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.deletePods(t, deploymentID)
+			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 		})
 	}
 }
@@ -807,24 +808,24 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func() {
-			s.T().Parallel()
+		s.T().Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(deployment)
+			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
-				s.mustRemoveDeployment(deploymentID)
-				s.mustEnsureDeploymentRemoved(deploymentID)
+				s.mustRemoveDeployment(t, deploymentID)
+				s.mustEnsureDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(deploymentID)
-			s.mustEnsureDeploymentInitialized(deploymentID)
-			s.mustEnsureStatefulSetReady(deploymentID)
-			s.mustEnsureLoadBalancerServicesReady(deploymentID)
-			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(deploymentID)
-			s.mustRunBasicSmokeTest(deploymentID)
+			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
+			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
+			s.mustRunBasicSmokeTest(t, deploymentID)
 
 			// Try to get DS metrics from prometheus.
-			s.mustVerifyMetrics(deploymentID)
+			s.mustVerifyMetrics(t, deploymentID)
 		})
 	}
 }

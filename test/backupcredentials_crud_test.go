@@ -2,6 +2,7 @@ package test
 
 import (
 	"net/http"
+	"testing"
 
 	apiv1 "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
@@ -10,7 +11,7 @@ import (
 
 // Helper functions performing CRUD operations on Control Plane API.
 
-func (s *PDSTestSuite) mustCreateS3BackupCredentials(s3Creds s3Credentials, credName string) *apiv1.ModelsBackupCredentials {
+func (s *PDSTestSuite) mustCreateS3BackupCredentials(t *testing.T, s3Creds s3Credentials, credName string) *apiv1.ModelsBackupCredentials {
 	credentials := apiv1.ControllersCredentials{
 		S3: &apiv1.ModelsS3Credentials{
 			Endpoint:  &s3Creds.endpoint,
@@ -19,10 +20,10 @@ func (s *PDSTestSuite) mustCreateS3BackupCredentials(s3Creds s3Credentials, cred
 		},
 	}
 
-	return s.mustCreateBackupCredentials(credName, credentials)
+	return s.mustCreateBackupCredentials(t, credName, credentials)
 }
 
-func (s *PDSTestSuite) mustCreateGoogleBackupCredentials(credName string) *apiv1.ModelsBackupCredentials {
+func (s *PDSTestSuite) mustCreateGoogleBackupCredentials(t *testing.T, credName string) *apiv1.ModelsBackupCredentials {
 	myCreds := "{\"creds\": \"fake-creds\"}"
 	credentials := apiv1.ControllersCredentials{
 		Google: &apiv1.ModelsGoogleCredentials{
@@ -31,10 +32,10 @@ func (s *PDSTestSuite) mustCreateGoogleBackupCredentials(credName string) *apiv1
 		},
 	}
 
-	return s.mustCreateBackupCredentials(credName, credentials)
+	return s.mustCreateBackupCredentials(t, credName, credentials)
 }
 
-func (s *PDSTestSuite) mustCreateBackupCredentials(credName string, credentials apiv1.ControllersCredentials) *apiv1.ModelsBackupCredentials {
+func (s *PDSTestSuite) mustCreateBackupCredentials(t *testing.T, credName string, credentials apiv1.ControllersCredentials) *apiv1.ModelsBackupCredentials {
 	backupCreds, httpResp, err := s.createBackupCredentials(credName, credentials)
 	api.RequireNoError(s.T(), httpResp, err)
 
@@ -97,9 +98,9 @@ func (s *PDSTestSuite) updateBackupCredentials(credentialsId string, name string
 		Execute()
 }
 
-func (s *PDSTestSuite) mustDeleteBackupCredentials(backupCredentialsID string) {
+func (s *PDSTestSuite) mustDeleteBackupCredentials(t *testing.T, backupCredentialsID string) {
 	resp, err := s.deleteBackupCredentials(backupCredentialsID)
-	api.RequireNoError(s.T(), resp, err)
+	api.RequireNoError(t, resp, err)
 }
 
 func (s *PDSTestSuite) deleteBackupCredentialsIfExists(backupCredentialsID string) {

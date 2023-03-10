@@ -61,8 +61,8 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 
 	for _, testCase := range testCases {
 		s.Run(testCase.description, func() {
-			createdBackupCreds := s.mustCreateBackupCredentials(credName, testCase.objectStoreCredentials)
-			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(createdBackupCreds.GetId()) })
+			createdBackupCreds := s.mustCreateBackupCredentials(s.T(), credName, testCase.objectStoreCredentials)
+			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
 
 			backupCreds := s.mustGetBackupCredentials(createdBackupCreds.GetId())
 			s.Require().Equal(backupCreds.GetName(), credName)
@@ -103,8 +103,8 @@ func (s *PDSTestSuite) TestBackupCredentials_DuplicateCredentialsCreation_Result
 		},
 	}
 
-	createdBackupCreds := s.mustCreateBackupCredentials(credName, credentials)
-	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(createdBackupCreds.GetId()) })
+	createdBackupCreds := s.mustCreateBackupCredentials(s.T(), credName, credentials)
+	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
 
 	// When.
 	_, httpResponse, err := s.createBackupCredentials(credName, credentials)
@@ -119,8 +119,8 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsNonAssociatedWithTarget_
 	credName := generateRandomName(backupCredPrefix)
 	updatedName := generateRandomName("updated-" + backupCredPrefix)
 	updatedJsonKey := "{\"creds\": \"fake-creds2\"}"
-	createdBackupCreds := s.mustCreateGoogleBackupCredentials(credName)
-	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(createdBackupCreds.GetId()) })
+	createdBackupCreds := s.mustCreateGoogleBackupCredentials(s.T(), credName)
+	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
 
 	backupCreds := s.mustGetBackupCredentials(createdBackupCreds.GetId())
 	s.Require().Equal(backupCreds.GetName(), credName)
@@ -151,13 +151,13 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 		},
 	}
 
-	backupCredentials := s.mustCreateS3BackupCredentials(s3Creds, credName)
-	backupTarget := s.mustCreateS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
+	backupTarget := s.mustCreateS3BackupTarget(s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupTarget(backupTarget.GetId())
-		s.mustDeleteBackupCredentials(backupCredentials.GetId())
+		s.mustDeleteBackupTarget(s.T(), backupTarget.GetId())
+		s.mustDeleteBackupCredentials(s.T(), backupCredentials.GetId())
 	})
-	s.mustEnsureBackupTargetCreatedInTC(backupTarget.GetId(), s.testPDSDeploymentTargetID)
+	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
 
 	// When.
 	_, httpResponse, err := s.updateBackupCredentials(backupCredentials.GetId(), "new-name", updatedCredentials)
@@ -170,10 +170,10 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 func (s *PDSTestSuite) TestBackupCredentials_DeleteCredsNonAssociatedWithTarget_Succeeded() {
 	// Given.
 	credName := generateRandomName(backupCredPrefix)
-	createdBackupCreds := s.mustCreateGoogleBackupCredentials(credName)
+	createdBackupCreds := s.mustCreateGoogleBackupCredentials(s.T(), credName)
 
 	// When.
-	s.mustDeleteBackupCredentials(createdBackupCreds.GetId())
+	s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId())
 
 	// Then.
 	_, httpResponse, _ := s.getBackupCredentials(createdBackupCreds.GetId())
@@ -184,11 +184,11 @@ func (s *PDSTestSuite) TestBackupCredentials_DeleteCredsAssociatedWithTarget_Fai
 	// Given.
 	credName := generateRandomName(backupCredPrefix)
 	s3Creds := s.config.backupTarget.credentials.s3
-	createdBackupCreds := s.mustCreateS3BackupCredentials(s3Creds, credName)
-	createdBackupTarget := s.mustCreateS3BackupTarget(createdBackupCreds.GetId(), s.config.backupTarget.bucket, s.config.backupTarget.region)
+	createdBackupCreds := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
+	createdBackupTarget := s.mustCreateS3BackupTarget(s.T(), createdBackupCreds.GetId(), s.config.backupTarget.bucket, s.config.backupTarget.region)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupTarget(createdBackupTarget.GetId())
-		s.mustDeleteBackupCredentials(createdBackupCreds.GetId())
+		s.mustDeleteBackupTarget(s.T(), createdBackupTarget.GetId())
+		s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId())
 	})
 
 	// When.

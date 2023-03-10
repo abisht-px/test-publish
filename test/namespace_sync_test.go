@@ -1,6 +1,9 @@
 package test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -8,7 +11,6 @@ import (
 )
 
 func (s *PDSTestSuite) TestNamespaceSync_OK() {
-	s.T().Parallel()
 	// Given.
 	namespaceName := "integration-test-" + random.AlphaNumericString(10)
 	namespace := &corev1.Namespace{
@@ -55,8 +57,8 @@ func (s *PDSTestSuite) TestNamespaceSync_MissingLabel() {
 	for _, testcase := range testcases {
 		// Copy testcase to make sure it runs properly in parallel.
 		c := testcase
-		s.Run(c.name, func() {
-			s.T().Parallel()
+		s.T().Run(c.name, func(t *testing.T) {
+			t.Parallel()
 
 			// Given.
 			namespace := &corev1.Namespace{
@@ -69,17 +71,16 @@ func (s *PDSTestSuite) TestNamespaceSync_MissingLabel() {
 			// When.
 			_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
 			s.T().Cleanup(func() { _ = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name) })
-			s.Require().NoError(err)
+			require.NoError(t, err)
 
 			// Then.
-			s.mustNeverGetNamespaceByName(namespace.Name)
+			s.mustNeverGetNamespaceByName(t, namespace.Name)
 		})
 	}
 
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_TerminatingNamespace() {
-	s.T().Parallel()
 	// Given.
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +111,6 @@ func (s *PDSTestSuite) TestNamespaceSync_TerminatingNamespace() {
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_DeleteLabel() {
-	s.T().Parallel()
 	// Given.
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -136,7 +136,6 @@ func (s *PDSTestSuite) TestNamespaceSync_DeleteLabel() {
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_DeleteNamespace() {
-	s.T().Parallel()
 	// Given.
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

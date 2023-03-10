@@ -108,3 +108,20 @@ go test -parallel 2 -test.v ./... -testify.m TestDataService_UpdateImage
 export GOMAXPROCS=2
 go test -test.v ./... -testify.m TestDataService_UpdateImage
 ```
+
+## Development
+
+### Parallel tests
+
+Testify isn’t really safe for parallel test execution within the same suite ([link](https://github.com/stretchr/testify/pull/1322)).
+
+All the tests share the same testing.T instance, so tests start affecting each other in strange
+ ways, and the cleanups can start racing with the suite cleanup, etc.
+
+But we still could mark all subtests as parallel within the parent test, this requires:
+
+* use `s.T().Run(description, func (t *testing.T) {` instead of
+`s.Run(description, func() {` in order to explicitly get the new testing.T instance;
+* any helpers and assertions can’t use the suite’s top-level `s.T()` instance,
+but they have to accept a `*testing.T` parameter. Then the callers either pass
+the separate subtest `t`, or `s.T()` if they’re not inside a subtest.
