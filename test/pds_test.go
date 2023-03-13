@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
@@ -134,7 +135,7 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustHavePDStestAgentToken(env)
 		s.mustInstallAgent(env)
 	}
-	s.mustHavePDStestDeploymentTarget(env)
+	s.waitForPDSTestDeploymentTarget(env)
 	namespace := s.mustEventuallyGetNamespaceByName(env.pdsNamespaceName, "available")
 	s.testPDSNamespaceID = namespace.GetId()
 	s.mustCreateApplicationTemplates()
@@ -219,30 +220,24 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 	s.testPDSProjectID = testPDSProjectID
 }
 
-func (s *PDSTestSuite) mustHavePDStestDeploymentTarget(env environment) {
-	var err error
-	s.requireNowOrEventually(
-		func() bool {
-			s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
-			return err == nil
-		},
-		waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval,
-		"PDS deployment target %q does not exist: %v.", env.pdsDeploymentTargetName, err,
-	)
+func (s *PDSTestSuite) waitForPDSTestDeploymentTarget(env environment) {
+	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
+		var err error
+		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(t, s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
+		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
+	})
 
-	s.requireNowOrEventually(
-		func() bool { return isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
-		waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval,
-		"PDS deployment target %q is not healthy.", s.testPDSDeploymentTargetID,
-	)
+	wait.For(s.T(), waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		err := checkDeploymentTargetHealth(s.ctx, s.apiClient, s.testPDSDeploymentTargetID)
+		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.testPDSDeploymentTargetID)
+	})
 }
 
 func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
-	s.nowOrEventually(
-		func() bool { return !isDeploymentTargetHealthy(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID) },
-		waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval,
-		"PDS deployment target %s is still healthy.", s.testPDSDeploymentTargetID,
-	)
+	wait.For(s.T(), waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		err := checkDeploymentTargetHealth(s.ctx, s.apiClient, s.testPDSDeploymentTargetID)
+		require.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
+	})
 	resp, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
 	api.NoErrorf(s.T(), resp, err, "Deleting deployment target %s.", s.testPDSDeploymentTargetID)
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
@@ -375,10 +370,10 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete storage classes.")
 	err = s.targetCluster.DeleteReleasedPVs(s.ctx)
 	s.NoError(err, "Cannot delete released PVs.")
-	s.nowOrEventually(func() bool {
+	wait.For(s.T(), 5*time.Minute, 10*time.Second, func(t tests.T) {
 		err := s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
-		return err != nil
-	}, 5*time.Minute, 10*time.Second, "Cannot delete detached PX volumes.")
+		assert.NoError(t, err, "Cannot delete detached PX volumes.")
+	})
 	err = s.targetCluster.DeletePXCloudCredentials(s.ctx)
 	s.NoError(err, "Cannot delete PX cloud credentials.")
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/random"
+	"github.com/portworx/pds-integration-test/internal/tests"
 )
 
 const (
@@ -19,15 +20,18 @@ const (
 	pdsDeploymentHealthState       = "Healthy"
 )
 
-func isDeploymentTargetHealthy(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID string) bool {
+func checkDeploymentTargetHealth(ctx context.Context, apiClient *pds.APIClient, deploymentTargetID string) error {
 	target, resp, err := apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, deploymentTargetID).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return false
+	if err != nil {
+		return api.ExtractErrorDetails(resp, err)
 	}
-	return target.GetStatus() == pdsDeploymentTargetHealthState
+	if target.GetStatus() != pdsDeploymentTargetHealthState {
+		return fmt.Errorf("deployment target not healthy: got %q, want %q", target.GetStatus(), pdsDeploymentTargetHealthState)
+	}
+	return nil
 }
 
-func getDeploymentTargetIDByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, deploymentTargetName string) (string, error) {
+func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *pds.APIClient, tenantID, deploymentTargetName string) (string, error) {
 	targets, resp, err := apiClient.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return "", fmt.Errorf("getting deployment targets for tenant %s: %w", tenantID, err)
