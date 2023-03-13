@@ -12,9 +12,6 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/random"
-	"github.com/portworx/pds-integration-test/internal/tests"
-
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -52,15 +49,6 @@ func getNamespaceByName(t *testing.T, ctx context.Context, apiClient *pds.APICli
 		}
 	}
 	return nil
-}
-
-func isDeploymentHealthy(t tests.T, ctx context.Context, apiClient *pds.APIClient, deploymentID string) {
-	deployment, resp, err := apiClient.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
-	err = api.ExtractErrorDetails(resp, err)
-	require.NoError(t, err, "Get deployment %q state", deploymentID)
-
-	healthState := deployment.GetHealth()
-	require.Equal(t, pdsDeploymentHealthState, healthState, "Deployment %q is in state %q", deploymentID, healthState)
 }
 
 func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APIClient) ([]PDSImageReferenceSpec, error) {

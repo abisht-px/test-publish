@@ -454,10 +454,14 @@ func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, s
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentHealthy(t *testing.T, deploymentID string) {
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		func(t tests.T) {
-			isDeploymentHealthy(t, s.ctx, s.apiClient, deploymentID)
-		})
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdStatusGet(s.ctx, deploymentID).Execute()
+		err = api.ExtractErrorDetails(resp, err)
+		require.NoError(t, err, "Getting deployment %q state.", deploymentID)
+
+		healthState := deployment.GetHealth()
+		require.Equal(t, pdsDeploymentHealthState, healthState, "Deployment %q is in state %q.", deploymentID, healthState)
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID string) {
