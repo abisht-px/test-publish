@@ -70,7 +70,7 @@ func (s *PDSTestSuite) TestNamespaceSync_MissingLabel() {
 
 			// When.
 			_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
-			s.T().Cleanup(func() { _ = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name) })
+			t.Cleanup(func() { _ = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name) })
 			require.NoError(t, err)
 
 			// Then.
