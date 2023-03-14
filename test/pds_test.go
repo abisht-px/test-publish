@@ -672,26 +672,15 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentI
 	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
 	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
 
-	require.Eventually(
-		t,
-		func() bool {
-			clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
-			if err != nil {
-				return false
-			}
-			if !isJobSucceeded(clusterInitJob) {
-				return false
-			}
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
+		require.NoErrorf(t, err, "Getting clusterInitJob %s/%s for deployment %s.", namespace, clusterInitJobName, deploymentID)
+		require.Truef(t, isJobSucceeded(clusterInitJob), "CluterInitJob %s/%s for deployment %s not successful.", namespace, clusterInitJobName, deploymentID)
 
-			nodeInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, nodeInitJobName)
-			if err != nil {
-				return false
-			}
-			return isJobSucceeded(nodeInitJob)
-		},
-		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		"Deployment %s is not ready.", deploymentID,
-	)
+		nodeInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, nodeInitJobName)
+		require.NoErrorf(t, err, "Getting nodeInitJob %s/%s for deployment %s.", namespace, nodeInitJobName, deploymentID)
+		require.Truef(t, isJobSucceeded(clusterInitJob), "NodeInitJob %s/%s for deployment %s not successful.", namespace, nodeInitJob, deploymentID)
+	})
 }
 
 func (s *PDSTestSuite) mustCreateBackup(t *testing.T, deploymentID, backupTargetID string) *pds.ModelsBackup {
@@ -1124,16 +1113,13 @@ func (s *PDSTestSuite) mustFlushDNSCache() []string {
 	return newPodIPs
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentRemoved(t *testing.T, deploymentID string) {
-	require.Eventually(
-		t,
-		func() bool {
-			_, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-			return resp != nil && resp.StatusCode == 404 && err != nil
-		},
-		waiterDeploymentStatusRemovedTimeout, waiterRetryInterval,
-		"Deployment %s is not removed.", deploymentID,
-	)
+func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
+	wait.For(t, waiterDeploymentStatusRemovedTimeout, waiterRetryInterval, func(t tests.T) {
+		_, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+		assert.Error(t, err)
+		assert.NotNil(t, resp)
+		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
+	})
 }
 
 func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {

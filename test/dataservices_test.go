@@ -88,7 +88,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.mustEnsureDeploymentHealthy(t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
@@ -172,7 +172,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.mustEnsureDeploymentHealthy(t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
@@ -357,7 +357,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 				s.T().Cleanup(func() {
 					s.mustRemoveDeployment(t, deploymentID)
-					s.mustEnsureDeploymentRemoved(t, deploymentID)
+					s.waitForDeploymentRemoved(t, deploymentID)
 				})
 
 				// Create.
@@ -510,7 +510,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
@@ -637,7 +637,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
@@ -728,7 +728,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.mustEnsureDeploymentHealthy(t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
@@ -815,7 +815,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			s.T().Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
-				s.mustEnsureDeploymentRemoved(t, deploymentID)
+				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.mustEnsureDeploymentHealthy(t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
