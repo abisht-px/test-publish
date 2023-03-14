@@ -889,15 +889,11 @@ func (s *PDSTestSuite) mustEnsureBackupSuccessful(t *testing.T, deploymentID, ba
 	namespace := namespaceModel.GetName()
 
 	// 1. Wait for the backup to finish.
-	require.Eventually(
-		t,
-		func() bool {
-			pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
-			return err == nil && isBackupFinished(pdsBackup)
-		},
-		waiterBackupStatusSucceededTimeout, waiterRetryInterval,
-		"Backup %s for the %s deployment is not finished.", backupName, deploymentID,
-	)
+	wait.For(t, waiterBackupStatusSucceededTimeout, waiterRetryInterval, func(t tests.T) {
+		pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
+		require.NoErrorf(t, err, "Getting backup %s/%s for deployment %s from target cluster.", namespace, backupName, deploymentID)
+		require.Truef(t, isBackupFinished(pdsBackup), "Backup %s for the deployment %s did not finish.", backupName, deploymentID)
+	})
 
 	// 2. Check the result.
 	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
