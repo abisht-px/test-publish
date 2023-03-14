@@ -28,7 +28,7 @@ func (s *PDSTestSuite) TestNamespaceSync_OK() {
 	s.Require().NoError(err)
 
 	// Then.
-	s.mustEventuallyGetNamespaceByName(namespaceName, "available")
+	s.mustWaitForNamespaceStatus(namespaceName, "available")
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_MissingLabel() {
@@ -99,7 +99,7 @@ func (s *PDSTestSuite) TestNamespaceSync_TerminatingNamespace() {
 	s.T().Cleanup(func() { _, _ = s.targetCluster.RemoveNamespaceFinalizers(s.ctx, namespace.Name) })
 	s.Require().NoError(err)
 
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "available")
+	s.mustWaitForNamespaceStatus(namespace.Name, "available")
 
 	// When.
 	// Turn the namespace into 'Terminating' state because of the finalizer.
@@ -107,7 +107,7 @@ func (s *PDSTestSuite) TestNamespaceSync_TerminatingNamespace() {
 	s.Require().NoError(err)
 
 	// Then.
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "unavailable")
+	s.mustWaitForNamespaceStatus(namespace.Name, "unavailable")
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_DeleteLabel() {
@@ -124,7 +124,7 @@ func (s *PDSTestSuite) TestNamespaceSync_DeleteLabel() {
 	createdNamespace, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
 	s.T().Cleanup(func() { _ = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name) })
 	s.Require().NoError(err)
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "available")
+	s.mustWaitForNamespaceStatus(namespace.Name, "available")
 
 	// When.
 	createdNamespace.SetLabels(nil)
@@ -132,7 +132,7 @@ func (s *PDSTestSuite) TestNamespaceSync_DeleteLabel() {
 	s.Require().NoError(err)
 
 	// Then.
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "unavailable")
+	s.mustWaitForNamespaceStatus(namespace.Name, "unavailable")
 }
 
 func (s *PDSTestSuite) TestNamespaceSync_DeleteNamespace() {
@@ -149,12 +149,12 @@ func (s *PDSTestSuite) TestNamespaceSync_DeleteNamespace() {
 	_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
 	s.T().Cleanup(func() { _ = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name) })
 	s.Require().NoError(err)
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "available")
+	s.mustWaitForNamespaceStatus(namespace.Name, "available")
 
 	// When.
 	err = s.targetCluster.DeleteNamespace(s.ctx, namespace.Name)
 	s.Require().NoError(err)
 
 	// Then.
-	s.mustEventuallyGetNamespaceByName(namespace.Name, "unavailable")
+	s.mustWaitForNamespaceStatus(namespace.Name, "unavailable")
 }

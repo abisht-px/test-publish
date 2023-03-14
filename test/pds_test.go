@@ -136,7 +136,7 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustInstallAgent(env)
 	}
 	s.waitForPDSTestDeploymentTarget(env)
-	namespace := s.mustEventuallyGetNamespaceByName(env.pdsNamespaceName, "available")
+	namespace := s.mustWaitForNamespaceStatus(env.pdsNamespaceName, "available")
 	s.testPDSNamespaceID = namespace.GetId()
 	s.mustCreateApplicationTemplates()
 	s.mustCreateStorageOptions()
@@ -243,21 +243,14 @@ func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
 
-func (s *PDSTestSuite) mustEventuallyGetNamespaceByName(name, expectedStatus string) *pds.ModelsNamespace {
-	var foundNamespace *pds.ModelsNamespace
-	s.requireNowOrEventually(
-		func() bool {
-			namespace := getNamespaceByName(s.T(), s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
-			found := namespace != nil && namespace.GetStatus() == expectedStatus
-			if found {
-				foundNamespace = namespace
-			}
-			return found
-		},
-		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
-		"Namespace %s with status %s does not exist.", name, expectedStatus,
-	)
-	return foundNamespace
+func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *pds.ModelsNamespace {
+	var namespace *pds.ModelsNamespace
+	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
+		namespace = getNamespaceByName(t, s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
+		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
+	})
+	return namespace
 }
 
 func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
@@ -1192,16 +1185,6 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	}
 
 	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
-}
-
-// requireNowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
-// This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
-func (s *PDSTestSuite) requireNowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
-	if s.nowOrEventually(condition, waitFor, tick, msgAndArgs...) {
-		return
-	}
-
-	s.T().FailNow()
 }
 
 // nowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.

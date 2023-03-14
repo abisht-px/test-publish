@@ -44,7 +44,7 @@ func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *pds.
 	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
 }
 
-func getNamespaceByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) *pds.ModelsNamespace {
+func getNamespaceByName(t tests.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) *pds.ModelsNamespace {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
 	api.NoError(t, resp, err)
 	for _, namespace := range namespaces.GetData() {
