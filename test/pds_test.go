@@ -715,27 +715,18 @@ func (s *PDSTestSuite) mustCreateS3BackupTarget(t *testing.T, backupCredentialsI
 }
 
 func (s *PDSTestSuite) mustEnsureBackupTargetCreatedInTC(t *testing.T, backupTargetID, deploymentTargetID string) {
-	s.mustEnsureBackupTargetEndedInState(t, backupTargetID, deploymentTargetID, "successful")
+	s.mustWaitForBackupTargetState(t, backupTargetID, deploymentTargetID, "successful")
 }
 
-func (s *PDSTestSuite) mustEnsureBackupTargetEndedInState(t *testing.T, backupTargetID, deploymentTargetID, expectedFinalState string) {
-	s.Eventually(func() bool {
+func (s *PDSTestSuite) mustWaitForBackupTargetState(t *testing.T, backupTargetID, deploymentTargetID, expectedFinalState string) {
+	wait.For(t, waiterBackupTargetSyncedTimeout, waiterShortRetryInterval, func(t tests.T) {
 		backupTargetState := s.mustGetBackupTargetState(t, backupTargetID, deploymentTargetID)
-		switch backupTargetState.GetState() {
-		case "pending":
-			return false
-		case expectedFinalState:
-			return true
-		default:
-			s.Failf("backup target ended up in %s state", backupTargetState.GetState())
-			return false
-		}
-	}, waiterBackupTargetSyncedTimeout, waiterShortRetryInterval,
-		"Backup target %s failed to end up in %s state to deployment target %s", backupTargetID, expectedFinalState, deploymentTargetID,
-	)
+		require.Equalf(t, expectedFinalState, backupTargetState.GetState(),
+			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, deploymentTargetID)
+	})
 }
 
-func (s *PDSTestSuite) mustGetBackupTargetState(t *testing.T, backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
+func (s *PDSTestSuite) mustGetBackupTargetState(t tests.T, backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
 	backupTargetStates, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
 	api.RequireNoError(t, resp, err)
 
@@ -753,16 +744,12 @@ func (s *PDSTestSuite) mustDeleteBackupTarget(t *testing.T, backupTargetID strin
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
 	resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
-
-	require.Eventually(
-		t,
-		func() bool {
-			_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
-			return err != nil && resp != nil && resp.StatusCode == http.StatusNotFound
-		},
-		waiterBackupStatusSucceededTimeout, waiterShortRetryInterval,
-		"Backup target %s is not deleted.", backupTargetID,
-	)
+	wait.For(t, waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
+		_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
+		assert.Error(t, err)
+		assert.NotNil(t, resp)
+		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
+	})
 }
 
 func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
@@ -774,14 +761,12 @@ func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
 	}
 	api.NoError(s.T(), resp, err)
 
-	s.nowOrEventually(
-		func() bool {
-			_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
-			return err != nil && resp != nil && resp.StatusCode == http.StatusNotFound
-		},
-		waiterBackupStatusSucceededTimeout, waiterShortRetryInterval,
-		"Backup target %s is not deleted.", backupTargetID,
-	)
+	wait.For(s.T(), waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
+		_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
+		assert.Error(t, err)
+		assert.NotNil(t, resp)
+		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
+	})
 }
 
 func (s *PDSTestSuite) mustCreateStorageOptions() {
@@ -1181,15 +1166,6 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 	}
 
 	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
-}
-
-// nowOrEventually tries to evaluate the condition immediately, or waits for specified number of time to become truthful.
-// This is useful in cases when the target cluster is already registered to a control plane -> there's no need to wait.
-func (s *PDSTestSuite) nowOrEventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
-	if condition() {
-		return true
-	}
-	return s.Eventually(condition, waitFor, tick, msgAndArgs...)
 }
 
 func (s *PDSTestSuite) deletePods(t *testing.T, deploymentID string) {

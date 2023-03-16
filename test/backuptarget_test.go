@@ -52,7 +52,7 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 
 	// Then.
 	api.RequireNoError(s.T(), response, err)
-	s.mustEnsureBackupTargetEndedInState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID, "failed_create")
+	s.mustWaitForBackupTargetState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID, "failed_create")
 	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
 	s.Require().NotEmpty(backupTargetState.GetErrorDetails())
 	s.Require().NotEmpty(backupTargetState.GetErrorMessage())
