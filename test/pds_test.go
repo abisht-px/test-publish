@@ -460,19 +460,11 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID str
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	require.Eventually(
-		t,
-		func() bool {
-			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-			if err != nil {
-				return false
-			}
-
-			return *set.Spec.Replicas == set.Status.ReadyReplicas
-		},
-		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		"Deployment %s is not ready.", deploymentID,
-	)
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
+		require.Equalf(t, *set.Spec.Replicas, set.Status.ReadyReplicas, "Insufficient ReadyReplicas for deployment %s.", deployment.GetClusterResourceName())
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(t *testing.T, deploymentID string) {
@@ -483,31 +475,21 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(t *testing.T, deploym
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	require.Eventually(
-		t,
-		func() bool {
-			svcs, err := s.targetCluster.ListServices(s.ctx, namespace, map[string]string{
-				"name": deployment.GetClusterResourceName(),
-			})
-			if err != nil {
-				return false
-			}
+	wait.For(t, waiterLoadBalancerServicesReady, waiterRetryInterval, func(t tests.T) {
+		svcs, err := s.targetCluster.ListServices(s.ctx, namespace, map[string]string{
+			"name": deployment.GetClusterResourceName(),
+		})
+		require.NoErrorf(t, err, "Listing services for deployment %s.", deployment.GetClusterResourceName())
 
-			for _, svc := range svcs.Items {
-				if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
-					ingress := svc.Status.LoadBalancer.Ingress
-					if len(ingress) == 0 {
-						// Load balancer is not initialized yet, external address was not assigned yet.
-						return false
-					}
-				}
+		for _, svc := range svcs.Items {
+			if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+				ingress := svc.Status.LoadBalancer.Ingress
+				require.NotEqualf(t, 0, len(ingress),
+					"External ingress for service %s of deployment %s not assigned.",
+					svc.GetClusterName(), deployment.GetClusterResourceName())
 			}
-
-			return true
-		},
-		waiterLoadBalancerServicesReady, waiterRetryInterval,
-		"Load balancers of %s are not ready.", deploymentID,
-	)
+		}
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.T, deploymentID string) {
@@ -601,20 +583,13 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	require.Eventually(
-		t,
-		func() bool {
-			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-			if err != nil {
-				return false
-			}
-
-			// Also check the UpdatedReplicas count, so we are sure that all nodes were restarted after the change.
-			return set.Status.ReadyReplicas == *deployment.NodeCount && set.Status.UpdatedReplicas == *deployment.NodeCount
-		},
-		waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval,
-		"Deployment %s is expected to have %d ready and updated replicas.", deploymentID, *deployment.NodeCount,
-	)
+	wait.For(t, waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval, func(t tests.T) {
+		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
+		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")
+		// Also check the UpdatedReplicas count, so we are sure that all nodes were restarted after the change.
+		require.Equalf(t, *deployment.NodeCount, set.Status.UpdatedReplicas, "UpdatedReplicas don't match desired NodeCount.")
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, imageTag string) {
@@ -628,22 +603,15 @@ func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, im
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	require.Eventually(
-		t,
-		func() bool {
-			set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-			if err != nil {
-				return false
-			}
-			image, err := getDatabaseImage(dataService.GetName(), set)
-			if err != nil {
-				return false
-			}
-			return strings.Contains(image, imageTag)
-		},
-		waiterDeploymentStatusHealthyTimeout, waiterRetryInterval,
-		"Statefulset %s is expected to have %s image tag.", deployment.GetClusterResourceName(), imageTag,
-	)
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
+		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
+
+		image, err := getDatabaseImage(dataService.GetName(), set)
+		require.NoErrorf(t, err, "Getting database image of deployment %s.", deployment.GetClusterResourceName())
+
+		require.Contains(t, image, imageTag, "StatefulSet %s does not contain image tag %q.", deployment.GetClusterResourceName(), imageTag)
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentID string) {
