@@ -44,15 +44,17 @@ func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *pds.
 	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
 }
 
-func getNamespaceByName(t tests.T, ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) *pds.ModelsNamespace {
+func getNamespaceByName(ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) (*pds.ModelsNamespace, error) {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
-	api.NoError(t, resp, err)
+	if err = api.ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("getting namespace %s: %w", name, err)
+	}
 	for _, namespace := range namespaces.GetData() {
 		if namespace.GetName() == name {
-			return &namespace
+			return &namespace, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APIClient) ([]PDSImageReferenceSpec, error) {

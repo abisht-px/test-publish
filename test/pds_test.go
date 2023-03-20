@@ -246,7 +246,8 @@ func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *pds.ModelsNamespace {
 	var namespace *pds.ModelsNamespace
 	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace = getNamespaceByName(t, s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+		namespace, err := getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
 		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
 	})
@@ -257,8 +258,8 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 	require.Never(
 		t,
 		func() bool {
-			namespace := getNamespaceByName(t, s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
-			return namespace != nil
+			namespace, err := getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+			return err != nil && namespace != nil
 		},
 		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
 		"Namespace %s was not expected to be found in control plane.", name,
