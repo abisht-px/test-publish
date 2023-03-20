@@ -533,18 +533,12 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.
 
 	// Wait until all hosts are accessible (DNS server returns an IP address for all hosts).
 	if len(hostnames) > 0 {
-		require.Eventually(
-			t,
-			func() bool {
-				dnsIPs := s.mustFlushDNSCache()
-				jobNameSuffix := time.Now().Format("0405") // mmss
-				jobName := s.mustRunHostCheckJob(namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)
-				hostsAccessible := s.mustWaitForHostCheckJobResult(namespace, jobName)
-				return hostsAccessible
-			},
-			waiterAllHostsAvailableTimeout, waiterRetryInterval,
-			"Failed to wait for all hosts to be available:\n%s", strings.Join(hostnames, "\n"),
-		)
+		wait.For(t, waiterAllHostsAvailableTimeout, waiterRetryInterval, func(t tests.T) {
+			dnsIPs := s.mustFlushDNSCache(t)
+			jobNameSuffix := time.Now().Format("0405") // mmss
+			jobName := s.mustRunHostCheckJob(t, namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)
+			s.mustWaitForJobSuccess(t, namespace, jobName)
+		})
 	}
 }
 
@@ -557,7 +551,7 @@ func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string
 	}
 }
 
-func (s *PDSTestSuite) mustRunHostCheckJob(namespace string, jobNamePrefix, jobNameSuffix string, hosts, dnsIPs []string) string {
+func (s *PDSTestSuite) mustRunHostCheckJob(t tests.T, namespace string, jobNamePrefix, jobNameSuffix string, hosts, dnsIPs []string) string {
 	jobName := fmt.Sprintf("%s-hostcheck-%s", jobNamePrefix, jobNameSuffix)
 	image := "portworx/dnsutils"
 	env := []corev1.EnvVar{{
@@ -574,31 +568,29 @@ func (s *PDSTestSuite) mustRunHostCheckJob(namespace string, jobNamePrefix, jobN
 	}
 
 	job, err := s.targetCluster.CreateJob(s.ctx, namespace, jobName, image, env, cmd)
-	s.Require().NoError(err)
+	require.NoErrorf(t, err, "Creating job %s/%s on target cluster.", namespace, jobName)
 	return job.GetName()
 }
 
-func (s *PDSTestSuite) mustWaitForHostCheckJobResult(namespace, jobName string) bool {
+func (s *PDSTestSuite) mustWaitForJobSuccess(t tests.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	s.waitForJobToFinish(s.T(), namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
+	s.mustWaitForJobToFinish(t, namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-	s.Require().NoError(err)
-
-	return job.Status.Succeeded > 0
+	require.NoErrorf(t, err, "Getting job %s/%s from target cluster.", namespace, jobName)
+	require.Greaterf(t, job.Status.Succeeded, 0, "Job %s/%s did not succeed.", namespace, jobName)
 }
 
-func (s *PDSTestSuite) waitForJobToFinish(t *testing.T, namespace string, jobName string, waitFor time.Duration, tick time.Duration) {
-	require.Eventually(
-		t,
-		func() bool {
-			job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-			return err == nil && (job.Status.Succeeded > 0 || job.Status.Failed > 0)
-		},
-		waitFor, tick,
-		"Failed to wait for job %s to finish.", jobName,
-	)
+func (s *PDSTestSuite) mustWaitForJobToFinish(t tests.T, namespace string, jobName string, timeout time.Duration, tick time.Duration) {
+	wait.For(t, timeout, tick, func(t tests.T) {
+		job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
+		require.NoErrorf(t, err, "Getting %s/%s job from target cluster.", namespace, jobName)
+		require.Truef(t,
+			job.Status.Succeeded > 0 || job.Status.Failed > 0,
+			"Job did not finish (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
+		)
+	})
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T, deploymentID string) {
@@ -942,7 +934,7 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(t *testing.T, deploymentID string) 
 
 func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(t *testing.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	s.waitForJobToFinish(t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
+	s.mustWaitForJobToFinish(t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
@@ -1051,33 +1043,29 @@ func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
 	api.RequireNoError(t, resp, err)
 }
 
-func (s *PDSTestSuite) mustFlushDNSCache() []string {
+func (s *PDSTestSuite) mustFlushDNSCache(t tests.T) []string {
 	// Restarts CoreDNS pods to flush DNS cache:
 	// kubectl delete pods -l k8s-app=kube-dns -n kube-system
 	namespace := "kube-system"
 	selector := map[string]string{"k8s-app": "kube-dns"}
 	err := s.targetCluster.DeletePodsBySelector(s.ctx, namespace, selector)
-	s.Require().NoError(err, "Failed to delete coredns pods")
+	require.NoError(t, err, "Failed to delete CoreDNS pods")
 
 	// Wait for CoreDNS pods to be fully restarted.
-	s.Require().Eventually(
-		func() bool {
-			set, err := s.targetCluster.ListDeployments(s.ctx, namespace, selector)
-			if err != nil || len(set.Items) != 1 {
-				return false
-			}
+	wait.For(t, waiterCoreDNSRestartedTimeout, waiterShortRetryInterval, func(t tests.T) {
+		set, err := s.targetCluster.ListDeployments(s.ctx, namespace, selector)
+		require.NoError(t, err, "Listing CoreDNS deployments from target cluster.")
+		require.Len(t, set.Items, 1, "Expected a single CoreDNS deployment.")
 
-			d := set.Items[0]
-			replicas := d.Status.Replicas
-			return d.Status.ReadyReplicas == replicas && d.Status.UpdatedReplicas == replicas
-		},
-		waiterCoreDNSRestartedTimeout, waiterShortRetryInterval,
-		"Failed to wait for CoreDNS pods to be restarted.",
-	)
+		deployment := set.Items[0]
+		replicas := deployment.Status.Replicas
+		require.Equalf(t, replicas, deployment.Status.ReadyReplicas, "Not all replicas of deployment %s are ready.", deployment.ClusterName)
+		require.Equalf(t, replicas, deployment.Status.UpdatedReplicas, "Not all replicas of deployment %s are updated.", deployment.ClusterName)
+	})
 
 	// Get and return new CoreDNS pod IPs.
 	pods, err := s.targetCluster.ListPods(s.ctx, namespace, selector)
-	s.Require().NoError(err, "Failed to get CoreDNS pods")
+	require.NoError(t, err, "Failed to get CoreDNS pods")
 	var newPodIPs []string
 	for _, pod := range pods.Items {
 		if len(pod.Status.PodIP) > 0 && pod.Status.ContainerStatuses[0].Ready {
