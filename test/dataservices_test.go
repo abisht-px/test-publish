@@ -86,7 +86,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 
 			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
@@ -170,7 +170,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
@@ -182,15 +182,15 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			backupTargetConfig := s.config.backupTarget
 			s3Creds := backupTargetConfig.credentials.s3
 			backupCredentials := s.mustCreateS3BackupCredentials(t, s3Creds, name)
-			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(t, backupCredentials.GetId()) })
+			t.Cleanup(func() { s.mustDeleteBackupCredentials(t, backupCredentials.GetId()) })
 
 			backupTarget := s.mustCreateS3BackupTarget(t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 			s.mustEnsureBackupTargetCreatedInTC(t, backupTarget.GetId(), s.testPDSDeploymentTargetID)
-			s.T().Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
+			t.Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
 
 			backup := s.mustCreateBackup(t, deploymentID, backupTarget.GetId())
 			s.mustEnsureBackupSuccessful(t, deploymentID, backup.GetClusterResourceName())
-			s.T().Cleanup(func() { s.mustDeleteBackup(t, backup.GetId()) })
+			t.Cleanup(func() { s.mustDeleteBackup(t, backup.GetId()) })
 		})
 	}
 }
@@ -355,7 +355,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 
 				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.getImageVersionString())
 				deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
-				s.T().Cleanup(func() {
+				t.Cleanup(func() {
 					s.mustRemoveDeployment(t, deploymentID)
 					s.waitForDeploymentRemoved(t, deploymentID)
 				})
@@ -508,7 +508,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
@@ -635,7 +635,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
@@ -726,7 +726,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 
 			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
@@ -813,7 +813,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
-			s.T().Cleanup(func() {
+			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
