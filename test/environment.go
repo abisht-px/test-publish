@@ -88,6 +88,8 @@ type environment struct {
 }
 
 func MustHaveControlPlaneEnvVariables(t *testing.T) controlPlaneEnvironment {
+	t.Helper()
+
 	credentials := api.LoginCredentials{
 		BearerToken: os.Getenv(envPDSToken),
 	}
@@ -112,36 +114,13 @@ func MustHaveControlPlaneEnvVariables(t *testing.T) controlPlaneEnvironment {
 
 func mustHaveEnvVariables(t *testing.T) environment {
 	t.Helper()
-
-	pdsToken := os.Getenv(envPDSToken)
-	var authConf api.LoginCredentials
-	if pdsToken == "" {
-		authConf = api.LoginCredentials{
-			TokenIssuerURL:     mustGetEnvVariable(t, envSecretTokenIssuerURL),
-			IssuerClientID:     mustGetEnvVariable(t, envSecretIssuerClientID),
-			IssuerClientSecret: mustGetEnvVariable(t, envSecretIssuerClientSecret),
-			Username:           mustGetEnvVariable(t, envSecretPDSUsername),
-			Password:           mustGetEnvVariable(t, envSecretPDSPassword),
-		}
-	}
-
-	controlPlaneAddress := mustGetEnvVariable(t, envControlPlaneAddress)
-	controlPlaneAddress = mustCleanAddress(t, controlPlaneAddress)
-
 	return environment{
-		controlPlane: controlPlaneEnvironment{
-			ControlPlaneAPI:  fmt.Sprintf("https://%s/api", controlPlaneAddress),
-			AccountName:      getEnvVariableWithDefault(envPDSAccountName, defaultPDSAccountName),
-			TenantName:       getEnvVariableWithDefault(envPDSTenantName, defaultPDSTenantName),
-			ProjectName:      getEnvVariableWithDefault(envPDSProjectName, defaultPDSProjectName),
-			LoginCredentials: authConf,
-			PrometheusAPI:    fmt.Sprintf("https://%s/prometheus", controlPlaneAddress),
-		},
+		controlPlane:            MustHaveControlPlaneEnvVariables(t),
 		targetKubeconfig:        mustGetEnvVariable(t, envTargetKubeconfig),
 		pdsNamespaceName:        getEnvVariableWithDefault(envPDSNamespaceName, defaultPDSNamespaceName),
 		pdsDeploymentTargetName: getEnvVariableWithDefault(envPDSDeploymentTargetName, defaultPDSDeploymentTargetName),
 		pdsServiceAccountName:   getEnvVariableWithDefault(envPDSServiceAccountName, defaultPDSServiceAccountName),
-		pdsToken:                pdsToken,
+		pdsToken:                os.Getenv(envPDSToken),
 		backupTarget: backupTargetConfig{
 			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
 			region: mustGetEnvVariable(t, envBackupTargetRegion),
