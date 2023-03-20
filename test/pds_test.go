@@ -82,7 +82,6 @@ type PDSTestSuite struct {
 	startTime time.Time
 
 	targetCluster              *targetcluster.TargetCluster
-	targetClusterKubeconfig    string
 	apiClient                  *pds.APIClient
 	prometheusClient           prometheusv1.API
 	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
@@ -119,7 +118,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
 	s.config = env
-	s.targetClusterKubeconfig = env.targetKubeconfig
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHaveAuthorization(env)
