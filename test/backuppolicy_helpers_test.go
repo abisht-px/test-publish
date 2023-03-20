@@ -27,18 +27,18 @@ func (s *PDSTestSuite) createBackupPolicy(name, schedule *string, retention *int
 			},
 		},
 	}
-	return s.apiClient.BackupPoliciesApi.ApiTenantsIdBackupPoliciesPost(s.ctx, s.testPDSTenantID).Body(requestBody).Execute()
+	return s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesPost(s.ctx, s.testPDSTenantID).Body(requestBody).Execute()
 }
 
 func (s *PDSTestSuite) mustListBackupPolicy(backupPolicyID string) *pds.ModelsBackupPolicy {
-	backupPolicy, resp, err := s.apiClient.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(s.ctx, s.testPDSTenantID).Id2(backupPolicyID).Execute()
+	backupPolicy, resp, err := s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(s.ctx, s.testPDSTenantID).Id2(backupPolicyID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(backupPolicy)
 	return &backupPolicy.Data[0]
 }
 
 func (s *PDSTestSuite) mustGetBackupPolicy(backupPolicyID string) *pds.ModelsBackupPolicy {
-	backupPolicy, resp, err := s.apiClient.BackupPoliciesApi.ApiBackupPoliciesIdGet(s.ctx, backupPolicyID).Execute()
+	backupPolicy, resp, err := s.controlPlane.API.BackupPoliciesApi.ApiBackupPoliciesIdGet(s.ctx, backupPolicyID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotNil(backupPolicy)
 	return backupPolicy
@@ -62,7 +62,7 @@ func (s *PDSTestSuite) updateBackupPolicy(backupPolicyID string, name, schedule 
 			},
 		},
 	}
-	return s.apiClient.BackupPoliciesApi.ApiBackupPoliciesIdPut(s.ctx, backupPolicyID).Body(requestBody).Execute()
+	return s.controlPlane.API.BackupPoliciesApi.ApiBackupPoliciesIdPut(s.ctx, backupPolicyID).Body(requestBody).Execute()
 }
 
 func (s *PDSTestSuite) mustDeleteBackupPolicy(backupPolicyID string) {
@@ -71,5 +71,5 @@ func (s *PDSTestSuite) mustDeleteBackupPolicy(backupPolicyID string) {
 }
 
 func (s *PDSTestSuite) deleteBackupPolicy(backupPolicyID string) (*http.Response, error) {
-	return s.apiClient.BackupPoliciesApi.ApiBackupPoliciesIdDelete(s.ctx, backupPolicyID).Execute()
+	return s.controlPlane.API.BackupPoliciesApi.ApiBackupPoliciesIdDelete(s.ctx, backupPolicyID).Execute()
 }

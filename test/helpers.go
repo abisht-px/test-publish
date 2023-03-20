@@ -20,7 +20,7 @@ const (
 	pdsDeploymentHealthState       = "Healthy"
 )
 
-func checkDeploymentTargetHealth(ctx context.Context, apiClient *pds.APIClient, deploymentTargetID string) error {
+func checkDeploymentTargetHealth(ctx context.Context, apiClient *api.PDSClient, deploymentTargetID string) error {
 	target, resp, err := apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, deploymentTargetID).Execute()
 	if err != nil {
 		return api.ExtractErrorDetails(resp, err)
@@ -31,7 +31,7 @@ func checkDeploymentTargetHealth(ctx context.Context, apiClient *pds.APIClient, 
 	return nil
 }
 
-func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *pds.APIClient, tenantID, deploymentTargetName string) (string, error) {
+func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *api.PDSClient, tenantID, deploymentTargetName string) (string, error) {
 	targets, resp, err := apiClient.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return "", fmt.Errorf("getting deployment targets for tenant %s: %w", tenantID, err)
@@ -44,7 +44,7 @@ func getDeploymentTargetIDByName(t tests.T, ctx context.Context, apiClient *pds.
 	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
 }
 
-func getNamespaceByName(ctx context.Context, apiClient *pds.APIClient, deploymentTargetID, name string) (*pds.ModelsNamespace, error) {
+func getNamespaceByName(ctx context.Context, apiClient *api.PDSClient, deploymentTargetID, name string) (*pds.ModelsNamespace, error) {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return nil, fmt.Errorf("getting namespace %s: %w", name, err)
@@ -57,7 +57,7 @@ func getNamespaceByName(ctx context.Context, apiClient *pds.APIClient, deploymen
 	return nil, nil
 }
 
-func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *pds.APIClient) ([]PDSImageReferenceSpec, error) {
+func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *api.PDSClient) ([]PDSImageReferenceSpec, error) {
 	var records []PDSImageReferenceSpec
 
 	dataServices, resp, err := apiClient.DataServicesApi.ApiDataServicesGet(ctx).Execute()
@@ -108,7 +108,7 @@ func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImag
 	return nil
 }
 
-func getResourceSettingsTemplateByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, templateName, dataServiceID string) (*pds.ModelsResourceSettingsTemplate, error) {
+func getResourceSettingsTemplateByName(t *testing.T, ctx context.Context, apiClient *api.PDSClient, tenantID, templateName, dataServiceID string) (*pds.ModelsResourceSettingsTemplate, error) {
 	resources, resp, err := apiClient.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func getResourceSettingsTemplateByName(t *testing.T, ctx context.Context, apiCli
 	return nil, fmt.Errorf("resource settings template %s not found", templateName)
 }
 
-func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *pds.APIClient, tenantID, templateName, dataServiceID string) (*pds.ModelsApplicationConfigurationTemplate, error) {
+func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *api.PDSClient, tenantID, templateName, dataServiceID string) (*pds.ModelsApplicationConfigurationTemplate, error) {
 	appConfigurations, resp, err := apiClient.ApplicationConfigurationTemplatesApi.ApiTenantsIdApplicationConfigurationTemplatesGet(ctx, tenantID).Name(templateName).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *pd
 	return nil, fmt.Errorf("application configuration template %s not found", templateName)
 }
 
-func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *pds.APIClient, deployment *ShortDeploymentSpec, image *PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
+func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *api.PDSClient, deployment *ShortDeploymentSpec, image *PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
 	resource, err := getResourceSettingsTemplateByName(t, ctx, apiClient, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
 	if err != nil {
 		return "", err

@@ -43,7 +43,7 @@ func (s *PDSTestSuite) mustCreateBackupCredentials(t *testing.T, credName string
 }
 
 func (s *PDSTestSuite) createBackupCredentials(credName string, credentials apiv1.ControllersCredentials) (*apiv1.ModelsBackupCredentials, *http.Response, error) {
-	return s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, s.testPDSTenantID).
+	return s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, s.testPDSTenantID).
 		Body(apiv1.ControllersCreateBackupCredentialsRequest{Credentials: &credentials, Name: &credName}).
 		Execute()
 }
@@ -56,18 +56,18 @@ func (s *PDSTestSuite) mustGetBackupCredentials(credentialsId string) *apiv1.Mod
 }
 
 func (s *PDSTestSuite) getBackupCredentials(credentialsId string) (*apiv1.ModelsBackupCredentials, *http.Response, error) {
-	return s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdGet(s.ctx, credentialsId).Execute()
+	return s.controlPlane.API.BackupCredentialsApi.ApiBackupCredentialsIdGet(s.ctx, credentialsId).Execute()
 }
 
 func (s *PDSTestSuite) mustGetBackupCredentialsNoSecrets(credentialsId string) *apiv1.ControllersPartialCredentials {
-	cloudConfig, httpResp, err := s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdCredentialsGet(s.ctx, credentialsId).Execute()
+	cloudConfig, httpResp, err := s.controlPlane.API.BackupCredentialsApi.ApiBackupCredentialsIdCredentialsGet(s.ctx, credentialsId).Execute()
 	api.RequireNoError(s.T(), httpResp, err)
 
 	return cloudConfig
 }
 
 func (s *PDSTestSuite) mustListBackupCredentials() []apiv1.ModelsBackupCredentials {
-	backupCredList, httpResp, err := s.apiClient.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, s.testPDSTenantID).Execute()
+	backupCredList, httpResp, err := s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, s.testPDSTenantID).Execute()
 	api.RequireNoError(s.T(), httpResp, err)
 
 	return backupCredList.GetData()
@@ -93,7 +93,7 @@ func (s *PDSTestSuite) updateGoogleBackupCredentials(credentialsId string, name 
 }
 
 func (s *PDSTestSuite) updateBackupCredentials(credentialsId string, name string, credentials apiv1.ControllersCredentials) (*apiv1.ModelsBackupCredentials, *http.Response, error) {
-	return s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdPut(s.ctx, credentialsId).
+	return s.controlPlane.API.BackupCredentialsApi.ApiBackupCredentialsIdPut(s.ctx, credentialsId).
 		Body(apiv1.ControllersUpdateBackupCredentialsRequest{Credentials: &credentials, Name: &name}).
 		Execute()
 }
@@ -112,5 +112,5 @@ func (s *PDSTestSuite) deleteBackupCredentialsIfExists(backupCredentialsID strin
 }
 
 func (s *PDSTestSuite) deleteBackupCredentials(backupCredentialsID string) (*http.Response, error) {
-	return s.apiClient.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, backupCredentialsID).Execute()
+	return s.controlPlane.API.BackupCredentialsApi.ApiBackupCredentialsIdDelete(s.ctx, backupCredentialsID).Execute()
 }

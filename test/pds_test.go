@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/auth"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
@@ -81,8 +81,8 @@ type PDSTestSuite struct {
 	ctx       context.Context
 	startTime time.Time
 
+	controlPlane               *controlplane.ControlPlane
 	targetCluster              *targetcluster.TargetCluster
-	apiClient                  *pds.APIClient
 	prometheusClient           prometheusv1.API
 	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
 	pdsHelmChartVersion        string
@@ -121,7 +121,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHaveAuthorization(env)
-	s.mustHaveAPIClient(env)
+	s.mustHaveControlPlane(env)
 	s.mustHavePDSMetadata(env)
 	s.mustHavePDStestAccount(env)
 	s.mustHavePDStestTenant(env)
@@ -152,7 +152,7 @@ func (s *PDSTestSuite) TearDownSuite() {
 
 // mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
 func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
-	metadata, resp, err := s.apiClient.MetadataApi.ApiMetadataGet(s.ctx).Execute()
+	metadata, resp, err := s.controlPlane.API.MetadataApi.ApiMetadataGet(s.ctx).Execute()
 	api.RequireNoError(s.T(), resp, err)
 
 	// If user didn't specify the helm chart version, let's use the one configured in PDS API.
@@ -166,7 +166,7 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 // mustHavePDStestAccount finds PDS account with name set in envrionment and stores its ID as "Test PDS Account".
 func (s *PDSTestSuite) mustHavePDStestAccount(env environment) {
 	// TODO: Use account name query filters
-	accounts, resp, err := s.apiClient.AccountsApi.ApiAccountsGet(s.ctx).Execute()
+	accounts, resp, err := s.controlPlane.API.AccountsApi.ApiAccountsGet(s.ctx).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(accounts, "PDS API must return at least one account.")
 
@@ -184,7 +184,7 @@ func (s *PDSTestSuite) mustHavePDStestAccount(env environment) {
 // mustHavePDStestTenant finds PDS tenant in Test PDS Account with name set in environment and stores its ID as "Test PDS Tenant".
 func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 	// TODO: Use tenant name query filters
-	tenants, resp, err := s.apiClient.TenantsApi.ApiAccountsIdTenantsGet(s.ctx, s.testPDSAccountID).Execute()
+	tenants, resp, err := s.controlPlane.API.TenantsApi.ApiAccountsIdTenantsGet(s.ctx, s.testPDSAccountID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(tenants, "PDS API must return at least one tenant.")
 
@@ -202,7 +202,7 @@ func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 // mustHavePDStestProject finds PDS project in Test PDS Tenant with name set in environment and stores its ID as "Test PDS Project".
 func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 	// TODO: Use project name query filters
-	projects, resp, err := s.apiClient.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.testPDSTenantID).Execute()
+	projects, resp, err := s.controlPlane.API.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.testPDSTenantID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(projects, "PDS API must return at least one project.")
 
@@ -220,22 +220,22 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
 		var err error
-		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(t, s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
+		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(t, s.ctx, s.controlPlane.API, s.testPDSTenantID, env.pdsDeploymentTargetName)
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
 	})
 
 	wait.For(s.T(), waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := checkDeploymentTargetHealth(s.ctx, s.apiClient, s.testPDSDeploymentTargetID)
+		err := checkDeploymentTargetHealth(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.testPDSDeploymentTargetID)
 	})
 }
 
 func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	wait.For(s.T(), waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := checkDeploymentTargetHealth(s.ctx, s.apiClient, s.testPDSDeploymentTargetID)
+		err := checkDeploymentTargetHealth(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID)
 		require.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
 	})
-	resp, err := s.apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
+	resp, err := s.controlPlane.API.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
 	api.NoErrorf(s.T(), resp, err, "Deleting deployment target %s.", s.testPDSDeploymentTargetID)
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
@@ -252,7 +252,7 @@ func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *
 		err       error
 	)
 	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace, err = getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+		namespace, err = getNamespaceByName(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
 		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
@@ -264,7 +264,7 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 	require.Never(
 		t,
 		func() bool {
-			namespace, err := getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+			namespace, err := getNamespaceByName(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID, name)
 			return err != nil && namespace != nil
 		},
 		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
@@ -275,7 +275,7 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 // mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".
 func (s *PDSTestSuite) mustHavePDStestServiceAccount(env environment) {
 	// TODO: Use service account name query filters
-	serviceAccounts, resp, err := s.apiClient.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(s.ctx, s.testPDSTenantID).Execute()
+	serviceAccounts, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(s.ctx, s.testPDSTenantID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(serviceAccounts, "PDS API must return at least one tenant.")
 
@@ -292,7 +292,7 @@ func (s *PDSTestSuite) mustHavePDStestServiceAccount(env environment) {
 
 // mustHavePDStestAgentToken gets "Test PDS Service Account" and stores its Token as "Test PDS Agent Token".
 func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
-	token, resp, err := s.apiClient.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(s.ctx, s.testPDSServiceAccountID).Execute()
+	token, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(s.ctx, s.testPDSServiceAccountID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().Equal(200, resp.StatusCode, "PDS API must return HTTP 200.")
 
@@ -320,14 +320,11 @@ func (s *PDSTestSuite) mustHaveAuthorization(env environment) {
 	s.tokenSource = tokenSource
 }
 
-func (s *PDSTestSuite) mustHaveAPIClient(env environment) {
-	endpointUrl, err := url.Parse(env.controlPlane.ControlPlaneAPI)
-	s.Require().NoError(err, "Cannot parse control plane URL.")
-	apiConf := pds.NewConfiguration()
-	apiConf.Host = endpointUrl.Host
-	apiConf.Scheme = endpointUrl.Scheme
-	apiConf.HTTPClient = oauth2.NewClient(s.ctx, s.tokenSource)
-	s.apiClient = pds.NewAPIClient(apiConf)
+func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
+	apiClient, err := api.NewPDSClient(context.Background(), env.controlPlane.ControlPlaneAPI, env.controlPlane.LoginCredentials)
+	s.Require().NoError(err, "Could not create Control Plane API client.")
+
+	s.controlPlane = controlplane.New(apiClient)
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
@@ -379,7 +376,7 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {
-	imageVersions, err := getAllImageVersions(s.T(), s.ctx, s.apiClient)
+	imageVersions, err := getAllImageVersions(s.T(), s.ctx, s.controlPlane.API)
 	s.Require().NoError(err, "Error while reading image versions.")
 	s.Require().NotEmpty(imageVersions, "No image versions found.")
 	s.imageVersionSpecList = imageVersions
@@ -391,7 +388,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment ShortDe
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := createPDSDeployment(t, s.ctx, s.apiClient, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	deploymentID, err := createPDSDeployment(t, s.ctx, s.controlPlane.API, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
@@ -429,28 +426,28 @@ func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, s
 		req.NodeCount = &nodeCount
 	}
 
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
-		resourceTemplate, err := getResourceSettingsTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		resourceTemplate, err := getResourceSettingsTemplateByName(s.T(), s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
-		appConfigTemplate, err := getAppConfigTemplateByName(s.T(), s.ctx, s.apiClient, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		appConfigTemplate, err := getAppConfigTemplateByName(s.T(), s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
 
-	_, resp, err = s.apiClient.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
+	_, resp, err = s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdPut(s.ctx, deploymentID).Body(req).Execute()
 	api.RequireNoErrorf(t, resp, err, "update %s deployment", deploymentID)
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentHealthy(t *testing.T, deploymentID string) {
 	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdStatusGet(s.ctx, deploymentID).Execute()
+		deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdStatusGet(s.ctx, deploymentID).Execute()
 		err = api.ExtractErrorDetails(resp, err)
 		require.NoError(t, err, "Getting deployment %q state.", deploymentID)
 
@@ -460,10 +457,10 @@ func (s *PDSTestSuite) mustEnsureDeploymentHealthy(t *testing.T, deploymentID st
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -475,10 +472,10 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID str
 }
 
 func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -500,10 +497,10 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerServicesReady(t *testing.T, deploym
 }
 
 func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
@@ -512,7 +509,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.
 		return
 	}
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 	namespace := namespaceModel.GetName()
 
@@ -583,10 +580,10 @@ func (s *PDSTestSuite) mustWaitForJobToFinish(t tests.T, namespace string, jobNa
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -600,13 +597,13 @@ func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T
 }
 
 func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, imageTag string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -622,10 +619,10 @@ func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, im
 }
 
 func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -649,14 +646,14 @@ func (s *PDSTestSuite) mustCreateBackup(t *testing.T, deploymentID, backupTarget
 		BackupTargetId: pointer.String(backupTargetID),
 		BackupType:     pointer.String("adhoc"),
 	}
-	backup, resp, err := s.apiClient.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(requestBody).Execute()
+	backup, resp, err := s.controlPlane.API.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(requestBody).Execute()
 	api.RequireNoError(t, resp, err)
 
 	return backup
 }
 
 func (s *PDSTestSuite) mustDeleteBackup(t *testing.T, backupID string) {
-	resp, err := s.apiClient.BackupsApi.ApiBackupsIdDelete(s.ctx, backupID).Execute()
+	resp, err := s.controlPlane.API.BackupsApi.ApiBackupsIdDelete(s.ctx, backupID).Execute()
 	api.RequireNoError(t, resp, err)
 }
 
@@ -672,7 +669,7 @@ func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region 
 		Region:              &region,
 		Type:                pointer.String("s3"),
 	}
-	return s.apiClient.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(requestBody).Execute()
+	return s.controlPlane.API.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(requestBody).Execute()
 }
 
 func (s *PDSTestSuite) mustCreateS3BackupTarget(t *testing.T, backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
@@ -694,7 +691,7 @@ func (s *PDSTestSuite) mustWaitForBackupTargetState(t *testing.T, backupTargetID
 }
 
 func (s *PDSTestSuite) mustGetBackupTargetState(t tests.T, backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
-	backupTargetStates, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
+	backupTargetStates, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	for _, backupTargetState := range backupTargetStates.GetData() {
@@ -709,10 +706,10 @@ func (s *PDSTestSuite) mustGetBackupTargetState(t tests.T, backupTargetID, deplo
 func (s *PDSTestSuite) mustDeleteBackupTarget(t *testing.T, backupTargetID string) {
 	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
+	resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
 	wait.For(t, waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
-		_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
+		_, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
@@ -722,14 +719,14 @@ func (s *PDSTestSuite) mustDeleteBackupTarget(t *testing.T, backupTargetID strin
 func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
 	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
+	resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
 	if resp.StatusCode == http.StatusNotFound {
 		return
 	}
 	api.NoError(s.T(), resp, err)
 
 	wait.For(s.T(), waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
-		_, resp, err := s.apiClient.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
+		_, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
@@ -744,7 +741,7 @@ func (s *PDSTestSuite) mustCreateStorageOptions() {
 		Fs:     pointer.StringPtr("xfs"),
 		Fg:     pointer.BoolPtr(false),
 	}
-	storageTemplateResp, resp, err := s.apiClient.StorageOptionsTemplatesApi.
+	storageTemplateResp, resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.
 		ApiTenantsIdStorageOptionsTemplatesPost(s.ctx, s.testPDSTenantID).
 		Body(storageTemplate).Execute()
 	api.RequireNoError(s.T(), resp, err)
@@ -774,7 +771,7 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			}
 			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
-			configTemplate, resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.
+			configTemplate, resp, err := s.controlPlane.API.ApplicationConfigurationTemplatesApi.
 				ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
 				Body(configTemplateBody).Execute()
 			api.RequireNoError(s.T(), resp, err)
@@ -794,7 +791,7 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			}
 			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
-			resourceTemplate, resp, err := s.apiClient.ResourceSettingsTemplatesApi.
+			resourceTemplate, resp, err := s.controlPlane.API.ResourceSettingsTemplatesApi.
 				ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
 				Body(resourceTemplateBody).Execute()
 			api.RequireNoError(s.T(), resp, err)
@@ -813,29 +810,29 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 }
 
 func (s *PDSTestSuite) deleteStorageOptions() {
-	resp, err := s.apiClient.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.testPDSStorageTemplateID).Execute()
+	resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.testPDSStorageTemplateID).Execute()
 	api.NoErrorf(s.T(), resp, err, "Deleting test storage options template (%s)", s.testPDSStorageTemplateID)
 }
 
 func (s *PDSTestSuite) deleteApplicationTemplates() {
 	for _, dsTemplate := range s.testPDSTemplatesMap {
 		for _, configTemplateInfo := range dsTemplate.AppConfigTemplates {
-			resp, err := s.apiClient.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, configTemplateInfo.ID).Execute()
+			resp, err := s.controlPlane.API.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, configTemplateInfo.ID).Execute()
 			api.NoErrorf(s.T(), resp, err, "Deleting configuration template (ID=%s, name=%s).", configTemplateInfo.ID, configTemplateInfo.Name)
 		}
 
 		for _, resourceTemplateInfo := range dsTemplate.ResourceTemplates {
-			resp, err := s.apiClient.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateInfo.ID).Execute()
+			resp, err := s.controlPlane.API.ResourceSettingsTemplatesApi.ApiResourceSettingsTemplatesIdDelete(s.ctx, resourceTemplateInfo.ID).Execute()
 			api.NoErrorf(s.T(), resp, err, "Deleting resource settings template (ID=%s, name=%s)", resourceTemplateInfo.ID, resourceTemplateInfo.Name)
 		}
 	}
 }
 
 func (s *PDSTestSuite) mustEnsureBackupSuccessful(t *testing.T, deploymentID, backupName string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -879,18 +876,18 @@ func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
 }
 
 func (s *PDSTestSuite) mustCreateLoadTestJob(t *testing.T, deploymentID string) (string, string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 	deploymentName := deployment.GetClusterResourceName()
 
-	namespace, resp, err := s.apiClient.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
+	namespace, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
-	dsImage, resp, err := s.apiClient.ImagesApi.ApiImagesIdGet(s.ctx, deployment.GetImageId()).Execute()
+	dsImage, resp, err := s.controlPlane.API.ImagesApi.ApiImagesIdGet(s.ctx, deployment.GetImageId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dsImageCreatedAt := dsImage.GetCreatedAt()
 
@@ -1014,7 +1011,7 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(t *testing.T, dataService *pds.Mode
 }
 
 func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
-	resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
+	resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 }
 
@@ -1052,7 +1049,7 @@ func (s *PDSTestSuite) mustFlushDNSCache(t tests.T) []string {
 
 func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
 	wait.For(t, waiterDeploymentStatusRemovedTimeout, waiterRetryInterval, func(t tests.T) {
-		_, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+		_, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
@@ -1138,10 +1135,10 @@ func (s *PDSTestSuite) deletePods(t *testing.T, deploymentID string) {
 }
 
 func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.apiClient.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := s.apiClient.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
