@@ -133,9 +133,8 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustHavePDStestAgentToken(env)
 		s.mustInstallAgent(env)
 	}
-	s.waitForPDSTestDeploymentTarget(env)
-	namespace := s.mustWaitForNamespaceStatus(env.pdsNamespaceName, "available")
-	s.testPDSNamespaceID = namespace.GetId()
+	s.mustWaitForPDSTestDeploymentTarget(env)
+	s.mustWaitForPDSTestNamespace(env)
 	s.mustCreateApplicationTemplates()
 	s.mustCreateStorageOptions()
 }
@@ -218,7 +217,7 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 	s.testPDSProjectID = testPDSProjectID
 }
 
-func (s *PDSTestSuite) waitForPDSTestDeploymentTarget(env environment) {
+func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
 		var err error
 		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(t, s.ctx, s.apiClient, s.testPDSTenantID, env.pdsDeploymentTargetName)
@@ -241,10 +240,19 @@ func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
 
+func (s *PDSTestSuite) mustWaitForPDSTestNamespace(env environment) {
+	namespace := s.mustWaitForNamespaceStatus(env.pdsNamespaceName, "available")
+	s.Require().NotNilf(namespace, "PDS test namespace %s is not available.", env.pdsNamespaceName)
+	s.testPDSNamespaceID = namespace.GetId()
+}
+
 func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *pds.ModelsNamespace {
-	var namespace *pds.ModelsNamespace
+	var (
+		namespace *pds.ModelsNamespace
+		err       error
+	)
 	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace, err := getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
+		namespace, err = getNamespaceByName(s.ctx, s.apiClient, s.testPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
 		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
