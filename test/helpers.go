@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"io"
 	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
@@ -137,12 +136,12 @@ func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *ap
 func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *api.PDSClient, deployment *ShortDeploymentSpec, image *PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
 	resource, err := getResourceSettingsTemplateByName(t, ctx, apiClient, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting resource settings template %s for tenant %s: %w", deployment.ResourceSettingsTemplateName, tenantID, err)
 	}
 
 	appConfig, err := getAppConfigTemplateByName(t, ctx, apiClient, tenantID, deployment.AppConfigTemplateName, image.DataServiceID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting application configuration template %s for tenant %s: %w", deployment.AppConfigTemplateName, tenantID, err)
 	}
 
 	storages, resp, err := apiClient.StorageOptionsTemplatesApi.ApiTenantsIdStorageOptionsTemplatesGet(ctx, tenantID).Name(deployment.StorageOptionName).Execute()
@@ -194,12 +193,8 @@ func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *api.PDSCl
 	pdsDeployment.SetStorageOptionsTemplateId(storage.GetId())
 
 	res, httpRes, err := apiClient.DeploymentsApi.ApiProjectsIdDeploymentsPost(ctx, projectID).Body(*pdsDeployment).Execute()
-	if err != nil {
-		rawbody, parseErr := io.ReadAll(httpRes.Body)
-		if parseErr != nil {
-			return "", err
-		}
-		return "", fmt.Errorf(string(rawbody))
+	if err = api.ExtractErrorDetails(httpRes, err); err != nil {
+		return "", fmt.Errorf("deploying %s under project %s: %w", *pdsDeployment.Name, projectID, err)
 	}
 
 	return res.GetId(), nil
