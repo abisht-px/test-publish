@@ -168,6 +168,41 @@ func (c *PDSClient) GetNamespaceByName(ctx context.Context, deploymentTargetID, 
 	return nil, nil
 }
 
+func (c *PDSClient) GetAllImageVersions(ctx context.Context) ([]PDSImageReferenceSpec, error) {
+	var records []PDSImageReferenceSpec
+
+	dataServices, resp, err := c.DataServicesApi.ApiDataServicesGet(ctx).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("fetching all data services: %w", err)
+	}
+
+	dataServicesByID := make(map[string]pdsApi.ModelsDataService)
+	for i := range dataServices.GetData() {
+		dataService := dataServices.GetData()[i]
+		dataServicesByID[dataService.GetId()] = dataService
+	}
+
+	images, resp, err := c.ImagesApi.ApiImagesGet(ctx).Latest(true).SortBy("-created_at").Limit("1000").Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("fetching all images: %w", err)
+	}
+
+	for _, image := range images.GetData() {
+		dataService := dataServicesByID[image.GetDataServiceId()]
+		record := PDSImageReferenceSpec{
+			DataServiceName:   dataService.GetName(),
+			DataServiceID:     dataService.GetId(),
+			VersionID:         image.GetVersionId(),
+			ImageVersionBuild: image.GetBuild(),
+			ImageVersionTag:   image.GetTag(),
+			ImageID:           image.GetId(),
+		}
+		records = append(records, record)
+	}
+
+	return records, nil
+}
+
 func (c *PDSClient) GetResourceSettingsTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsResourceSettingsTemplate, error) {
 	resources, resp, err := c.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
 	if err = ExtractErrorDetails(resp, err); err != nil {

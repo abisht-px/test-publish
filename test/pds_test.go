@@ -376,7 +376,7 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {
-	imageVersions, err := getAllImageVersions(s.ctx, s.controlPlane.API)
+	imageVersions, err := s.controlPlane.API.GetAllImageVersions(s.ctx)
 	s.Require().NoError(err, "Error while reading image versions.")
 	s.Require().NotEmpty(imageVersions, "No image versions found.")
 	s.imageVersionSpecList = imageVersions
