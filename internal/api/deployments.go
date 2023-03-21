@@ -1,4 +1,4 @@
-package test
+package api
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ type ShortDeploymentSpec struct {
 	NodeCount                    int    `yaml:"node_count"`
 }
 
-func (d ShortDeploymentSpec) getImageVersionString() string {
+func (d ShortDeploymentSpec) ImageVersionString() string {
 	if d.ImageVersionTag != "" {
 		if d.ImageVersionBuild != "" {
 			return fmt.Sprintf("%s-%s", d.ImageVersionTag, d.ImageVersionBuild)

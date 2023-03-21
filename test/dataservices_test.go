@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"testing"
+
+	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 var (
@@ -11,7 +13,7 @@ var (
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
-	deployments := []ShortDeploymentSpec{
+	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dbPostgres,
 			ImageVersionTag: "14.6",
@@ -81,10 +83,10 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
 			t.Parallel()
 
-			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
+			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
@@ -105,7 +107,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 	if *skipBackups {
 		s.T().Skip("Backup tests skipped.")
 	}
-	deployments := []ShortDeploymentSpec{
+	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dbPostgres,
 			ImageVersionTag: "11.18",
@@ -165,10 +167,10 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.getImageVersionString()), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.ImageVersionString()), func(t *testing.T) {
 			t.Parallel()
 
-			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.getImageVersionString())
+			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
@@ -197,11 +199,11 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 func (s *PDSTestSuite) TestDataService_UpdateImage() {
 	testCases := []struct {
-		spec           ShortDeploymentSpec
+		spec           api.ShortDeploymentSpec
 		targetVersions []string
 	}{
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMongoDB,
 				ImageVersionTag: "6.0.2",
 				NodeCount:       1,
@@ -209,7 +211,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"6.0.3"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "11.16",
 				NodeCount:       1,
@@ -217,7 +219,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"11.18"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "12.11",
 				NodeCount:       1,
@@ -225,7 +227,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"12.13"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "13.7",
 				NodeCount:       1,
@@ -233,7 +235,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"13.9"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "14.2",
 				NodeCount:       1,
@@ -241,7 +243,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"14.6"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "14.4",
 				NodeCount:       1,
@@ -249,7 +251,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"14.6"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "14.5",
 				NodeCount:       1,
@@ -257,7 +259,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"14.6"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCassandra,
 				ImageVersionTag: "4.0.4",
 				NodeCount:       1,
@@ -265,7 +267,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"4.0.6"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCassandra,
 				ImageVersionTag: "4.0.5",
 				NodeCount:       1,
@@ -273,7 +275,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"4.0.6"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.0",
 				NodeCount:       1,
@@ -281,7 +283,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"7.0.5"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.2",
 				NodeCount:       1,
@@ -289,7 +291,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"7.0.5"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.4",
 				NodeCount:       1,
@@ -297,7 +299,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"7.0.5"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.2.0",
 				NodeCount:       1,
@@ -305,7 +307,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"3.2.3"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.2.1",
 				NodeCount:       1,
@@ -313,7 +315,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"3.2.3"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRabbitMQ,
 				ImageVersionTag: "3.9.21",
 				NodeCount:       1,
@@ -321,7 +323,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"3.9.22"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRabbitMQ,
 				ImageVersionTag: "3.10.6",
 				NodeCount:       1,
@@ -329,7 +331,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"3.10.9"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRabbitMQ,
 				ImageVersionTag: "3.10.7",
 				NodeCount:       1,
@@ -337,7 +339,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			targetVersions: []string{"3.10.9"},
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMySQL,
 				ImageVersionTag: "8.0.30",
 				NodeCount:       1,
@@ -350,10 +352,10 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		for _, tvt := range testCase.targetVersions {
 			tt := testCase
 			targetVersionTag := tvt
-			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.getImageVersionString(), targetVersionTag), func(t *testing.T) {
+			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.ImageVersionString(), targetVersionTag), func(t *testing.T) {
 				t.Parallel()
 
-				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.getImageVersionString())
+				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.ImageVersionString())
 				deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 				t.Cleanup(func() {
 					s.mustRemoveDeployment(t, deploymentID)
@@ -384,11 +386,11 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 
 func (s *PDSTestSuite) TestDataService_ScaleUp() {
 	testCases := []struct {
-		spec    ShortDeploymentSpec
+		spec    api.ShortDeploymentSpec
 		scaleTo int
 	}{
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "11.18",
 				NodeCount:       1,
@@ -396,7 +398,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "12.13",
 				NodeCount:       1,
@@ -404,7 +406,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "13.9",
 				NodeCount:       1,
@@ -412,7 +414,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "14.6",
 				NodeCount:       1,
@@ -420,7 +422,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCassandra,
 				ImageVersionTag: "4.0.6",
 				NodeCount:       1,
@@ -428,7 +430,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbConsul,
 				ImageVersionTag: "1.14.0",
 				NodeCount:       1,
@@ -436,7 +438,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.5",
 				NodeCount:       6,
@@ -444,7 +446,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 8,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.1.1",
 				NodeCount:       1,
@@ -452,7 +454,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
@@ -460,7 +462,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRabbitMQ,
 				ImageVersionTag: "3.10.9",
 				NodeCount:       1,
@@ -468,7 +470,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMySQL,
 				ImageVersionTag: "8.0.31",
 				NodeCount:       1,
@@ -476,7 +478,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMongoDB,
 				ImageVersionTag: "6.0.3",
 				NodeCount:       1,
@@ -484,7 +486,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbElasticSearch,
 				ImageVersionTag: "8.5.2",
 				NodeCount:       1,
@@ -492,7 +494,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			scaleTo: 2,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCouchbase,
 				ImageVersionTag: "7.1.1",
 				NodeCount:       1,
@@ -503,10 +505,10 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 
 	for _, testCase := range testCases {
 		tt := testCase
-		s.T().Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.getImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.ImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func(t *testing.T) {
 			t.Parallel()
 
-			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
+			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
@@ -535,11 +537,11 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 
 func (s *PDSTestSuite) TestDataService_ScaleResources() {
 	testCases := []struct {
-		spec                    ShortDeploymentSpec
+		spec                    api.ShortDeploymentSpec
 		scaleToResourceTemplate string
 	}{
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbPostgres,
 				ImageVersionTag: "14.6",
 				NodeCount:       1,
@@ -547,7 +549,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbPostgres].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCassandra,
 				ImageVersionTag: "4.0.6",
 				NodeCount:       1,
@@ -555,7 +557,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbCassandra].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbConsul,
 				ImageVersionTag: "1.14.0",
 				NodeCount:       1,
@@ -563,7 +565,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbConsul].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbKafka,
 				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
@@ -571,7 +573,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbKafka].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRabbitMQ,
 				ImageVersionTag: "3.10.9",
 				NodeCount:       1,
@@ -579,7 +581,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbRabbitMQ].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMySQL,
 				ImageVersionTag: "8.0.31",
 				NodeCount:       1,
@@ -587,7 +589,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbMySQL].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbMongoDB,
 				ImageVersionTag: "6.0.2",
 				NodeCount:       1,
@@ -595,7 +597,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbMongoDB].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbElasticSearch,
 				ImageVersionTag: "8.5.2",
 				NodeCount:       1,
@@ -603,7 +605,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbElasticSearch].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbCouchbase,
 				ImageVersionTag: "7.1.1",
 				NodeCount:       1,
@@ -611,7 +613,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbCouchbase].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbRedis,
 				ImageVersionTag: "7.0.5",
 				NodeCount:       1,
@@ -619,7 +621,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			scaleToResourceTemplate: s.testPDSTemplatesMap[dbRedis].ResourceTemplates[1].Name,
 		},
 		{
-			spec: ShortDeploymentSpec{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dbZooKeeper,
 				ImageVersionTag: "3.8.0",
 				NodeCount:       3,
@@ -630,10 +632,10 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 
 	for _, testCase := range testCases {
 		tt := testCase
-		s.T().Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.getImageVersionString()), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.ImageVersionString()), func(t *testing.T) {
 			t.Parallel()
 
-			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.getImageVersionString())
+			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
 			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
@@ -661,7 +663,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 }
 
 func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
-	deployments := []ShortDeploymentSpec{
+	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dbPostgres,
 			ImageVersionTag: "14.6",
@@ -721,10 +723,10 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
 			t.Parallel()
 
-			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
+			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
@@ -747,7 +749,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 }
 
 func (s *PDSTestSuite) TestDataService_Metrics() {
-	deployments := []ShortDeploymentSpec{
+	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dbCassandra,
 			ImageVersionTag: "4.0.6",
@@ -808,10 +810,10 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.getImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
 			t.Parallel()
 
-			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.getImageVersionString(), deployment.NodeCount)
+			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)

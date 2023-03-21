@@ -97,7 +97,7 @@ type PDSTestSuite struct {
 	testPDSStorageTemplateName string
 	testPDSTemplatesMap        map[string]dataServiceTemplateInfo
 	config                     environment
-	imageVersionSpecList       []PDSImageReferenceSpec
+	imageVersionSpecList       []api.PDSImageReferenceSpec
 	tokenSource                oauth2.TokenSource
 }
 
@@ -382,7 +382,7 @@ func (s *PDSTestSuite) mustLoadImageVersions() {
 	s.imageVersionSpecList = imageVersions
 }
 
-func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment ShortDeploymentSpec) string {
+func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment api.ShortDeploymentSpec) string {
 	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
 	require.NotNil(t, image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 
@@ -395,7 +395,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment ShortDe
 	return deploymentID
 }
 
-func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
+func (s *PDSTestSuite) setDeploymentDefaults(deployment *api.ShortDeploymentSpec) {
 	if deployment.ServiceType == "" {
 		deployment.ServiceType = "ClusterIP"
 	}
@@ -413,7 +413,7 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *ShortDeploymentSpec) {
 	}
 }
 
-func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, spec *ShortDeploymentSpec) {
+func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
 		image := findImageVersionForRecord(spec, s.imageVersionSpecList)

@@ -56,8 +56,8 @@ func getNamespaceByName(ctx context.Context, apiClient *api.PDSClient, deploymen
 	return nil, nil
 }
 
-func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *api.PDSClient) ([]PDSImageReferenceSpec, error) {
-	var records []PDSImageReferenceSpec
+func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *api.PDSClient) ([]api.PDSImageReferenceSpec, error) {
+	var records []api.PDSImageReferenceSpec
 
 	dataServices, resp, err := apiClient.DataServicesApi.ApiDataServicesGet(ctx).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {
@@ -77,7 +77,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *api.PDSCl
 
 	for _, image := range images.GetData() {
 		dataService := dataServicesByID[image.GetDataServiceId()]
-		record := PDSImageReferenceSpec{
+		record := api.PDSImageReferenceSpec{
 			DataServiceName:   dataService.GetName(),
 			DataServiceID:     dataService.GetId(),
 			VersionID:         image.GetVersionId(),
@@ -91,7 +91,7 @@ func getAllImageVersions(t *testing.T, ctx context.Context, apiClient *api.PDSCl
 	return records, nil
 }
 
-func findImageVersionForRecord(deployment *ShortDeploymentSpec, images []PDSImageReferenceSpec) *PDSImageReferenceSpec {
+func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api.PDSImageReferenceSpec) *api.PDSImageReferenceSpec {
 	for _, image := range images {
 		found := image.DataServiceName == deployment.DataServiceName
 		if deployment.ImageVersionTag != "" {
@@ -133,7 +133,7 @@ func getAppConfigTemplateByName(t *testing.T, ctx context.Context, apiClient *ap
 	return nil, fmt.Errorf("application configuration template %s not found", templateName)
 }
 
-func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *api.PDSClient, deployment *ShortDeploymentSpec, image *PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
+func createPDSDeployment(t *testing.T, ctx context.Context, apiClient *api.PDSClient, deployment *api.ShortDeploymentSpec, image *api.PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
 	resource, err := getResourceSettingsTemplateByName(t, ctx, apiClient, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
 	if err != nil {
 		return "", fmt.Errorf("getting resource settings template %s for tenant %s: %w", deployment.ResourceSettingsTemplateName, tenantID, err)
