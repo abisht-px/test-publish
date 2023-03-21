@@ -220,7 +220,7 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
 		var err error
-		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(t, s.ctx, s.controlPlane.API, s.testPDSTenantID, env.pdsDeploymentTargetName)
+		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, env.pdsDeploymentTargetName)
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
 	})
 
@@ -376,7 +376,7 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 }
 
 func (s *PDSTestSuite) mustLoadImageVersions() {
-	imageVersions, err := getAllImageVersions(s.T(), s.ctx, s.controlPlane.API)
+	imageVersions, err := getAllImageVersions(s.ctx, s.controlPlane.API)
 	s.Require().NoError(err, "Error while reading image versions.")
 	s.Require().NotEmpty(imageVersions, "No image versions found.")
 	s.imageVersionSpecList = imageVersions
@@ -388,7 +388,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment api.Sho
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := createPDSDeployment(t, s.ctx, s.controlPlane.API, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	deploymentID, err := createPDSDeployment(s.ctx, s.controlPlane.API, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
@@ -430,13 +430,13 @@ func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, s
 	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
-		resourceTemplate, err := getResourceSettingsTemplateByName(s.T(), s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		resourceTemplate, err := getResourceSettingsTemplateByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
-		appConfigTemplate, err := getAppConfigTemplateByName(s.T(), s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		appConfigTemplate, err := getAppConfigTemplateByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
