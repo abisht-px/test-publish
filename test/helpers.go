@@ -17,19 +17,6 @@ const (
 	pdsDeploymentHealthState = "Healthy"
 )
 
-func getDeploymentTargetIDByName(ctx context.Context, apiClient *api.PDSClient, tenantID, deploymentTargetName string) (string, error) {
-	targets, resp, err := apiClient.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return "", fmt.Errorf("getting deployment targets for tenant %s: %w", tenantID, err)
-	}
-	for _, target := range targets.GetData() {
-		if target.GetName() == deploymentTargetName {
-			return target.GetId(), nil
-		}
-	}
-	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
-}
-
 func getNamespaceByName(ctx context.Context, apiClient *api.PDSClient, deploymentTargetID, name string) (*pds.ModelsNamespace, error) {
 	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
 	if err = api.ExtractErrorDetails(resp, err); err != nil {

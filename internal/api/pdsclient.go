@@ -142,6 +142,19 @@ func (c *PDSClient) CheckDeploymentTargetHealth(ctx context.Context, deploymentT
 	return nil
 }
 
+func (c *PDSClient) GetDeploymentTargetIDByName(ctx context.Context, tenantID, deploymentTargetName string) (string, error) {
+	targets, resp, err := c.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return "", fmt.Errorf("getting deployment targets for tenant %s: %w", tenantID, err)
+	}
+	for _, target := range targets.GetData() {
+		if target.GetName() == deploymentTargetName {
+			return target.GetId(), nil
+		}
+	}
+	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
+}
+
 func (c *PDSClient) GetResourceSettingsTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsResourceSettingsTemplate, error) {
 	resources, resp, err := c.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
 	if err = ExtractErrorDetails(resp, err); err != nil {

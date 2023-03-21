@@ -220,7 +220,7 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
 		var err error
-		s.testPDSDeploymentTargetID, err = getDeploymentTargetIDByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, env.pdsDeploymentTargetName)
+		s.testPDSDeploymentTargetID, err = s.controlPlane.API.GetDeploymentTargetIDByName(s.ctx, s.testPDSTenantID, env.pdsDeploymentTargetName)
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
 	})
 
