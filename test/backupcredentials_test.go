@@ -24,7 +24,7 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 			objectStoreCredentials: apiv1.ControllersCredentials{
 				Google: &apiv1.ModelsGoogleCredentials{
 					JsonKey:   &gcpCreds,
-					ProjectId: &s.testPDSProjectID,
+					ProjectId: &s.controlPlane.TestPDSProjectID,
 				},
 			},
 		},
@@ -74,7 +74,7 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 			switch {
 			case cloudConfig.Google != nil:
 				s.Require().NotNil(cloudConfig.Google)
-				s.Require().Equal(cloudConfig.Google.GetProjectId(), s.testPDSProjectID)
+				s.Require().Equal(cloudConfig.Google.GetProjectId(), s.controlPlane.TestPDSProjectID)
 			case cloudConfig.Azure != nil:
 				s.Require().NotNil(cloudConfig.Azure)
 				s.Require().Equal(cloudConfig.Azure.GetAccountName(), accName)
@@ -157,7 +157,7 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 		s.mustDeleteBackupTarget(s.T(), backupTarget.GetId())
 		s.mustDeleteBackupCredentials(s.T(), backupCredentials.GetId())
 	})
-	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
+	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
 
 	// When.
 	_, httpResponse, err := s.updateBackupCredentials(backupCredentials.GetId(), "new-name", updatedCredentials)

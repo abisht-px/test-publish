@@ -64,41 +64,20 @@ var (
 	pdsNamespaceLabelValue     = "true"
 )
 
-// Info for a single template.
-type templateInfo struct {
-	ID   string
-	Name string
-}
-
-// Info for all app config and resource templates which belong to a data service.
-type dataServiceTemplateInfo struct {
-	AppConfigTemplates []templateInfo
-	ResourceTemplates  []templateInfo
-}
-
 type PDSTestSuite struct {
 	suite.Suite
 	ctx       context.Context
 	startTime time.Time
 
-	controlPlane               *controlplane.ControlPlane
-	targetCluster              *targetcluster.TargetCluster
-	prometheusClient           prometheusv1.API
-	pdsAgentInstallable        *helminstaller.InstallableHelmPDS
-	pdsHelmChartVersion        string
-	testPDSAccountID           string
-	testPDSTenantID            string
-	testPDSProjectID           string
-	testPDSNamespaceID         string
-	testPDSDeploymentTargetID  string
-	testPDSServiceAccountID    string
-	testPDSAgentToken          string
-	testPDSStorageTemplateID   string
-	testPDSStorageTemplateName string
-	testPDSTemplatesMap        map[string]dataServiceTemplateInfo
-	config                     environment
-	imageVersionSpecList       []api.PDSImageReferenceSpec
-	tokenSource                oauth2.TokenSource
+	controlPlane        *controlplane.ControlPlane
+	targetCluster       *targetcluster.TargetCluster
+	prometheusClient    prometheusv1.API
+	pdsAgentInstallable *helminstaller.InstallableHelmPDS
+	pdsHelmChartVersion string
+
+	testPDSAgentToken string
+	config            environment
+	tokenSource       oauth2.TokenSource
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -178,13 +157,13 @@ func (s *PDSTestSuite) mustHavePDStestAccount(env environment) {
 		}
 	}
 	s.Require().NotEmpty(testPDSAccountID, "PDS account %s not found.", env.controlPlane.AccountName)
-	s.testPDSAccountID = testPDSAccountID
+	s.controlPlane.TestPDSAccountID = testPDSAccountID
 }
 
 // mustHavePDStestTenant finds PDS tenant in Test PDS Account with name set in environment and stores its ID as "Test PDS Tenant".
 func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 	// TODO: Use tenant name query filters
-	tenants, resp, err := s.controlPlane.API.TenantsApi.ApiAccountsIdTenantsGet(s.ctx, s.testPDSAccountID).Execute()
+	tenants, resp, err := s.controlPlane.API.TenantsApi.ApiAccountsIdTenantsGet(s.ctx, s.controlPlane.TestPDSAccountID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(tenants, "PDS API must return at least one tenant.")
 
@@ -196,13 +175,13 @@ func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
 		}
 	}
 	s.Require().NotEmpty(testPDSTenantID, "PDS tenant %s not found.", env.controlPlane.TenantName)
-	s.testPDSTenantID = testPDSTenantID
+	s.controlPlane.TestPDSTenantID = testPDSTenantID
 }
 
 // mustHavePDStestProject finds PDS project in Test PDS Tenant with name set in environment and stores its ID as "Test PDS Project".
 func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 	// TODO: Use project name query filters
-	projects, resp, err := s.controlPlane.API.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.testPDSTenantID).Execute()
+	projects, resp, err := s.controlPlane.API.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.controlPlane.TestPDSTenantID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(projects, "PDS API must return at least one project.")
 
@@ -214,36 +193,36 @@ func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
 		}
 	}
 	s.Require().NotEmpty(testPDSProjectID, "PDS project %s not found.", env.controlPlane.ProjectName)
-	s.testPDSProjectID = testPDSProjectID
+	s.controlPlane.TestPDSProjectID = testPDSProjectID
 }
 
 func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
 		var err error
-		s.testPDSDeploymentTargetID, err = s.controlPlane.API.GetDeploymentTargetIDByName(s.ctx, s.testPDSTenantID, env.pdsDeploymentTargetName)
+		s.controlPlane.TestPDSDeploymentTargetID, err = s.controlPlane.API.GetDeploymentTargetIDByName(s.ctx, s.controlPlane.TestPDSTenantID, env.pdsDeploymentTargetName)
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
 	})
 
 	wait.For(s.T(), waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.testPDSDeploymentTargetID)
-		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.testPDSDeploymentTargetID)
+		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.controlPlane.TestPDSDeploymentTargetID)
+		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.controlPlane.TestPDSDeploymentTargetID)
 	})
 }
 
 func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	wait.For(s.T(), waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.testPDSDeploymentTargetID)
-		require.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
+		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.controlPlane.TestPDSDeploymentTargetID)
+		require.Errorf(t, err, "Deployment target %q is still healthy.", s.controlPlane.TestPDSDeploymentTargetID)
 	})
-	resp, err := s.controlPlane.API.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
-	api.NoErrorf(s.T(), resp, err, "Deleting deployment target %s.", s.testPDSDeploymentTargetID)
+	resp, err := s.controlPlane.API.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.controlPlane.TestPDSDeploymentTargetID).Execute()
+	api.NoErrorf(s.T(), resp, err, "Deleting deployment target %s.", s.controlPlane.TestPDSDeploymentTargetID)
 	s.Equal(http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
 
 func (s *PDSTestSuite) mustWaitForPDSTestNamespace(env environment) {
 	namespace := s.mustWaitForNamespaceStatus(env.pdsNamespaceName, "available")
 	s.Require().NotNilf(namespace, "PDS test namespace %s is not available.", env.pdsNamespaceName)
-	s.testPDSNamespaceID = namespace.GetId()
+	s.controlPlane.TestPDSNamespaceID = namespace.GetId()
 }
 
 func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *pds.ModelsNamespace {
@@ -252,7 +231,7 @@ func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *
 		err       error
 	)
 	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace, err = s.controlPlane.API.GetNamespaceByName(s.ctx, s.testPDSDeploymentTargetID, name)
+		namespace, err = s.controlPlane.API.GetNamespaceByName(s.ctx, s.controlPlane.TestPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
 		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
@@ -264,7 +243,7 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 	require.Never(
 		t,
 		func() bool {
-			namespace, err := s.controlPlane.API.GetNamespaceByName(s.ctx, s.testPDSDeploymentTargetID, name)
+			namespace, err := s.controlPlane.API.GetNamespaceByName(s.ctx, s.controlPlane.TestPDSDeploymentTargetID, name)
 			return err != nil && namespace != nil
 		},
 		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
@@ -275,7 +254,7 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 // mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".
 func (s *PDSTestSuite) mustHavePDStestServiceAccount(env environment) {
 	// TODO: Use service account name query filters
-	serviceAccounts, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(s.ctx, s.testPDSTenantID).Execute()
+	serviceAccounts, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(s.ctx, s.controlPlane.TestPDSTenantID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(serviceAccounts, "PDS API must return at least one tenant.")
 
@@ -287,12 +266,12 @@ func (s *PDSTestSuite) mustHavePDStestServiceAccount(env environment) {
 		}
 	}
 	s.Require().NotEmpty(testPDSServiceAccountID, "PDS service account %s not found.", env.pdsServiceAccountName)
-	s.testPDSServiceAccountID = testPDSServiceAccountID
+	s.controlPlane.TestPDSServiceAccountID = testPDSServiceAccountID
 }
 
 // mustHavePDStestAgentToken gets "Test PDS Service Account" and stores its Token as "Test PDS Agent Token".
 func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
-	token, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(s.ctx, s.testPDSServiceAccountID).Execute()
+	token, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(s.ctx, s.controlPlane.TestPDSServiceAccountID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().Equal(200, resp.StatusCode, "PDS API must return HTTP 200.")
 
@@ -328,7 +307,7 @@ func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
-	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.testPDSTenantID, s.tokenSource)
+	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.controlPlane.TestPDSTenantID, s.tokenSource)
 	s.Require().NoError(err)
 
 	s.prometheusClient = promAPI
@@ -344,7 +323,7 @@ func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	provider, err := helminstaller.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.testPDSTenantID, s.testPDSAgentToken, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
+	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.controlPlane.TestPDSTenantID, s.testPDSAgentToken, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
 
 	installer, err := provider.Installer(env.targetKubeconfig, pdsChartConfig)
 	s.Require().NoError(err, "Cannot get agent installer for version constraints %s.", pdsChartConfig.VersionConstraints)
@@ -379,16 +358,16 @@ func (s *PDSTestSuite) mustLoadImageVersions() {
 	imageVersions, err := s.controlPlane.API.GetAllImageVersions(s.ctx)
 	s.Require().NoError(err, "Error while reading image versions.")
 	s.Require().NotEmpty(imageVersions, "No image versions found.")
-	s.imageVersionSpecList = imageVersions
+	s.controlPlane.ImageVersionSpecList = imageVersions
 }
 
 func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment api.ShortDeploymentSpec) string {
-	image := findImageVersionForRecord(&deployment, s.imageVersionSpecList)
+	image := findImageVersionForRecord(&deployment, s.controlPlane.ImageVersionSpecList)
 	require.NotNil(t, image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := s.controlPlane.API.CreateDeployment(s.ctx, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	deploymentID, err := s.controlPlane.API.CreateDeployment(s.ctx, &deployment, image, s.controlPlane.TestPDSTenantID, s.controlPlane.TestPDSDeploymentTargetID, s.controlPlane.TestPDSProjectID, s.controlPlane.TestPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
@@ -400,9 +379,9 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 		deployment.ServiceType = "ClusterIP"
 	}
 	if deployment.StorageOptionName == "" {
-		deployment.StorageOptionName = s.testPDSStorageTemplateName
+		deployment.StorageOptionName = s.controlPlane.TestPDSStorageTemplateName
 	}
-	dsTemplates, found := s.testPDSTemplatesMap[deployment.DataServiceName]
+	dsTemplates, found := s.controlPlane.TestPDSTemplatesMap[deployment.DataServiceName]
 	if found {
 		if deployment.ResourceSettingsTemplateName == "" {
 			deployment.ResourceSettingsTemplateName = dsTemplates.ResourceTemplates[0].Name
@@ -416,7 +395,7 @@ func (s *PDSTestSuite) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
-		image := findImageVersionForRecord(spec, s.imageVersionSpecList)
+		image := findImageVersionForRecord(spec, s.controlPlane.ImageVersionSpecList)
 		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
 		req.ImageId = &image.ImageID
@@ -430,13 +409,13 @@ func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, s
 	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
-		resourceTemplate, err := s.controlPlane.API.GetResourceSettingsTemplateByName(s.ctx, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		resourceTemplate, err := s.controlPlane.API.GetResourceSettingsTemplateByName(s.ctx, s.controlPlane.TestPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
-		appConfigTemplate, err := s.controlPlane.API.GetAppConfigTemplateByName(s.ctx, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		appConfigTemplate, err := s.controlPlane.API.GetAppConfigTemplateByName(s.ctx, s.controlPlane.TestPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
@@ -658,7 +637,7 @@ func (s *PDSTestSuite) mustDeleteBackup(t *testing.T, backupID string) {
 }
 
 func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
-	tenantID := s.testPDSTenantID
+	tenantID := s.controlPlane.TestPDSTenantID
 	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
 	name := fmt.Sprintf("integration-test-s3-%s", nameSuffix)
 
@@ -742,18 +721,18 @@ func (s *PDSTestSuite) mustCreateStorageOptions() {
 		Fg:     pointer.BoolPtr(false),
 	}
 	storageTemplateResp, resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.
-		ApiTenantsIdStorageOptionsTemplatesPost(s.ctx, s.testPDSTenantID).
+		ApiTenantsIdStorageOptionsTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
 		Body(storageTemplate).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NoError(err)
 
-	s.testPDSStorageTemplateID = storageTemplateResp.GetId()
-	s.testPDSStorageTemplateName = storageTemplateResp.GetName()
+	s.controlPlane.TestPDSStorageTemplateID = storageTemplateResp.GetId()
+	s.controlPlane.TestPDSStorageTemplateName = storageTemplateResp.GetName()
 }
 
 func (s *PDSTestSuite) mustCreateApplicationTemplates() {
-	dataServicesTemplates := make(map[string]dataServiceTemplateInfo)
-	for _, imageVersion := range s.imageVersionSpecList {
+	dataServicesTemplates := make(map[string]controlplane.DataServiceTemplateInfo)
+	for _, imageVersion := range s.controlPlane.ImageVersionSpecList {
 		templatesSpec, found := dataServiceTemplatesSpec[imageVersion.DataServiceName]
 		if !found {
 			continue
@@ -763,7 +742,7 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			continue
 		}
 
-		var resultTemplateInfo dataServiceTemplateInfo
+		var resultTemplateInfo controlplane.DataServiceTemplateInfo
 		for _, configTemplateSpec := range templatesSpec.configurationTemplates {
 			configTemplateBody := configTemplateSpec
 			if configTemplateBody.Name == nil {
@@ -772,11 +751,11 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
 			configTemplate, resp, err := s.controlPlane.API.ApplicationConfigurationTemplatesApi.
-				ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.testPDSTenantID).
+				ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
 				Body(configTemplateBody).Execute()
 			api.RequireNoError(s.T(), resp, err)
 
-			configTemplateInfo := templateInfo{
+			configTemplateInfo := controlplane.TemplateInfo{
 				ID:   configTemplate.GetId(),
 				Name: configTemplate.GetName(),
 			}
@@ -792,11 +771,11 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
 			resourceTemplate, resp, err := s.controlPlane.API.ResourceSettingsTemplatesApi.
-				ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.testPDSTenantID).
+				ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
 				Body(resourceTemplateBody).Execute()
 			api.RequireNoError(s.T(), resp, err)
 
-			resourceTemplateInfo := templateInfo{
+			resourceTemplateInfo := controlplane.TemplateInfo{
 				ID:   resourceTemplate.GetId(),
 				Name: resourceTemplate.GetName(),
 			}
@@ -806,16 +785,16 @@ func (s *PDSTestSuite) mustCreateApplicationTemplates() {
 
 		dataServicesTemplates[imageVersion.DataServiceName] = resultTemplateInfo
 	}
-	s.testPDSTemplatesMap = dataServicesTemplates
+	s.controlPlane.TestPDSTemplatesMap = dataServicesTemplates
 }
 
 func (s *PDSTestSuite) deleteStorageOptions() {
-	resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.testPDSStorageTemplateID).Execute()
-	api.NoErrorf(s.T(), resp, err, "Deleting test storage options template (%s)", s.testPDSStorageTemplateID)
+	resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(s.ctx, s.controlPlane.TestPDSStorageTemplateID).Execute()
+	api.NoErrorf(s.T(), resp, err, "Deleting test storage options template (%s)", s.controlPlane.TestPDSStorageTemplateID)
 }
 
 func (s *PDSTestSuite) deleteApplicationTemplates() {
-	for _, dsTemplate := range s.testPDSTemplatesMap {
+	for _, dsTemplate := range s.controlPlane.TestPDSTemplatesMap {
 		for _, configTemplateInfo := range dsTemplate.AppConfigTemplates {
 			resp, err := s.controlPlane.API.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(s.ctx, configTemplateInfo.ID).Execute()
 			api.NoErrorf(s.T(), resp, err, "Deleting configuration template (ID=%s, name=%s).", configTemplateInfo.ID, configTemplateInfo.Name)

@@ -28,7 +28,7 @@ func (s *PDSTestSuite) mustCreateGoogleBackupCredentials(t *testing.T, credName 
 	credentials := apiv1.ControllersCredentials{
 		Google: &apiv1.ModelsGoogleCredentials{
 			JsonKey:   &myCreds,
-			ProjectId: &s.testPDSProjectID,
+			ProjectId: &s.controlPlane.TestPDSProjectID,
 		},
 	}
 
@@ -43,7 +43,7 @@ func (s *PDSTestSuite) mustCreateBackupCredentials(t *testing.T, credName string
 }
 
 func (s *PDSTestSuite) createBackupCredentials(credName string, credentials apiv1.ControllersCredentials) (*apiv1.ModelsBackupCredentials, *http.Response, error) {
-	return s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, s.testPDSTenantID).
+	return s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsPost(s.ctx, s.controlPlane.TestPDSTenantID).
 		Body(apiv1.ControllersCreateBackupCredentialsRequest{Credentials: &credentials, Name: &credName}).
 		Execute()
 }
@@ -67,7 +67,7 @@ func (s *PDSTestSuite) mustGetBackupCredentialsNoSecrets(credentialsId string) *
 }
 
 func (s *PDSTestSuite) mustListBackupCredentials() []apiv1.ModelsBackupCredentials {
-	backupCredList, httpResp, err := s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, s.testPDSTenantID).Execute()
+	backupCredList, httpResp, err := s.controlPlane.API.BackupCredentialsApi.ApiTenantsIdBackupCredentialsGet(s.ctx, s.controlPlane.TestPDSTenantID).Execute()
 	api.RequireNoError(s.T(), httpResp, err)
 
 	return backupCredList.GetData()
@@ -85,7 +85,7 @@ func (s *PDSTestSuite) updateGoogleBackupCredentials(credentialsId string, name 
 	credentials := apiv1.ControllersCredentials{
 		Google: &apiv1.ModelsGoogleCredentials{
 			JsonKey:   &jsonKey,
-			ProjectId: &s.testPDSProjectID,
+			ProjectId: &s.controlPlane.TestPDSProjectID,
 		},
 	}
 

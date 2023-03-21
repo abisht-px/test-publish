@@ -27,11 +27,11 @@ func (s *PDSTestSuite) createBackupPolicy(name, schedule *string, retention *int
 			},
 		},
 	}
-	return s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesPost(s.ctx, s.testPDSTenantID).Body(requestBody).Execute()
+	return s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesPost(s.ctx, s.controlPlane.TestPDSTenantID).Body(requestBody).Execute()
 }
 
 func (s *PDSTestSuite) mustListBackupPolicy(backupPolicyID string) *pds.ModelsBackupPolicy {
-	backupPolicy, resp, err := s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(s.ctx, s.testPDSTenantID).Id2(backupPolicyID).Execute()
+	backupPolicy, resp, err := s.controlPlane.API.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(s.ctx, s.controlPlane.TestPDSTenantID).Id2(backupPolicyID).Execute()
 	api.RequireNoError(s.T(), resp, err)
 	s.Require().NotEmpty(backupPolicy)
 	return &backupPolicy.Data[0]

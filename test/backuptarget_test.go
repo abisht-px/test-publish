@@ -52,8 +52,8 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 
 	// Then.
 	api.RequireNoError(s.T(), response, err)
-	s.mustWaitForBackupTargetState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID, "failed_create")
-	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
+	s.mustWaitForBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID, "failed_create")
+	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
 	s.Require().NotEmpty(backupTargetState.GetErrorDetails())
 	s.Require().NotEmpty(backupTargetState.GetErrorMessage())
 	s.Require().Equal("failed_to_create_px_credentials", backupTargetState.GetErrorCode())
@@ -75,8 +75,8 @@ func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 
 	// Then.
 	// Check backup target state.
-	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
-	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.testPDSDeploymentTargetID)
+	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
+	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
 	s.Require().Empty(backupTargetState.GetErrorCode())
 	s.Require().Empty(backupTargetState.GetErrorDetails())
 	s.Require().Empty(backupTargetState.GetErrorMessage())
