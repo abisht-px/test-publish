@@ -106,39 +106,13 @@ func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api
 	return nil
 }
 
-func getResourceSettingsTemplateByName(ctx context.Context, apiClient *api.PDSClient, tenantID, templateName, dataServiceID string) (*pds.ModelsResourceSettingsTemplate, error) {
-	resources, resp, err := apiClient.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return nil, err
-	}
-	for _, r := range resources.GetData() {
-		if r.GetDataServiceId() == dataServiceID {
-			return &r, nil
-		}
-	}
-	return nil, fmt.Errorf("resource settings template %s not found", templateName)
-}
-
-func getAppConfigTemplateByName(ctx context.Context, apiClient *api.PDSClient, tenantID, templateName, dataServiceID string) (*pds.ModelsApplicationConfigurationTemplate, error) {
-	appConfigurations, resp, err := apiClient.ApplicationConfigurationTemplatesApi.ApiTenantsIdApplicationConfigurationTemplatesGet(ctx, tenantID).Name(templateName).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return nil, err
-	}
-	for _, c := range appConfigurations.GetData() {
-		if c.GetDataServiceId() == dataServiceID {
-			return &c, nil
-		}
-	}
-	return nil, fmt.Errorf("application configuration template %s not found", templateName)
-}
-
 func createPDSDeployment(ctx context.Context, apiClient *api.PDSClient, deployment *api.ShortDeploymentSpec, image *api.PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
-	resource, err := getResourceSettingsTemplateByName(ctx, apiClient, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
+	resource, err := apiClient.GetResourceSettingsTemplateByName(ctx, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
 	if err != nil {
 		return "", fmt.Errorf("getting resource settings template %s for tenant %s: %w", deployment.ResourceSettingsTemplateName, tenantID, err)
 	}
 
-	appConfig, err := getAppConfigTemplateByName(ctx, apiClient, tenantID, deployment.AppConfigTemplateName, image.DataServiceID)
+	appConfig, err := apiClient.GetAppConfigTemplateByName(ctx, tenantID, deployment.AppConfigTemplateName, image.DataServiceID)
 	if err != nil {
 		return "", fmt.Errorf("getting application configuration template %s for tenant %s: %w", deployment.AppConfigTemplateName, tenantID, err)
 	}

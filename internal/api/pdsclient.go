@@ -126,3 +126,29 @@ func (c *PDSClient) CreateUserAPIKey(expiresAt time.Time, name string) (*pdsApi.
 	}
 	return userApiKey, nil
 }
+
+func (c *PDSClient) GetResourceSettingsTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsResourceSettingsTemplate, error) {
+	resources, resp, err := c.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, err
+	}
+	for _, r := range resources.GetData() {
+		if r.GetDataServiceId() == dataServiceID {
+			return &r, nil
+		}
+	}
+	return nil, fmt.Errorf("resource settings template %s not found", templateName)
+}
+
+func (c *PDSClient) GetAppConfigTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsApplicationConfigurationTemplate, error) {
+	appConfigurations, resp, err := c.ApplicationConfigurationTemplatesApi.ApiTenantsIdApplicationConfigurationTemplatesGet(ctx, tenantID).Name(templateName).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, err
+	}
+	for _, c := range appConfigurations.GetData() {
+		if c.GetDataServiceId() == dataServiceID {
+			return &c, nil
+		}
+	}
+	return nil, fmt.Errorf("application configuration template %s not found", templateName)
+}

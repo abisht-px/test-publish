@@ -430,13 +430,13 @@ func (s *PDSTestSuite) mustUpdateDeployment(t *testing.T, deploymentID string, s
 	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
-		resourceTemplate, err := getResourceSettingsTemplateByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		resourceTemplate, err := s.controlPlane.API.GetResourceSettingsTemplateByName(s.ctx, s.testPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
-		appConfigTemplate, err := getAppConfigTemplateByName(s.ctx, s.controlPlane.API, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		appConfigTemplate, err := s.controlPlane.API.GetAppConfigTemplateByName(s.ctx, s.testPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
