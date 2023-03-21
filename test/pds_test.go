@@ -388,7 +388,7 @@ func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment api.Sho
 
 	s.setDeploymentDefaults(&deployment)
 
-	deploymentID, err := createPDSDeployment(s.ctx, s.controlPlane.API, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
+	deploymentID, err := s.controlPlane.API.CreateDeployment(s.ctx, &deployment, image, s.testPDSTenantID, s.testPDSDeploymentTargetID, s.testPDSProjectID, s.testPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 

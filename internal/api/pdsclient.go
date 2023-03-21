@@ -193,3 +193,70 @@ func (c *PDSClient) GetAppConfigTemplateByName(ctx context.Context, tenantID, te
 	}
 	return nil, fmt.Errorf("application configuration template %s not found", templateName)
 }
+
+func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeploymentSpec, image *PDSImageReferenceSpec, tenantID, deploymentTargetID, projectID, namespaceID string) (string, error) {
+	resource, err := c.GetResourceSettingsTemplateByName(ctx, tenantID, deployment.ResourceSettingsTemplateName, image.DataServiceID)
+	if err != nil {
+		return "", fmt.Errorf("getting resource settings template %s for tenant %s: %w", deployment.ResourceSettingsTemplateName, tenantID, err)
+	}
+
+	appConfig, err := c.GetAppConfigTemplateByName(ctx, tenantID, deployment.AppConfigTemplateName, image.DataServiceID)
+	if err != nil {
+		return "", fmt.Errorf("getting application configuration template %s for tenant %s: %w", deployment.AppConfigTemplateName, tenantID, err)
+	}
+
+	storages, resp, err := c.StorageOptionsTemplatesApi.ApiTenantsIdStorageOptionsTemplatesGet(ctx, tenantID).Name(deployment.StorageOptionName).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return "", fmt.Errorf("getting storage option template %s for tenant %s: %w", deployment.StorageOptionName, tenantID, err)
+	}
+
+	if len(storages.GetData()) == 0 {
+		return "", fmt.Errorf("storage option template %s not found", deployment.StorageOptionName)
+	}
+	if len(storages.GetData()) != 1 {
+		return "", fmt.Errorf("more than one storage option template found")
+	}
+	storage := storages.GetData()[0]
+
+	var backupPolicy *pdsApi.ModelsBackupPolicy
+	if len(deployment.BackupPolicyname) > 0 {
+		backupPolicies, resp, err := c.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(ctx, tenantID).Name(deployment.BackupPolicyname).Execute()
+		if err = ExtractErrorDetails(resp, err); err != nil {
+			return "", fmt.Errorf("getting backup policies for tenant %s: %w", tenantID, err)
+		}
+		if len(backupPolicies.GetData()) == 0 {
+			return "", fmt.Errorf("backup policy %s not found", deployment.BackupPolicyname)
+		}
+		if len(backupPolicies.GetData()) != 1 {
+			return "", fmt.Errorf("more than one backup policy found")
+		}
+		backupPolicy = &backupPolicies.GetData()[0]
+	}
+
+	dns, resp, err := c.TenantsApi.ApiTenantsIdDnsDetailsGet(ctx, tenantID).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return "", fmt.Errorf("getting DNS details for tenant %s: %w", tenantID, err)
+	}
+
+	pdsDeployment := pdsApi.NewControllersCreateProjectDeployment()
+	pdsDeployment.SetApplicationConfigurationTemplateId(appConfig.GetId())
+	pdsDeployment.SetDeploymentTargetId(deploymentTargetID)
+	pdsDeployment.SetDnsZone(dns.GetDnsZone())
+	pdsDeployment.SetImageId(image.ImageID)
+	pdsDeployment.SetName(deployment.NamePrefix)
+	pdsDeployment.SetNamespaceId(namespaceID)
+	pdsDeployment.SetNodeCount(int32(deployment.NodeCount))
+	pdsDeployment.SetResourceSettingsTemplateId(resource.GetId())
+	if backupPolicy != nil {
+		pdsDeployment.ScheduledBackup.SetBackupPolicyId(backupPolicy.GetId())
+	}
+	pdsDeployment.SetServiceType(deployment.ServiceType)
+	pdsDeployment.SetStorageOptionsTemplateId(storage.GetId())
+
+	res, httpRes, err := c.DeploymentsApi.ApiProjectsIdDeploymentsPost(ctx, projectID).Body(*pdsDeployment).Execute()
+	if err = ExtractErrorDetails(httpRes, err); err != nil {
+		return "", fmt.Errorf("deploying %s under project %s: %w", *pdsDeployment.Name, projectID, err)
+	}
+
+	return res.GetId(), nil
+}
