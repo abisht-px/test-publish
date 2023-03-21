@@ -252,7 +252,7 @@ func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *
 		err       error
 	)
 	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace, err = getNamespaceByName(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID, name)
+		namespace, err = s.controlPlane.API.GetNamespaceByName(s.ctx, s.testPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
 		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
@@ -264,7 +264,7 @@ func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
 	require.Never(
 		t,
 		func() bool {
-			namespace, err := getNamespaceByName(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID, name)
+			namespace, err := s.controlPlane.API.GetNamespaceByName(s.ctx, s.testPDSDeploymentTargetID, name)
 			return err != nil && namespace != nil
 		},
 		waiterNamespaceExistsTimeout, waiterShortRetryInterval,

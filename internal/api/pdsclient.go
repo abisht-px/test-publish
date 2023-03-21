@@ -155,6 +155,19 @@ func (c *PDSClient) GetDeploymentTargetIDByName(ctx context.Context, tenantID, d
 	return "", fmt.Errorf("deployment target %s not found", deploymentTargetName)
 }
 
+func (c *PDSClient) GetNamespaceByName(ctx context.Context, deploymentTargetID, name string) (*pdsApi.ModelsNamespace, error) {
+	namespaces, resp, err := c.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("getting namespace %s: %w", name, err)
+	}
+	for _, namespace := range namespaces.GetData() {
+		if namespace.GetName() == name {
+			return &namespace, nil
+		}
+	}
+	return nil, nil
+}
+
 func (c *PDSClient) GetResourceSettingsTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsResourceSettingsTemplate, error) {
 	resources, resp, err := c.ResourceSettingsTemplatesApi.ApiTenantsIdResourceSettingsTemplatesGet(ctx, tenantID).Name(templateName).Execute()
 	if err = ExtractErrorDetails(resp, err); err != nil {

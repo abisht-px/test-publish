@@ -17,19 +17,6 @@ const (
 	pdsDeploymentHealthState = "Healthy"
 )
 
-func getNamespaceByName(ctx context.Context, apiClient *api.PDSClient, deploymentTargetID, name string) (*pds.ModelsNamespace, error) {
-	namespaces, resp, err := apiClient.NamespacesApi.ApiDeploymentTargetsIdNamespacesGet(ctx, deploymentTargetID).Execute()
-	if err = api.ExtractErrorDetails(resp, err); err != nil {
-		return nil, fmt.Errorf("getting namespace %s: %w", name, err)
-	}
-	for _, namespace := range namespaces.GetData() {
-		if namespace.GetName() == name {
-			return &namespace, nil
-		}
-	}
-	return nil, nil
-}
-
 func getAllImageVersions(ctx context.Context, apiClient *api.PDSClient) ([]api.PDSImageReferenceSpec, error) {
 	var records []api.PDSImageReferenceSpec
 
