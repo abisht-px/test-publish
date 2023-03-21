@@ -12,6 +12,10 @@ import (
 	"github.com/portworx/pds-integration-test/internal/auth"
 )
 
+const (
+	pdsDeploymentTargetHealthStateHealthy = "healthy"
+)
+
 // PDSClient is a wrapper around the PDS OpenAPI client with additional helper logic.
 type PDSClient struct {
 	*pdsApi.APIClient
@@ -125,6 +129,17 @@ func (c *PDSClient) CreateUserAPIKey(expiresAt time.Time, name string) (*pdsApi.
 		return nil, fmt.Errorf("could not create user API key: %w", err)
 	}
 	return userApiKey, nil
+}
+
+func (c *PDSClient) CheckDeploymentTargetHealth(ctx context.Context, deploymentTargetID string) error {
+	target, resp, err := c.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, deploymentTargetID).Execute()
+	if err != nil {
+		return ExtractErrorDetails(resp, err)
+	}
+	if target.GetStatus() != pdsDeploymentTargetHealthStateHealthy {
+		return fmt.Errorf("deployment target not healthy: got %q, want %q", target.GetStatus(), pdsDeploymentTargetHealthStateHealthy)
+	}
+	return nil
 }
 
 func (c *PDSClient) GetResourceSettingsTemplateByName(ctx context.Context, tenantID, templateName, dataServiceID string) (*pdsApi.ModelsResourceSettingsTemplate, error) {

@@ -14,20 +14,8 @@ import (
 )
 
 const (
-	pdsDeploymentTargetHealthState = "healthy"
-	pdsDeploymentHealthState       = "Healthy"
+	pdsDeploymentHealthState = "Healthy"
 )
-
-func checkDeploymentTargetHealth(ctx context.Context, apiClient *api.PDSClient, deploymentTargetID string) error {
-	target, resp, err := apiClient.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, deploymentTargetID).Execute()
-	if err != nil {
-		return api.ExtractErrorDetails(resp, err)
-	}
-	if target.GetStatus() != pdsDeploymentTargetHealthState {
-		return fmt.Errorf("deployment target not healthy: got %q, want %q", target.GetStatus(), pdsDeploymentTargetHealthState)
-	}
-	return nil
-}
 
 func getDeploymentTargetIDByName(ctx context.Context, apiClient *api.PDSClient, tenantID, deploymentTargetName string) (string, error) {
 	targets, resp, err := apiClient.DeploymentTargetsApi.ApiTenantsIdDeploymentTargetsGet(ctx, tenantID).Execute()

@@ -225,14 +225,14 @@ func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 	})
 
 	wait.For(s.T(), waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := checkDeploymentTargetHealth(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID)
+		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.testPDSDeploymentTargetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.testPDSDeploymentTargetID)
 	})
 }
 
 func (s *PDSTestSuite) deletePDStestDeploymentTarget() {
 	wait.For(s.T(), waiterDeploymentTargetStatusUnhealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := checkDeploymentTargetHealth(s.ctx, s.controlPlane.API, s.testPDSDeploymentTargetID)
+		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.testPDSDeploymentTargetID)
 		require.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
 	})
 	resp, err := s.controlPlane.API.DeploymentTargetsApi.ApiDeploymentTargetsIdDelete(s.ctx, s.testPDSDeploymentTargetID).Execute()
