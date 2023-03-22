@@ -28,6 +28,7 @@ import (
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/auth"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
+	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
@@ -71,6 +72,7 @@ type PDSTestSuite struct {
 
 	controlPlane        *controlplane.ControlPlane
 	targetCluster       *targetcluster.TargetCluster
+	crossCluster        *crosscluster.CrossClusterHelper
 	prometheusClient    prometheusv1.API
 	pdsAgentInstallable *helminstaller.InstallableHelmPDS
 	pdsHelmChartVersion string
@@ -111,6 +113,8 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustWaitForPDSTestDeploymentTarget(env)
 	s.controlPlane.MustWaitForTestNamespace(s.ctx, s.T(), env.pdsNamespaceName)
 	s.mustCreateApplicationTemplates()
+
+	s.crossCluster = crosscluster.NewHelper(s.controlPlane, s.targetCluster)
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
