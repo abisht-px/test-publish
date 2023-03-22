@@ -190,9 +190,9 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			s.mustEnsureBackupTargetCreatedInTC(t, backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
 			t.Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
 
-			backup := s.mustCreateBackup(t, deploymentID, backupTarget.GetId())
+			backup := s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
 			s.mustEnsureBackupSuccessful(t, deploymentID, backup.GetClusterResourceName())
-			t.Cleanup(func() { s.mustDeleteBackup(t, backup.GetId()) })
+			t.Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId()) })
 		})
 	}
 }

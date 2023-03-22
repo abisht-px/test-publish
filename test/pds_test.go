@@ -447,23 +447,6 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentI
 	})
 }
 
-func (s *PDSTestSuite) mustCreateBackup(t *testing.T, deploymentID, backupTargetID string) *pds.ModelsBackup {
-	requestBody := pds.ControllersCreateDeploymentBackup{
-		BackupLevel:    pointer.String("snapshot"),
-		BackupTargetId: pointer.String(backupTargetID),
-		BackupType:     pointer.String("adhoc"),
-	}
-	backup, resp, err := s.controlPlane.API.BackupsApi.ApiDeploymentsIdBackupsPost(s.ctx, deploymentID).Body(requestBody).Execute()
-	api.RequireNoError(t, resp, err)
-
-	return backup
-}
-
-func (s *PDSTestSuite) mustDeleteBackup(t *testing.T, backupID string) {
-	resp, err := s.controlPlane.API.BackupsApi.ApiBackupsIdDelete(s.ctx, backupID).Execute()
-	api.RequireNoError(t, resp, err)
-}
-
 func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
 	tenantID := s.controlPlane.TestPDSTenantID
 	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
