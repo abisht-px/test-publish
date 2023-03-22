@@ -109,7 +109,7 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustInstallAgent(env)
 	}
 	s.mustWaitForPDSTestDeploymentTarget(env)
-	s.mustWaitForPDSTestNamespace(env)
+	s.controlPlane.MustWaitForTestNamespace(s.ctx, s.T(), env.pdsNamespaceName)
 	s.mustCreateApplicationTemplates()
 }
 
@@ -148,38 +148,6 @@ func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
 		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.controlPlane.TestPDSDeploymentTargetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.controlPlane.TestPDSDeploymentTargetID)
 	})
-}
-
-func (s *PDSTestSuite) mustWaitForPDSTestNamespace(env environment) {
-	namespace := s.mustWaitForNamespaceStatus(env.pdsNamespaceName, "available")
-	s.Require().NotNilf(namespace, "PDS test namespace %s is not available.", env.pdsNamespaceName)
-	s.controlPlane.TestPDSNamespaceID = namespace.GetId()
-}
-
-func (s *PDSTestSuite) mustWaitForNamespaceStatus(name, expectedStatus string) *pds.ModelsNamespace {
-	var (
-		namespace *pds.ModelsNamespace
-		err       error
-	)
-	wait.For(s.T(), waiterNamespaceExistsTimeout, waiterShortRetryInterval, func(t tests.T) {
-		namespace, err = s.controlPlane.API.GetNamespaceByName(s.ctx, s.controlPlane.TestPDSDeploymentTargetID, name)
-		require.NoErrorf(t, err, "Getting namespace %s.", name)
-		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
-		require.Equalf(t, expectedStatus, namespace.GetStatus(), "Namespace %s not in status %s.", name, expectedStatus)
-	})
-	return namespace
-}
-
-func (s *PDSTestSuite) mustNeverGetNamespaceByName(t *testing.T, name string) {
-	require.Never(
-		t,
-		func() bool {
-			namespace, err := s.controlPlane.API.GetNamespaceByName(s.ctx, s.controlPlane.TestPDSDeploymentTargetID, name)
-			return err != nil && namespace != nil
-		},
-		waiterNamespaceExistsTimeout, waiterShortRetryInterval,
-		"Namespace %s was not expected to be found in control plane.", name,
-	)
 }
 
 // mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".
