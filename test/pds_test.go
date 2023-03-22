@@ -102,11 +102,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHaveAuthorization(env)
 	s.mustHaveControlPlane(env)
 	s.mustHavePDSMetadata(env)
-	s.mustHavePDStestAccount(env)
-	s.mustHavePDStestTenant(env)
 	s.mustHavePrometheusClient(env)
-	s.mustHavePDStestProject(env)
-	s.mustLoadImageVersions()
 	if shouldInstallPDSHelmChart(s.pdsHelmChartVersion) {
 		s.mustHavePDStestServiceAccount(env)
 		s.mustHavePDStestAgentToken(env)
@@ -115,7 +111,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustWaitForPDSTestDeploymentTarget(env)
 	s.mustWaitForPDSTestNamespace(env)
 	s.mustCreateApplicationTemplates()
-	s.mustCreateStorageOptions()
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
@@ -140,60 +135,6 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	} else {
 		s.pdsHelmChartVersion = env.pdsHelmChartVersion
 	}
-}
-
-// mustHavePDStestAccount finds PDS account with name set in envrionment and stores its ID as "Test PDS Account".
-func (s *PDSTestSuite) mustHavePDStestAccount(env environment) {
-	// TODO: Use account name query filters
-	accounts, resp, err := s.controlPlane.API.AccountsApi.ApiAccountsGet(s.ctx).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().NotEmpty(accounts, "PDS API must return at least one account.")
-
-	var testPDSAccountID string
-	for _, account := range accounts.GetData() {
-		if account.GetName() == env.controlPlane.AccountName {
-			testPDSAccountID = account.GetId()
-			break
-		}
-	}
-	s.Require().NotEmpty(testPDSAccountID, "PDS account %s not found.", env.controlPlane.AccountName)
-	s.controlPlane.TestPDSAccountID = testPDSAccountID
-}
-
-// mustHavePDStestTenant finds PDS tenant in Test PDS Account with name set in environment and stores its ID as "Test PDS Tenant".
-func (s *PDSTestSuite) mustHavePDStestTenant(env environment) {
-	// TODO: Use tenant name query filters
-	tenants, resp, err := s.controlPlane.API.TenantsApi.ApiAccountsIdTenantsGet(s.ctx, s.controlPlane.TestPDSAccountID).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().NotEmpty(tenants, "PDS API must return at least one tenant.")
-
-	var testPDSTenantID string
-	for _, tenant := range tenants.GetData() {
-		if tenant.GetName() == env.controlPlane.TenantName {
-			testPDSTenantID = tenant.GetId()
-			break
-		}
-	}
-	s.Require().NotEmpty(testPDSTenantID, "PDS tenant %s not found.", env.controlPlane.TenantName)
-	s.controlPlane.TestPDSTenantID = testPDSTenantID
-}
-
-// mustHavePDStestProject finds PDS project in Test PDS Tenant with name set in environment and stores its ID as "Test PDS Project".
-func (s *PDSTestSuite) mustHavePDStestProject(env environment) {
-	// TODO: Use project name query filters
-	projects, resp, err := s.controlPlane.API.ProjectsApi.ApiTenantsIdProjectsGet(s.ctx, s.controlPlane.TestPDSTenantID).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().NotEmpty(projects, "PDS API must return at least one project.")
-
-	var testPDSProjectID string
-	for _, project := range projects.GetData() {
-		if project.GetName() == env.controlPlane.ProjectName {
-			testPDSProjectID = project.GetId()
-			break
-		}
-	}
-	s.Require().NotEmpty(testPDSProjectID, "PDS project %s not found.", env.controlPlane.ProjectName)
-	s.controlPlane.TestPDSProjectID = testPDSProjectID
 }
 
 func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
@@ -303,7 +244,13 @@ func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
 	apiClient, err := api.NewPDSClient(context.Background(), env.controlPlane.ControlPlaneAPI, env.controlPlane.LoginCredentials)
 	s.Require().NoError(err, "Could not create Control Plane API client.")
 
-	s.controlPlane = controlplane.New(apiClient)
+	controlPlane := controlplane.New(apiClient)
+	controlPlane.MustInitializeTestData(s.ctx, s.T(),
+		env.controlPlane.AccountName,
+		env.controlPlane.TenantName,
+		env.controlPlane.ProjectName,
+		namePrefix)
+	s.controlPlane = controlPlane
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
@@ -352,13 +299,6 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 	})
 	err = s.targetCluster.DeletePXCloudCredentials(s.ctx)
 	s.NoError(err, "Cannot delete PX cloud credentials.")
-}
-
-func (s *PDSTestSuite) mustLoadImageVersions() {
-	imageVersions, err := s.controlPlane.API.GetAllImageVersions(s.ctx)
-	s.Require().NoError(err, "Error while reading image versions.")
-	s.Require().NotEmpty(imageVersions, "No image versions found.")
-	s.controlPlane.ImageVersionSpecList = imageVersions
 }
 
 func (s *PDSTestSuite) mustDeployDeploymentSpec(t *testing.T, deployment api.ShortDeploymentSpec) string {
@@ -710,24 +650,6 @@ func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
 		assert.NotNil(t, resp)
 		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
 	})
-}
-
-func (s *PDSTestSuite) mustCreateStorageOptions() {
-	storageTemplate := pds.ControllersCreateStorageOptionsTemplateRequest{
-		Name:   pointer.StringPtr(namePrefix),
-		Repl:   pointer.Int32Ptr(1),
-		Secure: pointer.BoolPtr(false),
-		Fs:     pointer.StringPtr("xfs"),
-		Fg:     pointer.BoolPtr(false),
-	}
-	storageTemplateResp, resp, err := s.controlPlane.API.StorageOptionsTemplatesApi.
-		ApiTenantsIdStorageOptionsTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
-		Body(storageTemplate).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().NoError(err)
-
-	s.controlPlane.TestPDSStorageTemplateID = storageTemplateResp.GetId()
-	s.controlPlane.TestPDSStorageTemplateName = storageTemplateResp.GetName()
 }
 
 func (s *PDSTestSuite) mustCreateApplicationTemplates() {
