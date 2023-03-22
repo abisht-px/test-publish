@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	waiterRetryInterval                          = time.Second * 10
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Minute * 5
 )
 

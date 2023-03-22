@@ -1,7 +1,13 @@
 package controlplane
 
 import (
+	"time"
+
 	"github.com/portworx/pds-integration-test/internal/api"
+)
+
+const (
+	waiterRetryInterval = time.Second * 10
 )
 
 type ControlPlane struct {

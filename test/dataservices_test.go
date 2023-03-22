@@ -87,12 +87,12 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -171,12 +171,12 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 
@@ -356,14 +356,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				t.Parallel()
 
 				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.ImageVersionString())
-				deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 				t.Cleanup(func() {
 					s.mustRemoveDeployment(t, deploymentID)
 					s.waitForDeploymentRemoved(t, deploymentID)
 				})
 
 				// Create.
-				s.mustEnsureDeploymentHealthy(t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.mustEnsureDeploymentInitialized(t, deploymentID)
 				s.mustEnsureStatefulSetReady(t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -373,7 +373,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				// Update.
 				newSpec := tt.spec
 				newSpec.ImageVersionTag = targetVersionTag
-				s.mustUpdateDeployment(t, deploymentID, &newSpec)
+				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &newSpec)
 				s.mustEnsureStatefulSetImage(t, deploymentID, targetVersionTag)
 				s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -509,14 +509,14 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			t.Parallel()
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -526,7 +526,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			// Update.
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
-			s.mustUpdateDeployment(t, deploymentID, &updateSpec)
+			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
 			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -636,14 +636,14 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			t.Parallel()
 
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
-			deploymentID := s.mustDeployDeploymentSpec(t, tt.spec)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 
 			// Create.
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -653,7 +653,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			// Update.
 			updateSpec := tt.spec
 			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
-			s.mustUpdateDeployment(t, deploymentID, &updateSpec)
+			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
 			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -727,12 +727,12 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
@@ -814,12 +814,12 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.mustDeployDeploymentSpec(t, deployment)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
 				s.mustRemoveDeployment(t, deploymentID)
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
-			s.mustEnsureDeploymentHealthy(t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.mustEnsureDeploymentInitialized(t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)

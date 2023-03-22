@@ -7,29 +7,8 @@ import (
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
-	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/random"
 )
-
-const (
-	pdsDeploymentHealthState = "Healthy"
-)
-
-func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api.PDSImageReferenceSpec) *api.PDSImageReferenceSpec {
-	for _, image := range images {
-		found := image.DataServiceName == deployment.DataServiceName
-		if deployment.ImageVersionTag != "" {
-			found = found && image.ImageVersionTag == deployment.ImageVersionTag
-		}
-		if deployment.ImageVersionBuild != "" {
-			found = found && image.ImageVersionBuild == deployment.ImageVersionBuild
-		}
-		if found {
-			return &image
-		}
-	}
-	return nil
-}
 
 func isJobSucceeded(job *batchv1.Job) bool {
 	return *job.Spec.Completions == job.Status.Succeeded
