@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	waiterRetryInterval                = time.Second * 10
 	waiterBackupStatusSucceededTimeout = time.Second * 300
 )
 

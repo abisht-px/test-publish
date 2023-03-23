@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -44,7 +43,6 @@ const (
 	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
 	waiterDeploymentStatusHealthyTimeout         = time.Second * 600
 	waiterLoadBalancerServicesReady              = time.Second * 300
-	waiterStatefulSetReadyAndUpdatedReplicas     = time.Second * 600
 	waiterBackupStatusSucceededTimeout           = time.Second * 300
 	waiterBackupTargetSyncedTimeout              = time.Second * 60
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
@@ -362,45 +360,6 @@ func (s *PDSTestSuite) mustWaitForJobToFinish(t tests.T, namespace string, jobNa
 	})
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReadyAndUpdatedReplicas(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespace := namespaceModel.GetName()
-	wait.For(t, waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval, func(t tests.T) {
-		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
-		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")
-		// Also check the UpdatedReplicas count, so we are sure that all nodes were restarted after the change.
-		require.Equalf(t, *deployment.NodeCount, set.Status.UpdatedReplicas, "UpdatedReplicas don't match desired NodeCount.")
-	})
-}
-
-func (s *PDSTestSuite) mustEnsureStatefulSetImage(t *testing.T, deploymentID, imageTag string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespace := namespaceModel.GetName()
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
-
-		image, err := getDatabaseImage(dataService.GetName(), set)
-		require.NoErrorf(t, err, "Getting database image of deployment %s.", deployment.GetClusterResourceName())
-
-		require.Contains(t, image, imageTag, "StatefulSet %s does not contain image tag %q.", deployment.GetClusterResourceName(), imageTag)
-	})
-}
-
 func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
@@ -612,46 +571,6 @@ func (s *PDSTestSuite) mustGetDBPassword(t *testing.T, namespace, deploymentName
 	require.NoError(t, err)
 
 	return string(secret.Data["password"])
-}
-
-func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, error) {
-	var containerName string
-	switch deploymentType {
-	case dataservices.Postgres:
-		containerName = "postgresql"
-	case dataservices.Cassandra:
-		containerName = "cassandra"
-	case dataservices.Couchbase:
-		containerName = "couchbase"
-	case dataservices.Redis:
-		containerName = "redis"
-	case dataservices.ZooKeeper:
-		containerName = "zookeeper"
-	case dataservices.Kafka:
-		containerName = "kafka"
-	case dataservices.RabbitMQ:
-		containerName = "rabbitmq"
-	case dataservices.MongoDB:
-		containerName = "mongos"
-	case dataservices.MySQL:
-		containerName = "mysql"
-	case dataservices.ElasticSearch:
-		containerName = "elasticsearch"
-	case dataservices.Consul:
-		containerName = "consul"
-	default:
-		return "", fmt.Errorf("unknown database type: %s", deploymentType)
-	}
-
-	for _, container := range set.Spec.Template.Spec.Containers {
-		if container.Name != containerName {
-			continue
-		}
-
-		return container.Image, nil
-	}
-
-	return "", fmt.Errorf("database type: %s: container %q is not found", deploymentType, containerName)
 }
 
 func (s *PDSTestSuite) deletePods(t *testing.T, deploymentID string) {

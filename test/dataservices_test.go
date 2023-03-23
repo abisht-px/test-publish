@@ -375,8 +375,8 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				newSpec := tt.spec
 				newSpec.ImageVersionTag = targetVersionTag
 				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &newSpec)
-				s.mustEnsureStatefulSetImage(t, deploymentID, targetVersionTag)
-				s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+				s.crossCluster.MustEnsureStatefulSetImage(s.ctx, t, deploymentID, targetVersionTag)
+				s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 				s.mustRunBasicSmokeTest(t, deploymentID)
@@ -528,7 +528,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
 			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 			s.mustRunBasicSmokeTest(t, deploymentID)
@@ -655,7 +655,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			updateSpec := tt.spec
 			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
 			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 			s.mustRunBasicSmokeTest(t, deploymentID)
@@ -741,7 +741,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.mustRunBasicSmokeTest(t, deploymentID)
 			//Delete pods and load test
 			s.deletePods(t, deploymentID)
-			s.mustEnsureStatefulSetReadyAndUpdatedReplicas(t, deploymentID)
+			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 			s.mustRunBasicSmokeTest(t, deploymentID)
