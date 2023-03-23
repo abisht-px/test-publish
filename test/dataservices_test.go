@@ -192,7 +192,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			t.Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
 
 			backup := s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
-			s.mustEnsureBackupSuccessful(t, deploymentID, backup.GetClusterResourceName())
+			s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
 			t.Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId()) })
 		})
 	}

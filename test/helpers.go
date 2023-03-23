@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/portworx/pds-integration-test/internal/random"
@@ -12,18 +11,6 @@ import (
 
 func isJobSucceeded(job *batchv1.Job) bool {
 	return *job.Spec.Completions == job.Status.Succeeded
-}
-
-func isBackupFinished(backup *backupsv1.Backup) bool {
-	return isBackupSucceeded(backup) || isBackupFailed(backup)
-}
-
-func isBackupSucceeded(backup *backupsv1.Backup) bool {
-	return backup.Status.Succeeded > 0
-}
-
-func isBackupFailed(backup *backupsv1.Backup) bool {
-	return backup.Status.Failed > 0
 }
 
 type TestLogger struct {

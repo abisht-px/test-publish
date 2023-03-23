@@ -113,7 +113,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustWaitForPDSTestDeploymentTarget(env)
 	s.controlPlane.MustWaitForTestNamespace(s.ctx, s.T(), env.pdsNamespaceName)
 
-	s.crossCluster = crosscluster.NewHelper(s.controlPlane, s.targetCluster)
+	s.crossCluster = crosscluster.NewHelper(s.controlPlane, s.targetCluster, s.startTime)
 }
 
 func (s *PDSTestSuite) TearDownSuite() {
@@ -499,43 +499,6 @@ func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
 		assert.NotNil(t, resp)
 		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
 	})
-}
-
-func (s *PDSTestSuite) mustEnsureBackupSuccessful(t *testing.T, deploymentID, backupName string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespace := namespaceModel.GetName()
-
-	// 1. Wait for the backup to finish.
-	wait.For(t, waiterBackupStatusSucceededTimeout, waiterRetryInterval, func(t tests.T) {
-		pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
-		require.NoErrorf(t, err, "Getting backup %s/%s for deployment %s from target cluster.", namespace, backupName, deploymentID)
-		require.Truef(t, isBackupFinished(pdsBackup), "Backup %s for the deployment %s did not finish.", backupName, deploymentID)
-	})
-
-	// 2. Check the result.
-	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backupName)
-	require.NoError(t, err)
-
-	if isBackupFailed(pdsBackup) {
-		// Backup failed.
-		backupJobs := pdsBackup.Status.BackupJobs
-		var backupJobName string
-		if len(backupJobs) > 0 {
-			backupJobName = backupJobs[0].Name
-		}
-		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, backupJobName, s.startTime)
-		if err != nil {
-			require.Fail(t, fmt.Sprintf("Backup '%s' failed.", backupName))
-		} else {
-			require.Fail(t, fmt.Sprintf("Backup job '%s' failed. See job logs for more details:", backupJobName), logs)
-		}
-	}
-	require.True(t, isBackupSucceeded(pdsBackup))
 }
 
 func (s *PDSTestSuite) mustRunBasicSmokeTest(t *testing.T, deploymentID string) {

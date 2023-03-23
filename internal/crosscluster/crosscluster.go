@@ -1,6 +1,8 @@
 package crosscluster
 
 import (
+	"time"
+
 	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 )
@@ -13,11 +15,14 @@ import (
 type CrossClusterHelper struct {
 	controlPlane  *controlplane.ControlPlane
 	targetCluster *targetcluster.TargetCluster
+
+	startTime time.Time
 }
 
-func NewHelper(controlPlane *controlplane.ControlPlane, targetCluster *targetcluster.TargetCluster) *CrossClusterHelper {
+func NewHelper(controlPlane *controlplane.ControlPlane, targetCluster *targetcluster.TargetCluster, startTime time.Time) *CrossClusterHelper {
 	return &CrossClusterHelper{
 		controlPlane:  controlPlane,
 		targetCluster: targetCluster,
+		startTime:     startTime,
 	}
 }
