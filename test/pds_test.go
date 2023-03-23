@@ -382,10 +382,6 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentI
 	})
 }
 
-func (s *PDSTestSuite) mustRunBasicSmokeTest(t *testing.T, deploymentID string) {
-	s.mustRunLoadTestJob(t, deploymentID)
-}
-
 func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
 	jobNamespace, jobName := s.mustCreateLoadTestJob(t, deploymentID)
 	s.mustEnsureLoadTestJobSucceeded(t, jobNamespace, jobName)

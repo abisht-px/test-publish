@@ -99,7 +99,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 		})
 	}
 }
@@ -369,7 +369,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.mustEnsureStatefulSetReady(t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-				s.mustRunBasicSmokeTest(t, deploymentID)
+				s.mustRunLoadTestJob(t, deploymentID)
 
 				// Update.
 				newSpec := tt.spec
@@ -379,7 +379,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-				s.mustRunBasicSmokeTest(t, deploymentID)
+				s.mustRunLoadTestJob(t, deploymentID)
 			})
 		}
 	}
@@ -522,7 +522,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
@@ -531,7 +531,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 		})
 	}
 }
@@ -649,7 +649,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
@@ -658,7 +658,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 		})
 	}
 }
@@ -738,13 +738,13 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 			//Delete pods and load test
 			s.deletePods(t, deploymentID)
 			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 		})
 	}
 }
@@ -825,7 +825,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
-			s.mustRunBasicSmokeTest(t, deploymentID)
+			s.mustRunLoadTestJob(t, deploymentID)
 
 			// Try to get DS metrics from prometheus.
 			s.mustVerifyMetrics(t, deploymentID)
