@@ -1,4 +1,4 @@
-package test
+package dataservices
 
 import (
 	"fmt"
@@ -9,22 +9,22 @@ import (
 )
 
 const (
-	dbCassandra     = "Cassandra"
-	dbCouchbase     = "Couchbase"
-	dbKafka         = "Kafka"
-	dbMongoDB       = "MongoDB Enterprise"
-	dbMySQL         = "MySQL"
-	dbPostgres      = "PostgreSQL"
-	dbRabbitMQ      = "RabbitMQ"
-	dbRedis         = "Redis"
-	dbZooKeeper     = "ZooKeeper"
-	dbElasticSearch = "Elasticsearch"
-	dbConsul        = "Consul"
+	Cassandra     = "Cassandra"
+	Couchbase     = "Couchbase"
+	Kafka         = "Kafka"
+	MongoDB       = "MongoDB Enterprise"
+	MySQL         = "MySQL"
+	Postgres      = "PostgreSQL"
+	RabbitMQ      = "RabbitMQ"
+	Redis         = "Redis"
+	ZooKeeper     = "ZooKeeper"
+	ElasticSearch = "Elasticsearch"
+	Consul        = "Consul"
 )
 
-type dataServiceTemplateSpec struct {
-	configurationTemplates map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest
-	resourceTemplates      map[string]pds.ControllersCreateResourceSettingsTemplateRequest
+type TemplateSpec struct {
+	ConfigurationTemplates map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest
+	ResourceTemplates      map[string]pds.ControllersCreateResourceSettingsTemplateRequest
 }
 
 var (
@@ -33,9 +33,9 @@ var (
 	templateNameMed     = fmt.Sprintf("integration-test-med-%d", time.Now().Unix())
 
 	// When updating, please consider that the first element in each list is used by the setDeploymentDefaults function.
-	dataServiceTemplatesSpec = map[string]dataServiceTemplateSpec{
-		dbCassandra: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+	TemplateSpecs = map[string]TemplateSpec{
+		Cassandra: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name: pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{
@@ -50,7 +50,7 @@ var (
 					},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.75"),
@@ -69,8 +69,8 @@ var (
 				},
 			},
 		},
-		dbCouchbase: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		Couchbase: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name: pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{
@@ -89,7 +89,7 @@ var (
 					},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.75"),
@@ -108,14 +108,14 @@ var (
 				},
 			},
 		},
-		dbConsul: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		Consul: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -134,8 +134,8 @@ var (
 				},
 			},
 		},
-		dbKafka: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		Kafka: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name: pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{
@@ -146,7 +146,7 @@ var (
 					},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -165,14 +165,14 @@ var (
 				},
 			},
 		},
-		dbMongoDB: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		MongoDB: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -191,14 +191,14 @@ var (
 				},
 			},
 		},
-		dbMySQL: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		MySQL: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -217,8 +217,8 @@ var (
 				},
 			},
 		},
-		dbElasticSearch: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		ElasticSearch: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name: pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{
@@ -229,7 +229,7 @@ var (
 					},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -248,14 +248,14 @@ var (
 				},
 			},
 		},
-		dbPostgres: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		Postgres: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -274,14 +274,14 @@ var (
 				},
 			},
 		},
-		dbRabbitMQ: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		RabbitMQ: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -300,13 +300,13 @@ var (
 				},
 			},
 		},
-		dbRedis: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		Redis: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),
@@ -325,14 +325,14 @@ var (
 				},
 			},
 		},
-		dbZooKeeper: {
-			configurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+		ZooKeeper: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					Name:        pointer.StringPtr(templateNameDefault),
 					ConfigItems: []pds.ModelsConfigItem{},
 				},
 			},
-			resourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
 				templateNameSmall: {
 					Name:           pointer.StringPtr(templateNameSmall),
 					CpuRequest:     pointer.StringPtr("0.5"),

@@ -22,7 +22,7 @@ type ControlPlane struct {
 	TestPDSServiceAccountID    string
 	TestPDSStorageTemplateID   string
 	TestPDSStorageTemplateName string
-	TestPDSTemplatesMap        map[string]DataServiceTemplateInfo
+	TestPDSTemplatesMap        map[string]dataServiceTemplateInfo
 	ImageVersionSpecList       []api.PDSImageReferenceSpec
 }
 

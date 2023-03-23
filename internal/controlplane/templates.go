@@ -8,17 +8,15 @@ import (
 )
 
 // Info for a single template.
-// TODO 4915: Unexport definitions when all referencing helpers are attached to the controlPlane.
-type TemplateInfo struct {
+type templateInfo struct {
 	ID   string
 	Name string
 }
 
 // Info for all app config and resource templates which belong to a data service.
-// TODO 4915: Unexport definitions when all referencing helpers are attached to the controlPlane.
-type DataServiceTemplateInfo struct {
-	AppConfigTemplates []TemplateInfo
-	ResourceTemplates  []TemplateInfo
+type dataServiceTemplateInfo struct {
+	AppConfigTemplates []templateInfo
+	ResourceTemplates  []templateInfo
 }
 
 // DeleteTestStorageOptions cleans up storage options created specifically for the test run.

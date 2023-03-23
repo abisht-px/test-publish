@@ -8,18 +8,20 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/tests"
 )
 
 func (c *ControlPlane) MustInitializeTestData(
 	ctx context.Context, t tests.T,
-	accountName, tenantName, projectName, storageOptionsPrefix string,
+	accountName, tenantName, projectName, namePrefix string,
 ) {
 	c.mustHavePDStestAccount(ctx, t, accountName)
 	c.mustHavePDStestTenant(ctx, t, tenantName)
 	c.mustHavePDStestProject(ctx, t, projectName)
 	c.mustLoadImageVersions(ctx, t)
-	c.mustCreateStorageOptions(ctx, t, storageOptionsPrefix)
+	c.mustCreateStorageOptions(ctx, t, namePrefix)
+	c.mustCreateApplicationTemplates(ctx, t, namePrefix)
 }
 
 func (c *ControlPlane) mustHavePDStestAccount(ctx context.Context, t tests.T, name string) {
@@ -96,4 +98,62 @@ func (c *ControlPlane) mustCreateStorageOptions(ctx context.Context, t tests.T, 
 
 	c.TestPDSStorageTemplateID = storageTemplateResp.GetId()
 	c.TestPDSStorageTemplateName = storageTemplateResp.GetName()
+}
+
+func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tests.T, namePrefix string) {
+	dataServicesTemplates := make(map[string]dataServiceTemplateInfo)
+	for _, imageVersion := range c.ImageVersionSpecList {
+		templatesSpec, found := dataservices.TemplateSpecs[imageVersion.DataServiceName]
+		if !found {
+			continue
+		}
+		_, found = dataServicesTemplates[imageVersion.DataServiceName]
+		if found {
+			continue
+		}
+
+		var resultTemplateInfo dataServiceTemplateInfo
+		for _, configTemplateSpec := range templatesSpec.ConfigurationTemplates {
+			configTemplateBody := configTemplateSpec
+			if configTemplateBody.Name == nil {
+				configTemplateBody.Name = pointer.StringPtr(namePrefix)
+			}
+			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+
+			configTemplate, resp, err := c.API.ApplicationConfigurationTemplatesApi.
+				ApiTenantsIdApplicationConfigurationTemplatesPost(ctx, c.TestPDSTenantID).
+				Body(configTemplateBody).Execute()
+			api.RequireNoError(t, resp, err)
+
+			configTemplateInfo := templateInfo{
+				ID:   configTemplate.GetId(),
+				Name: configTemplate.GetName(),
+			}
+
+			resultTemplateInfo.AppConfigTemplates = append(resultTemplateInfo.AppConfigTemplates, configTemplateInfo)
+		}
+
+		for _, resourceTemplateSpec := range templatesSpec.ResourceTemplates {
+			resourceTemplateBody := resourceTemplateSpec
+			if resourceTemplateBody.Name == nil {
+				resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
+			}
+			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
+
+			resourceTemplate, resp, err := c.API.ResourceSettingsTemplatesApi.
+				ApiTenantsIdResourceSettingsTemplatesPost(ctx, c.TestPDSTenantID).
+				Body(resourceTemplateBody).Execute()
+			api.RequireNoError(t, resp, err)
+
+			resourceTemplateInfo := templateInfo{
+				ID:   resourceTemplate.GetId(),
+				Name: resourceTemplate.GetName(),
+			}
+
+			resultTemplateInfo.ResourceTemplates = append(resultTemplateInfo.ResourceTemplates, resourceTemplateInfo)
+		}
+
+		dataServicesTemplates[imageVersion.DataServiceName] = resultTemplateInfo
+	}
+	c.TestPDSTemplatesMap = dataServicesTemplates
 }

@@ -3,11 +3,13 @@ package test
 import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
+
+	"github.com/portworx/pds-integration-test/internal/dataservices"
 )
 
 var (
 	dataServiceExpectedMetrics = map[string][]parser.VectorSelector{
-		dbCassandra: {
+		dataservices.Cassandra: {
 			// cassandra_clientrequest_latency_seconds_sum{clientrequest="Read",pds_deployment_id=":deployment_id"}
 			// cassandra_clientrequest_latency_seconds_sum{clientrequest="Write",pds_deployment_id=":deployment_id"}
 			// cassandra_clientrequest_latency_seconds_count{clientrequest="Read",pds_deployment_id=":deployment_id"}
@@ -65,7 +67,7 @@ var (
 				},
 			},
 		},
-		dbCouchbase: {
+		dataservices.Couchbase: {
 			// cbnode_interestingstats_curr_items{pds_deployment_id=":deployment_id"}
 			// cbnode_interestingstats_curr_items_tot{pds_deployment_id=":deployment_id"}
 			// cbnode_interestingstats_couch_docs_actual_disk_size{pds_deployment_id=":deployment_id"}
@@ -81,7 +83,7 @@ var (
 			{Name: "cbnode_interestingstats_ep_bg_fetched"},
 			{Name: "cbnode_interestingstats_ops"},
 		},
-		dbConsul: {
+		dataservices.Consul: {
 			// consul_members_clients{pds_deployment_id=":deployment_id"}
 			// consul_members_servers{pds_deployment_id=":deployment_id"}
 			// consul_state_services{pds_deployment_id=":deployment_id"}
@@ -143,7 +145,7 @@ var (
 				},
 			},
 		},
-		dbKafka: {
+		dataservices.Kafka: {
 			// kafka_server_replicamanager_partitioncount{pds_deployment_id=":deployment_id"}
 			// kafka_server_replicamanager_underreplicatedpartitions{pds_deployment_id=":deployment_id"}
 			// kafka_server_brokertopicmetrics_bytesin_total{pds_deployment_id=":deployment_id",topic=""}
@@ -198,7 +200,7 @@ var (
 				},
 			},
 		},
-		dbMongoDB: {
+		dataservices.MongoDB: {
 			// mongodb_connections{state="active",pds_deployment_id=":deployment_id"}
 			// mongodb_connections{state="current",pds_deployment_id=":deployment_id"}
 			// mongodb_mongod_metrics_document_total{state="deleted",pds_deployment_id=":deployment_id"}
@@ -356,7 +358,7 @@ var (
 			},
 			{Name: "mongodb_mongod_replset_member_replication_lag"},
 		},
-		dbMySQL: {
+		dataservices.MySQL: {
 			// mysql_global_status_threads_connected{pds_deployment_id=":deployment_id"}
 			// mysql_global_variables_max_connections{pds_deployment_id=":deployment_id"}
 			// mysql_global_status_slow_queries{pds_deployment_id=":deployment_id"}
@@ -380,7 +382,7 @@ var (
 			{Name: "mysql_global_status_table_open_cache_misses"},
 			{Name: "mysql_global_status_connection_errors_total"},
 		},
-		dbElasticSearch: {
+		dataservices.ElasticSearch: {
 			// elasticsearch_cluster_health_active_primary_shards{pds_deployment_id=":deployment_id"}
 			// elasticsearch_cluster_health_active_shards{pds_deployment_id=":deployment_id"}
 			// elasticsearch_cluster_health_relocating_shards{pds_deployment_id=":deployment_id"}
@@ -432,7 +434,7 @@ var (
 			{Name: "elasticsearch_process_max_files_descriptors"},
 			{Name: "elasticsearch_process_open_files_count"},
 		},
-		dbPostgres: {
+		dataservices.Postgres: {
 			// pg_stat_activity_count{state="active",pds_deployment_id=":deployment_id"}
 			// pg_stat_activity_count{state="idle",pds_deployment_id=":deployment_id"}
 			// pg_stat_activity_count{pds_deployment_id=":deployment_id"}
@@ -468,7 +470,7 @@ var (
 			{Name: "pg_stat_database_blks_read"},
 			{Name: "pg_stat_database_blks_hit"},
 		},
-		dbRabbitMQ: {
+		dataservices.RabbitMQ: {
 			// rabbitmq_global_messages_received_total{pds_deployment_id=":deployment_id"}
 			// rabbitmq_global_messages_acknowledged_total{pds_deployment_id=":deployment_id"}
 			// rabbitmq_connections{pds_deployment_id=":deployment_id"}
@@ -482,7 +484,7 @@ var (
 			{Name: "rabbitmq_process_resident_memory_bytes"},
 			{Name: "rabbitmq_resident_memory_limit_bytes"},
 		},
-		dbRedis: {
+		dataservices.Redis: {
 			// redis_rejected_connections_total{pds_deployment_id=":deployment_id"}
 			// redis_connected_clients{pds_deployment_id=":deployment_id"}
 			// redis_config_maxclients{pds_deployment_id=":deployment_id"}
@@ -504,7 +506,7 @@ var (
 			{Name: "redis_expired_keys_total"},
 			{Name: "redis_memory_used_bytes"},
 		},
-		dbZooKeeper: {
+		dataservices.ZooKeeper: {
 			// zookeeper_num_alive_connections{pds_deployment_id=":deployment_id"}
 			// zookeeper_auth_failed_count{pds_deployment_id=":deployment_id"}
 			// zookeeper_avg_latency{pds_deployment_id=":deployment_id"}

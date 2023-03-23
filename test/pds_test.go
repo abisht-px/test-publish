@@ -29,6 +29,7 @@ import (
 	"github.com/portworx/pds-integration-test/internal/auth"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
+	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
@@ -112,7 +113,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	}
 	s.mustWaitForPDSTestDeploymentTarget(env)
 	s.controlPlane.MustWaitForTestNamespace(s.ctx, s.T(), env.pdsNamespaceName)
-	s.mustCreateApplicationTemplates()
 
 	s.crossCluster = crosscluster.NewHelper(s.controlPlane, s.targetCluster)
 }
@@ -337,7 +337,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.
 
 func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string) bool {
 	switch dataServiceType {
-	case dbKafka, dbRabbitMQ, dbCouchbase:
+	case dataservices.Kafka, dataservices.RabbitMQ, dataservices.Couchbase:
 		return true
 	default:
 		return false
@@ -523,64 +523,6 @@ func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
 	})
 }
 
-func (s *PDSTestSuite) mustCreateApplicationTemplates() {
-	dataServicesTemplates := make(map[string]controlplane.DataServiceTemplateInfo)
-	for _, imageVersion := range s.controlPlane.ImageVersionSpecList {
-		templatesSpec, found := dataServiceTemplatesSpec[imageVersion.DataServiceName]
-		if !found {
-			continue
-		}
-		_, found = dataServicesTemplates[imageVersion.DataServiceName]
-		if found {
-			continue
-		}
-
-		var resultTemplateInfo controlplane.DataServiceTemplateInfo
-		for _, configTemplateSpec := range templatesSpec.configurationTemplates {
-			configTemplateBody := configTemplateSpec
-			if configTemplateBody.Name == nil {
-				configTemplateBody.Name = pointer.StringPtr(namePrefix)
-			}
-			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
-
-			configTemplate, resp, err := s.controlPlane.API.ApplicationConfigurationTemplatesApi.
-				ApiTenantsIdApplicationConfigurationTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
-				Body(configTemplateBody).Execute()
-			api.RequireNoError(s.T(), resp, err)
-
-			configTemplateInfo := controlplane.TemplateInfo{
-				ID:   configTemplate.GetId(),
-				Name: configTemplate.GetName(),
-			}
-
-			resultTemplateInfo.AppConfigTemplates = append(resultTemplateInfo.AppConfigTemplates, configTemplateInfo)
-		}
-
-		for _, resourceTemplateSpec := range templatesSpec.resourceTemplates {
-			resourceTemplateBody := resourceTemplateSpec
-			if resourceTemplateBody.Name == nil {
-				resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
-			}
-			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
-
-			resourceTemplate, resp, err := s.controlPlane.API.ResourceSettingsTemplatesApi.
-				ApiTenantsIdResourceSettingsTemplatesPost(s.ctx, s.controlPlane.TestPDSTenantID).
-				Body(resourceTemplateBody).Execute()
-			api.RequireNoError(s.T(), resp, err)
-
-			resourceTemplateInfo := controlplane.TemplateInfo{
-				ID:   resourceTemplate.GetId(),
-				Name: resourceTemplate.GetName(),
-			}
-
-			resultTemplateInfo.ResourceTemplates = append(resultTemplateInfo.ResourceTemplates, resourceTemplateInfo)
-		}
-
-		dataServicesTemplates[imageVersion.DataServiceName] = resultTemplateInfo
-	}
-	s.controlPlane.TestPDSTemplatesMap = dataServicesTemplates
-}
-
 func (s *PDSTestSuite) mustEnsureBackupSuccessful(t *testing.T, deploymentID, backupName string) {
 	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
@@ -686,27 +628,27 @@ func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(t *testing.T, names
 
 func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
 	switch dataServiceType {
-	case dbCassandra:
+	case dataservices.Cassandra:
 		return "portworx/pds-loadtests:cassandra-0.0.5", nil
-	case dbCouchbase:
+	case dataservices.Couchbase:
 		return "portworx/pds-loadtests:couchbase-0.0.3", nil
-	case dbRedis:
+	case dataservices.Redis:
 		return "portworx/pds-loadtests:redis-0.0.3", nil
-	case dbZooKeeper:
+	case dataservices.ZooKeeper:
 		return "portworx/pds-loadtests:zookeeper-0.0.2", nil
-	case dbKafka:
+	case dataservices.Kafka:
 		return "portworx/pds-loadtests:kafka-0.0.3", nil
-	case dbRabbitMQ:
+	case dataservices.RabbitMQ:
 		return "portworx/pds-loadtests:rabbitmq-0.0.2", nil
-	case dbMongoDB:
+	case dataservices.MongoDB:
 		return "portworx/pds-loadtests:mongodb-0.0.1", nil
-	case dbMySQL:
+	case dataservices.MySQL:
 		return "portworx/pds-loadtests:mysql-0.0.3", nil
-	case dbElasticSearch:
+	case dataservices.ElasticSearch:
 		return "portworx/pds-loadtests:elasticsearch-0.0.2", nil
-	case dbConsul:
+	case dataservices.Consul:
 		return "portworx/pds-loadtests:consul-0.0.1", nil
-	case dbPostgres:
+	case dataservices.Postgres:
 		return "portworx/pds-loadtests:postgresql-0.0.3", nil
 	default:
 		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
@@ -733,7 +675,7 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(t *testing.T, dataService *pds.Mode
 
 	dataServiceType := dataService.GetName()
 	switch dataServiceType {
-	case dbRedis:
+	case dataservices.Redis:
 		var clusterMode string
 		if nodeCount != nil && *nodeCount > 1 {
 			clusterMode = "true"
@@ -844,27 +786,27 @@ func (s *PDSTestSuite) mustGetDBPassword(t *testing.T, namespace, deploymentName
 func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, error) {
 	var containerName string
 	switch deploymentType {
-	case dbPostgres:
+	case dataservices.Postgres:
 		containerName = "postgresql"
-	case dbCassandra:
+	case dataservices.Cassandra:
 		containerName = "cassandra"
-	case dbCouchbase:
+	case dataservices.Couchbase:
 		containerName = "couchbase"
-	case dbRedis:
+	case dataservices.Redis:
 		containerName = "redis"
-	case dbZooKeeper:
+	case dataservices.ZooKeeper:
 		containerName = "zookeeper"
-	case dbKafka:
+	case dataservices.Kafka:
 		containerName = "kafka"
-	case dbRabbitMQ:
+	case dataservices.RabbitMQ:
 		containerName = "rabbitmq"
-	case dbMongoDB:
+	case dataservices.MongoDB:
 		containerName = "mongos"
-	case dbMySQL:
+	case dataservices.MySQL:
 		containerName = "mysql"
-	case dbElasticSearch:
+	case dataservices.ElasticSearch:
 		containerName = "elasticsearch"
-	case dbConsul:
+	case dataservices.Consul:
 		containerName = "consul"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
