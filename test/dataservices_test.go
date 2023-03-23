@@ -187,9 +187,9 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			backupCredentials := s.mustCreateS3BackupCredentials(t, s3Creds, name)
 			t.Cleanup(func() { s.mustDeleteBackupCredentials(t, backupCredentials.GetId()) })
 
-			backupTarget := s.mustCreateS3BackupTarget(t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-			s.mustEnsureBackupTargetCreatedInTC(t, backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
-			t.Cleanup(func() { s.mustDeleteBackupTarget(t, backupTarget.GetId()) })
+			backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+			s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
+			t.Cleanup(func() { s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId()) })
 
 			backup := s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
 			s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())

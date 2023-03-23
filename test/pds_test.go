@@ -20,7 +20,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
@@ -32,7 +31,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
-	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
@@ -422,82 +420,6 @@ func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentI
 		nodeInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, nodeInitJobName)
 		require.NoErrorf(t, err, "Getting nodeInitJob %s/%s for deployment %s.", namespace, nodeInitJobName, deploymentID)
 		require.Truef(t, isJobSucceeded(clusterInitJob), "NodeInitJob %s/%s for deployment %s not successful.", namespace, nodeInitJob, deploymentID)
-	})
-}
-
-func (s *PDSTestSuite) createS3BackupTarget(backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
-	tenantID := s.controlPlane.TestPDSTenantID
-	nameSuffix := random.AlphaNumericString(random.NameSuffixLength)
-	name := fmt.Sprintf("integration-test-s3-%s", nameSuffix)
-
-	requestBody := pds.ControllersCreateTenantBackupTarget{
-		Name:                &name,
-		BackupCredentialsId: &backupCredentialsID,
-		Bucket:              &bucket,
-		Region:              &region,
-		Type:                pointer.String("s3"),
-	}
-	return s.controlPlane.API.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(s.ctx, tenantID).Body(requestBody).Execute()
-}
-
-func (s *PDSTestSuite) mustCreateS3BackupTarget(t *testing.T, backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
-	backupTarget, resp, err := s.createS3BackupTarget(backupCredentialsID, bucket, region)
-	api.RequireNoError(t, resp, err)
-	return backupTarget
-}
-
-func (s *PDSTestSuite) mustEnsureBackupTargetCreatedInTC(t *testing.T, backupTargetID, deploymentTargetID string) {
-	s.mustWaitForBackupTargetState(t, backupTargetID, deploymentTargetID, "successful")
-}
-
-func (s *PDSTestSuite) mustWaitForBackupTargetState(t *testing.T, backupTargetID, deploymentTargetID, expectedFinalState string) {
-	wait.For(t, waiterBackupTargetSyncedTimeout, waiterShortRetryInterval, func(t tests.T) {
-		backupTargetState := s.mustGetBackupTargetState(t, backupTargetID, deploymentTargetID)
-		require.Equalf(t, expectedFinalState, backupTargetState.GetState(),
-			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, deploymentTargetID)
-	})
-}
-
-func (s *PDSTestSuite) mustGetBackupTargetState(t tests.T, backupTargetID, deploymentTargetID string) pds.ModelsBackupTargetState {
-	backupTargetStates, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdStatesGet(s.ctx, backupTargetID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	for _, backupTargetState := range backupTargetStates.GetData() {
-		if backupTargetState.GetDeploymentTargetId() == deploymentTargetID {
-			return backupTargetState
-		}
-	}
-	require.Fail(t, "Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, deploymentTargetID)
-	return pds.ModelsBackupTargetState{}
-}
-
-func (s *PDSTestSuite) mustDeleteBackupTarget(t *testing.T, backupTargetID string) {
-	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
-	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
-	api.RequireNoError(t, resp, err)
-	wait.For(t, waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
-		_, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
-		assert.Error(t, err)
-		assert.NotNil(t, resp)
-		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
-	})
-}
-
-func (s *PDSTestSuite) deleteBackupTargetIfExists(backupTargetID string) {
-	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
-	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdDelete(s.ctx, backupTargetID).Force("true").Execute()
-	if resp.StatusCode == http.StatusNotFound {
-		return
-	}
-	api.NoError(s.T(), resp, err)
-
-	wait.For(s.T(), waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
-		_, resp, err := s.controlPlane.API.BackupTargetsApi.ApiBackupTargetsIdGet(s.ctx, backupTargetID).Execute()
-		assert.Error(t, err)
-		assert.NotNil(t, resp)
-		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
 	})
 }
 

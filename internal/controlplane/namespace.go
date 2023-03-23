@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	waiterShortRetryInterval     = time.Second * 1
 	waiterNamespaceExistsTimeout = time.Second * 30
 )
 

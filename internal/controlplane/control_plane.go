@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	waiterRetryInterval = time.Second * 10
+	waiterRetryInterval      = time.Second * 10
+	waiterShortRetryInterval = time.Second * 1
 )
 
 type ControlPlane struct {

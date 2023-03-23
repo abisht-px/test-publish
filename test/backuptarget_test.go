@@ -19,8 +19,8 @@ func (s *PDSTestSuite) TestBackupTarget_EmptyBackupTarget_Fail() {
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
-	backupTarget, response, err := s.createS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-	s.T().Cleanup(func() { s.deleteBackupTargetIfExists(backupTarget.GetId()) })
+	backupTarget, response, err := s.controlPlane.CreateS3BackupTarget(s.ctx, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupTargetIfExists(s.ctx, s.T(), backupTarget.GetId()) })
 
 	// Then.
 	s.Require().Equal(http.StatusUnprocessableEntity, response.StatusCode)
@@ -47,13 +47,13 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
-	backupTarget, response, err := s.createS3BackupTarget(backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-	s.T().Cleanup(func() { s.deleteBackupTargetIfExists(backupTarget.GetId()) })
+	backupTarget, response, err := s.controlPlane.CreateS3BackupTarget(s.ctx, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupTargetIfExists(s.ctx, s.T(), backupTarget.GetId()) })
 
 	// Then.
 	api.RequireNoError(s.T(), response, err)
-	s.mustWaitForBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID, "failed_create")
-	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
+	s.controlPlane.MustWaitForBackupTargetState(s.ctx, s.T(), backupTarget.GetId(), "failed_create")
+	backupTargetState := s.controlPlane.MustGetBackupTargetState(s.ctx, s.T(), backupTarget.GetId())
 	s.Require().NotEmpty(backupTargetState.GetErrorDetails())
 	s.Require().NotEmpty(backupTargetState.GetErrorMessage())
 	s.Require().Equal("failed_to_create_px_credentials", backupTargetState.GetErrorCode())
@@ -70,13 +70,13 @@ func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
 
 	// When.
-	backupTarget := s.mustCreateS3BackupTarget(s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-	s.T().Cleanup(func() { s.deleteBackupTargetIfExists(backupTarget.GetId()) })
+	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupTargetIfExists(s.ctx, s.T(), backupTarget.GetId()) })
 
 	// Then.
 	// Check backup target state.
-	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
-	backupTargetState := s.mustGetBackupTargetState(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
+	s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, s.T(), backupTarget.GetId())
+	backupTargetState := s.controlPlane.MustGetBackupTargetState(s.ctx, s.T(), backupTarget.GetId())
 	s.Require().Empty(backupTargetState.GetErrorCode())
 	s.Require().Empty(backupTargetState.GetErrorDetails())
 	s.Require().Empty(backupTargetState.GetErrorMessage())
@@ -95,7 +95,7 @@ func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 	s.Require().Equal(backupCredentialsConfig.endpoint, foundPXCloudCredential.AwsCredential.Endpoint)
 
 	// Test deletion of the backup target.
-	s.mustDeleteBackupTarget(s.T(), backupTarget.GetId())
+	s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId())
 	pxCloudCredentials, err = s.targetCluster.ListPXCloudCredentials(s.ctx)
 	s.Require().NoError(err)
 	foundPXCloudCredential = s.findCloudCredentialByName(pxCloudCredentials, backupTargetState.GetPxCredentialsName())

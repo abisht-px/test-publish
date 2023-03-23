@@ -152,12 +152,12 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 	}
 
 	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
-	backupTarget := s.mustCreateS3BackupTarget(s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupTarget(s.T(), backupTarget.GetId())
+		s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId())
 		s.mustDeleteBackupCredentials(s.T(), backupCredentials.GetId())
 	})
-	s.mustEnsureBackupTargetCreatedInTC(s.T(), backupTarget.GetId(), s.controlPlane.TestPDSDeploymentTargetID)
+	s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, s.T(), backupTarget.GetId())
 
 	// When.
 	_, httpResponse, err := s.updateBackupCredentials(backupCredentials.GetId(), "new-name", updatedCredentials)
@@ -185,9 +185,9 @@ func (s *PDSTestSuite) TestBackupCredentials_DeleteCredsAssociatedWithTarget_Fai
 	credName := generateRandomName(backupCredPrefix)
 	s3Creds := s.config.backupTarget.credentials.s3
 	createdBackupCreds := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
-	createdBackupTarget := s.mustCreateS3BackupTarget(s.T(), createdBackupCreds.GetId(), s.config.backupTarget.bucket, s.config.backupTarget.region)
+	createdBackupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), createdBackupCreds.GetId(), s.config.backupTarget.bucket, s.config.backupTarget.region)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupTarget(s.T(), createdBackupTarget.GetId())
+		s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), createdBackupTarget.GetId())
 		s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId())
 	})
 
