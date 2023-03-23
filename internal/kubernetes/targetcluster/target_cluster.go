@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -14,11 +16,16 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/kubernetes/cluster"
 	"github.com/portworx/pds-integration-test/internal/portworx"
+	"github.com/portworx/pds-integration-test/internal/tests"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 const (
 	pdsEnvironmentLabel = "pds/environment"
 	pdsSystemNamespace  = "pds-system"
+
+	waiterShortRetryInterval      = time.Second * 1
+	waiterCoreDNSRestartedTimeout = time.Second * 30
 )
 
 // TargetCluster wraps a PDS target cluster.
@@ -158,4 +165,36 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func (tc *TargetCluster) MustFlushDNSCache(ctx context.Context, t tests.T) []string {
+	// Restarts CoreDNS pods to flush DNS cache:
+	// kubectl delete pods -l k8s-app=kube-dns -n kube-system
+	namespace := "kube-system"
+	selector := map[string]string{"k8s-app": "kube-dns"}
+	err := tc.DeletePodsBySelector(ctx, namespace, selector)
+	require.NoError(t, err, "Failed to delete CoreDNS pods")
+
+	// Wait for CoreDNS pods to be fully restarted.
+	wait.For(t, waiterCoreDNSRestartedTimeout, waiterShortRetryInterval, func(t tests.T) {
+		set, err := tc.ListDeployments(ctx, namespace, selector)
+		require.NoError(t, err, "Listing CoreDNS deployments from target cluster.")
+		require.Len(t, set.Items, 1, "Expected a single CoreDNS deployment.")
+
+		deployment := set.Items[0]
+		replicas := deployment.Status.Replicas
+		require.Equalf(t, replicas, deployment.Status.ReadyReplicas, "Not all replicas of deployment %s are ready.", deployment.ClusterName)
+		require.Equalf(t, replicas, deployment.Status.UpdatedReplicas, "Not all replicas of deployment %s are updated.", deployment.ClusterName)
+	})
+
+	// Get and return new CoreDNS pod IPs.
+	pods, err := tc.ListPods(ctx, namespace, selector)
+	require.NoError(t, err, "Failed to get CoreDNS pods")
+	var newPodIPs []string
+	for _, pod := range pods.Items {
+		if len(pod.Status.PodIP) > 0 && pod.Status.ContainerStatuses[0].Ready {
+			newPodIPs = append(newPodIPs, pod.Status.PodIP)
+		}
+	}
+	return newPodIPs
 }

@@ -324,7 +324,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.
 	// Wait until all hosts are accessible (DNS server returns an IP address for all hosts).
 	if len(hostnames) > 0 {
 		wait.For(t, waiterAllHostsAvailableTimeout, waiterRetryInterval, func(t tests.T) {
-			dnsIPs := s.mustFlushDNSCache(t)
+			dnsIPs := s.targetCluster.MustFlushDNSCache(s.ctx, t)
 			jobNameSuffix := time.Now().Format("0405") // mmss
 			jobName := s.targetCluster.MustRunHostCheckJob(s.ctx, t, namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)
 			s.mustWaitForJobSuccess(t, namespace, jobName)
@@ -571,38 +571,6 @@ func (s *PDSTestSuite) mustGetLoadTestJobEnv(t *testing.T, dataService *pds.Mode
 func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
 	resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
-}
-
-func (s *PDSTestSuite) mustFlushDNSCache(t tests.T) []string {
-	// Restarts CoreDNS pods to flush DNS cache:
-	// kubectl delete pods -l k8s-app=kube-dns -n kube-system
-	namespace := "kube-system"
-	selector := map[string]string{"k8s-app": "kube-dns"}
-	err := s.targetCluster.DeletePodsBySelector(s.ctx, namespace, selector)
-	require.NoError(t, err, "Failed to delete CoreDNS pods")
-
-	// Wait for CoreDNS pods to be fully restarted.
-	wait.For(t, waiterCoreDNSRestartedTimeout, waiterShortRetryInterval, func(t tests.T) {
-		set, err := s.targetCluster.ListDeployments(s.ctx, namespace, selector)
-		require.NoError(t, err, "Listing CoreDNS deployments from target cluster.")
-		require.Len(t, set.Items, 1, "Expected a single CoreDNS deployment.")
-
-		deployment := set.Items[0]
-		replicas := deployment.Status.Replicas
-		require.Equalf(t, replicas, deployment.Status.ReadyReplicas, "Not all replicas of deployment %s are ready.", deployment.ClusterName)
-		require.Equalf(t, replicas, deployment.Status.UpdatedReplicas, "Not all replicas of deployment %s are updated.", deployment.ClusterName)
-	})
-
-	// Get and return new CoreDNS pod IPs.
-	pods, err := s.targetCluster.ListPods(s.ctx, namespace, selector)
-	require.NoError(t, err, "Failed to get CoreDNS pods")
-	var newPodIPs []string
-	for _, pod := range pods.Items {
-		if len(pod.Status.PodIP) > 0 && pod.Status.ContainerStatuses[0].Ready {
-			newPodIPs = append(newPodIPs, pod.Status.PodIP)
-		}
-	}
-	return newPodIPs
 }
 
 func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
