@@ -94,7 +94,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -178,7 +178,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 
 			name := generateRandomName("backup-creds")
@@ -365,7 +365,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 
 				// Create.
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-				s.mustEnsureDeploymentInitialized(t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 				s.mustEnsureStatefulSetReady(t, deploymentID)
 				s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 				s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -518,7 +518,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 
 			// Create.
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -645,7 +645,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 
 			// Create.
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -734,7 +734,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
@@ -821,7 +821,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 				s.waitForDeploymentRemoved(t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.mustEnsureDeploymentInitialized(t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.mustEnsureStatefulSetReady(t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)

@@ -4,14 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	batchv1 "k8s.io/api/batch/v1"
-
 	"github.com/portworx/pds-integration-test/internal/random"
 )
-
-func isJobSucceeded(job *batchv1.Job) bool {
-	return *job.Spec.Completions == job.Status.Succeeded
-}
 
 type TestLogger struct {
 	t *testing.T

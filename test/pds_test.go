@@ -360,28 +360,6 @@ func (s *PDSTestSuite) mustWaitForJobToFinish(t tests.T, namespace string, jobNa
 	})
 }
 
-func (s *PDSTestSuite) mustEnsureDeploymentInitialized(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespace := namespaceModel.GetName()
-	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
-	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
-
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		clusterInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, clusterInitJobName)
-		require.NoErrorf(t, err, "Getting clusterInitJob %s/%s for deployment %s.", namespace, clusterInitJobName, deploymentID)
-		require.Truef(t, isJobSucceeded(clusterInitJob), "CluterInitJob %s/%s for deployment %s not successful.", namespace, clusterInitJobName, deploymentID)
-
-		nodeInitJob, err := s.targetCluster.GetJob(s.ctx, namespace, nodeInitJobName)
-		require.NoErrorf(t, err, "Getting nodeInitJob %s/%s for deployment %s.", namespace, nodeInitJobName, deploymentID)
-		require.Truef(t, isJobSucceeded(clusterInitJob), "NodeInitJob %s/%s for deployment %s not successful.", namespace, nodeInitJob, deploymentID)
-	})
-}
-
 func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
 	jobNamespace, jobName := s.mustCreateLoadTestJob(t, deploymentID)
 	s.mustEnsureLoadTestJobSucceeded(t, jobNamespace, jobName)

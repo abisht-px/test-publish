@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	waiterDeploymentStatusHealthyTimeout     = time.Minute * 10
 	waiterStatefulSetReadyAndUpdatedReplicas = time.Minute * 10
 )
 
