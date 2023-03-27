@@ -3,6 +3,7 @@ package targetcluster
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -27,6 +28,8 @@ const (
 	waiterShortRetryInterval      = time.Second * 1
 	waiterCoreDNSRestartedTimeout = time.Second * 30
 )
+
+var pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 
 // TargetCluster wraps a PDS target cluster.
 type TargetCluster struct {
@@ -203,4 +206,14 @@ func (tc *TargetCluster) MustFlushDNSCache(ctx context.Context, t tests.T) []str
 		}
 	}
 	return newPodIPs
+}
+
+func (tc *TargetCluster) getDBPassword(ctx context.Context, namespace, deploymentName string) (string, error) {
+	secretName := fmt.Sprintf("%s-creds", deploymentName)
+	secret, err := tc.GetSecret(ctx, namespace, secretName)
+	if err != nil {
+		return "", err
+	}
+
+	return string(secret.Data["password"]), nil
 }

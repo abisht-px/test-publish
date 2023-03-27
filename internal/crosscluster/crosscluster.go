@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	waiterRetryInterval = time.Second * 10
+	waiterShortRetryInterval = time.Second * 1
+	waiterRetryInterval      = time.Second * 10
 )
 
 // CrossClusterHelper defines helper functions that involve both the control plane and target cluster.

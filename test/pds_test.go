@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"testing"
 	"time"
 
@@ -20,13 +19,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
-
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/auth"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
-	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/prometheus"
@@ -49,15 +45,12 @@ const (
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
 	waiterAllHostsAvailableTimeout               = time.Second * 600
 	waiterCoreDNSRestartedTimeout                = time.Second * 30
-
-	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
 )
 
 var (
-	namePrefix                 = fmt.Sprintf("integration-test-%d", time.Now().Unix())
-	pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
-	pdsNamespaceLabelKey       = "pds.portworx.com/available"
-	pdsNamespaceLabelValue     = "true"
+	namePrefix             = fmt.Sprintf("integration-test-%d", time.Now().Unix())
+	pdsNamespaceLabelKey   = "pds.portworx.com/available"
+	pdsNamespaceLabelValue = "true"
 )
 
 type PDSTestSuite struct {
@@ -257,147 +250,6 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete PX cloud credentials.")
 }
 
-func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
-	jobNamespace, jobName := s.mustCreateLoadTestJob(t, deploymentID)
-	s.mustEnsureLoadTestJobSucceeded(t, jobNamespace, jobName)
-	s.mustEnsureLoadTestJobLogsDoNotContain(t, jobNamespace, jobName, "ERROR|FATAL")
-}
-
-func (s *PDSTestSuite) mustCreateLoadTestJob(t *testing.T, deploymentID string) (string, string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-	deploymentName := deployment.GetClusterResourceName()
-
-	namespace, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(t, resp, err)
-	dataServiceType := dataService.GetName()
-
-	dsImage, resp, err := s.controlPlane.API.ImagesApi.ApiImagesIdGet(s.ctx, deployment.GetImageId()).Execute()
-	api.RequireNoError(t, resp, err)
-	dsImageCreatedAt := dsImage.GetCreatedAt()
-
-	jobName := fmt.Sprintf("%s-loadtest-%d", deployment.GetClusterResourceName(), time.Now().Unix())
-
-	image, err := s.mustGetLoadTestJobImage(dataServiceType)
-	require.NoError(t, err)
-
-	env := s.mustGetLoadTestJobEnv(t, dataService, dsImageCreatedAt, deploymentName, namespace.GetName(), deployment.NodeCount)
-
-	job, err := s.targetCluster.CreateJob(s.ctx, namespace.GetName(), jobName, image, env, nil)
-	require.NoError(t, err)
-
-	return namespace.GetName(), job.GetName()
-}
-
-func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(t *testing.T, namespace, jobName string) {
-	// 1. Wait for the job to finish.
-	s.targetCluster.MustWaitForJobToFinish(s.ctx, t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
-
-	// 2. Check the result.
-	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-	require.NoError(t, err)
-
-	if job.Status.Failed > 0 {
-		// Job failed.
-		logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
-		if err != nil {
-			require.Fail(t, fmt.Sprintf("Job '%s' failed.", jobName))
-		} else {
-			require.Fail(t, fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
-		}
-	}
-	require.True(t, job.Status.Succeeded > 0)
-}
-
-func (s *PDSTestSuite) mustEnsureLoadTestJobLogsDoNotContain(t *testing.T, namespace, jobName, rePattern string) {
-	logs, err := s.targetCluster.GetJobLogs(s.ctx, namespace, jobName, s.startTime)
-	require.NoError(t, err)
-	re := regexp.MustCompile(rePattern)
-	require.Nil(t, re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)
-}
-
-func (s *PDSTestSuite) mustGetLoadTestJobImage(dataServiceType string) (string, error) {
-	switch dataServiceType {
-	case dataservices.Cassandra:
-		return "portworx/pds-loadtests:cassandra-0.0.5", nil
-	case dataservices.Couchbase:
-		return "portworx/pds-loadtests:couchbase-0.0.3", nil
-	case dataservices.Redis:
-		return "portworx/pds-loadtests:redis-0.0.3", nil
-	case dataservices.ZooKeeper:
-		return "portworx/pds-loadtests:zookeeper-0.0.2", nil
-	case dataservices.Kafka:
-		return "portworx/pds-loadtests:kafka-0.0.3", nil
-	case dataservices.RabbitMQ:
-		return "portworx/pds-loadtests:rabbitmq-0.0.2", nil
-	case dataservices.MongoDB:
-		return "portworx/pds-loadtests:mongodb-0.0.1", nil
-	case dataservices.MySQL:
-		return "portworx/pds-loadtests:mysql-0.0.3", nil
-	case dataservices.ElasticSearch:
-		return "portworx/pds-loadtests:elasticsearch-0.0.2", nil
-	case dataservices.Consul:
-		return "portworx/pds-loadtests:consul-0.0.1", nil
-	case dataservices.Postgres:
-		return "portworx/pds-loadtests:postgresql-0.0.3", nil
-	default:
-		return "", fmt.Errorf("loadtest job image not found for data service %s", dataServiceType)
-	}
-}
-
-func (s *PDSTestSuite) mustGetLoadTestJobEnv(t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
-	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
-	password := s.mustGetDBPassword(t, namespace, deploymentName)
-	env := []corev1.EnvVar{
-		{
-			Name:  "HOST",
-			Value: host,
-		}, {
-			Name:  "PASSWORD",
-			Value: password,
-		}, {
-			Name:  "ITERATIONS",
-			Value: "1",
-		}, {
-			Name:  "FAIL_ON_ERROR",
-			Value: "true",
-		}}
-
-	dataServiceType := dataService.GetName()
-	switch dataServiceType {
-	case dataservices.Redis:
-		var clusterMode string
-		if nodeCount != nil && *nodeCount > 1 {
-			clusterMode = "true"
-		} else {
-			clusterMode = "false"
-		}
-		var user = "pds"
-		if dsImageCreatedAt != "" {
-			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, dsImageCreatedAt)
-			if err == nil && dsCreatedAt.Before(pdsUserInRedisIntroducedAt) {
-				// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
-				user = "default"
-			}
-		}
-		env = append(env,
-			corev1.EnvVar{
-				Name:  "PDS_USER",
-				Value: user,
-			},
-			corev1.EnvVar{
-				Name:  "CLUSTER_MODE",
-				Value: clusterMode,
-			},
-		)
-	}
-
-	return env
-}
-
 func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
 	resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
@@ -434,14 +286,6 @@ func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {
 		_, err = s.targetCluster.UpdateNamespace(s.ctx, namespace)
 		s.Require().NoError(err, "Updating namespace %s", namespace.Name)
 	}
-}
-
-func (s *PDSTestSuite) mustGetDBPassword(t *testing.T, namespace, deploymentName string) string {
-	secretName := fmt.Sprintf("%s-creds", deploymentName)
-	secret, err := s.targetCluster.GetSecret(s.ctx, namespace, secretName)
-	require.NoError(t, err)
-
-	return string(secret.Data["password"])
 }
 
 func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {

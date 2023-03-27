@@ -3,7 +3,9 @@ package targetcluster
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
@@ -36,6 +38,14 @@ func (tc *TargetCluster) MustWaitForJobToFinish(ctx context.Context, t tests.T, 
 			"Job did not finish (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
 		)
 	})
+}
+
+func (tc *TargetCluster) JobLogsMustNotContain(ctx context.Context, t *testing.T, namespace, jobName, rePattern string, since time.Time) {
+	logs, err := tc.GetJobLogs(ctx, namespace, jobName, since)
+	require.NoError(t, err)
+	re, err := regexp.Compile(rePattern)
+	require.NoErrorf(t, err, "Invalid log rexeg pattern %q.", rePattern)
+	require.Nil(t, re.FindStringIndex(logs), "Job log '%s' contains pattern '%s':\n%s", jobName, rePattern, logs)
 }
 
 func (tc *TargetCluster) MustRunHostCheckJob(ctx context.Context, t tests.T, namespace string, jobNamePrefix, jobNameSuffix string, hosts, dnsIPs []string) string {

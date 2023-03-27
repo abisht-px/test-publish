@@ -99,7 +99,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
 }
@@ -369,7 +369,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-				s.mustRunLoadTestJob(t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 				// Update.
 				newSpec := tt.spec
@@ -379,7 +379,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-				s.mustRunLoadTestJob(t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 			})
 		}
 	}
@@ -522,7 +522,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
@@ -531,7 +531,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
 }
@@ -649,7 +649,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 			// Update.
 			updateSpec := tt.spec
@@ -658,7 +658,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
 }
@@ -738,13 +738,13 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 			//Delete pods and load test
 			s.targetCluster.MustDeleteDeploymentPods(s.ctx, t, s.config.pdsNamespaceName, deploymentID)
 			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
 }
@@ -825,7 +825,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.mustRunLoadTestJob(t, deploymentID)
+			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 			// Try to get DS metrics from prometheus.
 			s.mustVerifyMetrics(t, deploymentID)
