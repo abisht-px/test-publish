@@ -18,7 +18,22 @@ const (
 	waiterStatefulSetReadyAndUpdatedReplicas = time.Minute * 10
 )
 
-func (c *CrossClusterHelper) MustEnsureStatefulSetReadyAndUpdatedReplicas(ctx context.Context, t tests.T, deploymentID string) {
+func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t tests.T, deploymentID string) {
+	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespace := namespaceModel.GetName()
+	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
+		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
+		require.Equalf(t, *set.Spec.Replicas, set.Status.ReadyReplicas, "Insufficient ReadyReplicas for deployment %s.", deployment.GetClusterResourceName())
+	})
+}
+
+func (c *CrossClusterHelper) MustWaitForStatefulSetReadyAndUpdatedReplicas(ctx context.Context, t tests.T, deploymentID string) {
 	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
@@ -35,7 +50,7 @@ func (c *CrossClusterHelper) MustEnsureStatefulSetReadyAndUpdatedReplicas(ctx co
 	})
 }
 
-func (c *CrossClusterHelper) MustEnsureStatefulSetImage(ctx context.Context, t tests.T, deploymentID, imageTag string) {
+func (c *CrossClusterHelper) MustWaitForStatefulSetImage(ctx context.Context, t tests.T, deploymentID, imageTag string) {
 	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 

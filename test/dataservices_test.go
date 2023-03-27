@@ -95,7 +95,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
@@ -179,7 +179,7 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
@@ -366,7 +366,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				// Create.
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-				s.mustEnsureStatefulSetReady(t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 				s.mustRunLoadTestJob(t, deploymentID)
@@ -375,8 +375,8 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				newSpec := tt.spec
 				newSpec.ImageVersionTag = targetVersionTag
 				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &newSpec)
-				s.crossCluster.MustEnsureStatefulSetImage(s.ctx, t, deploymentID, targetVersionTag)
-				s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, targetVersionTag)
+				s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 				s.mustRunLoadTestJob(t, deploymentID)
@@ -519,7 +519,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			// Create.
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
@@ -528,7 +528,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			updateSpec := tt.spec
 			updateSpec.NodeCount = tt.scaleTo
 			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
@@ -646,7 +646,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			// Create.
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
@@ -655,7 +655,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			updateSpec := tt.spec
 			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
 			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
@@ -735,13 +735,13 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
 			//Delete pods and load test
 			s.targetCluster.MustDeleteDeploymentPods(s.ctx, t, s.config.pdsNamespaceName, deploymentID)
-			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
@@ -822,7 +822,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.mustEnsureStatefulSetReady(t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)

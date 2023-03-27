@@ -257,21 +257,6 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 	s.NoError(err, "Cannot delete PX cloud credentials.")
 }
 
-func (s *PDSTestSuite) mustEnsureStatefulSetReady(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespaceModel, resp, err := s.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(s.ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	namespace := namespaceModel.GetName()
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		set, err := s.targetCluster.GetStatefulSet(s.ctx, namespace, deployment.GetClusterResourceName())
-		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
-		require.Equalf(t, *set.Spec.Replicas, set.Status.ReadyReplicas, "Insufficient ReadyReplicas for deployment %s.", deployment.GetClusterResourceName())
-	})
-}
-
 func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
 	jobNamespace, jobName := s.mustCreateLoadTestJob(t, deploymentID)
 	s.mustEnsureLoadTestJobSucceeded(t, jobNamespace, jobName)
