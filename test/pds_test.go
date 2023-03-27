@@ -47,7 +47,6 @@ const (
 	waiterBackupTargetSyncedTimeout              = time.Second * 60
 	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
 	waiterLoadTestJobFinishedTimeout             = time.Second * 300
-	waiterHostCheckFinishedTimeout               = time.Second * 60
 	waiterAllHostsAvailableTimeout               = time.Second * 600
 	waiterCoreDNSRestartedTimeout                = time.Second * 30
 
@@ -325,7 +324,7 @@ func (s *PDSTestSuite) mustEnsureLoadBalancerHostsAccessibleIfNeeded(t *testing.
 			dnsIPs := s.targetCluster.MustFlushDNSCache(s.ctx, t)
 			jobNameSuffix := time.Now().Format("0405") // mmss
 			jobName := s.targetCluster.MustRunHostCheckJob(s.ctx, t, namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)
-			s.mustWaitForJobSuccess(t, namespace, jobName)
+			s.targetCluster.MustWaitForJobSuccess(s.ctx, t, namespace, jobName)
 		})
 	}
 }
@@ -337,27 +336,6 @@ func (s *PDSTestSuite) loadBalancerAddressRequiredForTest(dataServiceType string
 	default:
 		return false
 	}
-}
-
-func (s *PDSTestSuite) mustWaitForJobSuccess(t tests.T, namespace, jobName string) {
-	// 1. Wait for the job to finish.
-	s.mustWaitForJobToFinish(t, namespace, jobName, waiterHostCheckFinishedTimeout, waiterShortRetryInterval)
-
-	// 2. Check the result.
-	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-	require.NoErrorf(t, err, "Getting job %s/%s from target cluster.", namespace, jobName)
-	require.Greaterf(t, job.Status.Succeeded, 0, "Job %s/%s did not succeed.", namespace, jobName)
-}
-
-func (s *PDSTestSuite) mustWaitForJobToFinish(t tests.T, namespace string, jobName string, timeout time.Duration, tick time.Duration) {
-	wait.For(t, timeout, tick, func(t tests.T) {
-		job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
-		require.NoErrorf(t, err, "Getting %s/%s job from target cluster.", namespace, jobName)
-		require.Truef(t,
-			job.Status.Succeeded > 0 || job.Status.Failed > 0,
-			"Job did not finish (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
-		)
-	})
 }
 
 func (s *PDSTestSuite) mustRunLoadTestJob(t *testing.T, deploymentID string) {
@@ -397,7 +375,7 @@ func (s *PDSTestSuite) mustCreateLoadTestJob(t *testing.T, deploymentID string) 
 
 func (s *PDSTestSuite) mustEnsureLoadTestJobSucceeded(t *testing.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	s.mustWaitForJobToFinish(t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
+	s.targetCluster.MustWaitForJobToFinish(s.ctx, t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := s.targetCluster.GetJob(s.ctx, namespace, jobName)
