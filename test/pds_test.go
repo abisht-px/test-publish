@@ -547,12 +547,6 @@ func (s *PDSTestSuite) mustGetDBPassword(t *testing.T, namespace, deploymentName
 	return string(secret.Data["password"])
 }
 
-func (s *PDSTestSuite) deletePods(t *testing.T, deploymentID string) {
-	m := map[string]string{"pds/deployment-id": deploymentID}
-	err := s.targetCluster.DeletePodsBySelector(s.ctx, defaultPDSNamespaceName, m)
-	require.NoError(t, err, "Cannot delete pods.")
-}
-
 func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {
 	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)

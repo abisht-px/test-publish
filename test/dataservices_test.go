@@ -740,7 +740,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)
 			s.mustRunLoadTestJob(t, deploymentID)
 			//Delete pods and load test
-			s.deletePods(t, deploymentID)
+			s.targetCluster.MustDeleteDeploymentPods(s.ctx, t, s.config.pdsNamespaceName, deploymentID)
 			s.crossCluster.MustEnsureStatefulSetReadyAndUpdatedReplicas(s.ctx, t, deploymentID)
 			s.mustEnsureLoadBalancerServicesReady(t, deploymentID)
 			s.mustEnsureLoadBalancerHostsAccessibleIfNeeded(t, deploymentID)

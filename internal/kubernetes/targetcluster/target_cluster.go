@@ -167,6 +167,12 @@ func (tc *TargetCluster) DeleteDetachedPXVolumes(ctx context.Context) error {
 	return err
 }
 
+func (tc *TargetCluster) MustDeleteDeploymentPods(ctx context.Context, t tests.T, namespace, deploymentID string) {
+	selector := map[string]string{"pds/deployment-id": deploymentID}
+	err := tc.DeletePodsBySelector(ctx, namespace, selector)
+	require.NoError(t, err, "Cannot delete pods.")
+}
+
 func (tc *TargetCluster) MustFlushDNSCache(ctx context.Context, t tests.T) []string {
 	// Restarts CoreDNS pods to flush DNS cache:
 	// kubectl delete pods -l k8s-app=kube-dns -n kube-system
