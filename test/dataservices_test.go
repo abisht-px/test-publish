@@ -828,7 +828,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 			// Try to get DS metrics from prometheus.
-			s.mustVerifyMetrics(t, deploymentID)
+			s.controlPlane.MustVerifyMetrics(s.ctx, t, deploymentID)
 		})
 	}
 }

@@ -1,9 +1,16 @@
-package test
+package controlplane
 
 import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
+	"github.com/stretchr/testify/require"
 
+	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 )
 
@@ -536,3 +543,34 @@ var (
 		},
 	}
 )
+
+func (c *ControlPlane) MustVerifyMetrics(ctx context.Context, t *testing.T, deploymentID string) {
+	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	dataService, resp, err := c.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
+	api.RequireNoError(t, resp, err)
+	dataServiceType := dataService.GetName()
+
+	require.Contains(t, dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics")
+	expectedMetrics := dataServiceExpectedMetrics[dataServiceType]
+
+	var missingMetrics []model.LabelValue
+	for _, expectedMetric := range expectedMetrics {
+		// Add deployment ID to the metric label filter.
+		pdsDeploymentIDMatch := parser.MustLabelMatcher(labels.MatchEqual, "pds_deployment_id", deploymentID)
+		expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
+
+		queryResult, _, err := c.Prometheus.Query(ctx, expectedMetric.String(), time.Now())
+		require.NoError(t, err, "prometheus: query error")
+
+		require.IsType(t, model.Vector{}, queryResult, "prometheus: wrong result model")
+		queryResultMetrics := queryResult.(model.Vector)
+
+		if len(queryResultMetrics) == 0 {
+			missingMetrics = append(missingMetrics, model.LabelValue(expectedMetric.Name))
+		}
+	}
+
+	require.Equalf(t, len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
+}
