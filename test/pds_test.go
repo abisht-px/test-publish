@@ -98,7 +98,8 @@ func (s *PDSTestSuite) SetupSuite() {
 		s.mustHavePDStestAgentToken(env)
 		s.mustInstallAgent(env)
 	}
-	s.mustWaitForPDSTestDeploymentTarget(env)
+	targetID := s.controlPlane.MustWaitForDeploymentTarget(s.ctx, s.T(), env.pdsDeploymentTargetName)
+	s.controlPlane.SetTestDeploymentTarget(targetID)
 	s.controlPlane.MustWaitForTestNamespace(s.ctx, s.T(), env.pdsNamespaceName)
 
 	s.crossCluster = crosscluster.NewHelper(s.controlPlane, s.targetCluster, s.startTime)
@@ -126,19 +127,6 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	} else {
 		s.pdsHelmChartVersion = env.pdsHelmChartVersion
 	}
-}
-
-func (s *PDSTestSuite) mustWaitForPDSTestDeploymentTarget(env environment) {
-	wait.For(s.T(), waiterDeploymentTargetNameExistsTimeout, waiterRetryInterval, func(t tests.T) {
-		var err error
-		s.controlPlane.TestPDSDeploymentTargetID, err = s.controlPlane.API.GetDeploymentTargetIDByName(s.ctx, s.controlPlane.TestPDSTenantID, env.pdsDeploymentTargetName)
-		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", env.pdsDeploymentTargetName)
-	})
-
-	wait.For(s.T(), waiterDeploymentTargetStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
-		err := s.controlPlane.API.CheckDeploymentTargetHealth(s.ctx, s.controlPlane.TestPDSDeploymentTargetID)
-		require.NoErrorf(t, err, "Deployment target %q is not healthy.", s.controlPlane.TestPDSDeploymentTargetID)
-	})
 }
 
 // mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".

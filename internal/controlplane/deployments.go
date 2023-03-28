@@ -25,7 +25,7 @@ func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.
 
 	c.setDeploymentDefaults(deployment)
 
-	deploymentID, err := c.API.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.TestPDSDeploymentTargetID, c.TestPDSProjectID, c.TestPDSNamespaceID)
+	deploymentID, err := c.API.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, c.TestPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 

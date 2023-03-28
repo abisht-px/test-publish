@@ -51,7 +51,7 @@ func (c *ControlPlane) MustWaitForBackupTargetState(ctx context.Context, t tests
 	wait.For(t, waiterBackupTargetSyncedTimeout, waiterShortRetryInterval, func(t tests.T) {
 		backupTargetState := c.MustGetBackupTargetState(ctx, t, backupTargetID)
 		require.Equalf(t, expectedFinalState, backupTargetState.GetState(),
-			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, c.TestPDSDeploymentTargetID)
+			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, c.testPDSDeploymentTargetID)
 	})
 }
 
@@ -60,11 +60,11 @@ func (c *ControlPlane) MustGetBackupTargetState(ctx context.Context, t tests.T, 
 	api.RequireNoError(t, resp, err)
 
 	for _, backupTargetState := range backupTargetStates.GetData() {
-		if backupTargetState.GetDeploymentTargetId() == c.TestPDSDeploymentTargetID {
+		if backupTargetState.GetDeploymentTargetId() == c.testPDSDeploymentTargetID {
 			return backupTargetState
 		}
 	}
-	require.Fail(t, "Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, c.TestPDSDeploymentTargetID)
+	require.Fail(t, "Backup target state for backup target %s and deployment target %s was not found.", backupTargetID, c.testPDSDeploymentTargetID)
 	return pds.ModelsBackupTargetState{}
 }
 

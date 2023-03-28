@@ -19,7 +19,7 @@ type ControlPlane struct {
 	TestPDSTenantID            string
 	TestPDSProjectID           string
 	TestPDSNamespaceID         string
-	TestPDSDeploymentTargetID  string
+	testPDSDeploymentTargetID  string
 	TestPDSServiceAccountID    string
 	TestPDSStorageTemplateID   string
 	TestPDSStorageTemplateName string
