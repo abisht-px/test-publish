@@ -3,7 +3,6 @@ package crosscluster
 import (
 	"context"
 	"fmt"
-	"time"
 
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
@@ -11,10 +10,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
-)
-
-const (
-	waiterBackupStatusSucceededTimeout = time.Second * 300
 )
 
 func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t tests.T, deploymentID, backupName string) {
@@ -27,7 +22,7 @@ func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t t
 	namespace := namespaceModel.GetName()
 
 	// 1. Wait for the backup to finish.
-	wait.For(t, waiterBackupStatusSucceededTimeout, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.BackupStatusSucceededTimeout, wait.RetryInterval, func(t tests.T) {
 		pdsBackup, err := c.targetCluster.GetPDSBackup(ctx, namespace, backupName)
 		require.NoErrorf(t, err, "Getting backup %s/%s for deployment %s from target cluster.", namespace, backupName, deploymentID)
 		require.Truef(t, isBackupFinished(pdsBackup), "Backup %s for the deployment %s did not finish.", backupName, deploymentID)

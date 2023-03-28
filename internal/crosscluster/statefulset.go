@@ -3,7 +3,6 @@ package crosscluster
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
@@ -14,10 +13,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-const (
-	waiterStatefulSetReadyAndUpdatedReplicas = time.Minute * 10
-)
-
 func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t tests.T, deploymentID string) {
 	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
@@ -26,7 +21,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		require.Equalf(t, *set.Spec.Replicas, set.Status.ReadyReplicas, "Insufficient ReadyReplicas for deployment %s.", deployment.GetClusterResourceName())
@@ -41,7 +36,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReadyAndUpdatedReplicas(ctx c
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, waiterStatefulSetReadyAndUpdatedReplicas, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.StatefulSetReadyAndUpdatedReplicas, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")
@@ -61,7 +56,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetImage(ctx context.Context, t 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 

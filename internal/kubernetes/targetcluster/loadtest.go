@@ -11,17 +11,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/portworx/pds-integration-test/internal/dataservices"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 const (
-	waiterLoadTestJobFinishedTimeout = time.Minute * 5
-
 	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
 )
 
 func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
 	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, waiterLoadTestJobFinishedTimeout, waiterShortRetryInterval)
+	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.LoadTestJobFinishedTimeout, wait.ShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := tc.GetJob(ctx, namespace, jobName)

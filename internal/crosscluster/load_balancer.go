@@ -13,12 +13,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-const (
-	waiterLoadBalancerServicesReady = time.Second * 300
-	waiterHostCheckFinishedTimeout  = time.Second * 60
-	waiterAllHostsAvailableTimeout  = time.Second * 600
-)
-
 func (c *CrossClusterHelper) MustWaitForLoadBalancerServicesReady(ctx context.Context, t tests.T, deploymentID string) {
 	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
@@ -27,7 +21,7 @@ func (c *CrossClusterHelper) MustWaitForLoadBalancerServicesReady(ctx context.Co
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, waiterLoadBalancerServicesReady, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.LoadBalancerServicesReady, wait.RetryInterval, func(t tests.T) {
 		svcs, err := c.targetCluster.ListServices(ctx, namespace, map[string]string{
 			"name": deployment.GetClusterResourceName(),
 		})
@@ -67,7 +61,7 @@ func (c *CrossClusterHelper) MustWaitForLoadBalancerHostsAccessibleIfNeeded(ctx 
 
 	// Wait until all hosts are accessible (DNS server returns an IP address for all hosts).
 	if len(hostnames) > 0 {
-		wait.For(t, waiterAllHostsAvailableTimeout, waiterRetryInterval, func(t tests.T) {
+		wait.For(t, wait.AllHostsAvailableTimeout, wait.RetryInterval, func(t tests.T) {
 			dnsIPs := c.targetCluster.MustFlushDNSCache(ctx, t)
 			jobNameSuffix := time.Now().Format("0405") // mmss
 			jobName := c.targetCluster.MustRunHostCheckJob(ctx, t, namespace, deployment.GetClusterResourceName(), jobNameSuffix, hostnames, dnsIPs)

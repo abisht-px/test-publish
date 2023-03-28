@@ -3,7 +3,6 @@ package controlplane
 import (
 	"context"
 	"testing"
-	"time"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
@@ -14,8 +13,6 @@ import (
 )
 
 const (
-	waiterDeploymentStatusHealthyTimeout = time.Minute * 10
-
 	pdsDeploymentHealthStateHealthy = "Healthy"
 )
 
@@ -83,7 +80,7 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, waiterDeploymentStatusHealthyTimeout, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.API.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
 		err = api.ExtractErrorDetails(resp, err)
 		require.NoError(t, err, "Getting deployment %q state.", deploymentID)

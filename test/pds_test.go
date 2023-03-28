@@ -30,23 +30,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-const (
-	waiterShortRetryInterval                     = time.Second * 1
-	waiterRetryInterval                          = time.Second * 10
-	waiterDeploymentTargetNameExistsTimeout      = time.Second * 90
-	waiterNamespaceExistsTimeout                 = time.Second * 30
-	waiterDeploymentTargetStatusHealthyTimeout   = time.Minute * 10
-	waiterDeploymentTargetStatusUnhealthyTimeout = time.Second * 300
-	waiterDeploymentStatusHealthyTimeout         = time.Second * 600
-	waiterLoadBalancerServicesReady              = time.Second * 300
-	waiterBackupStatusSucceededTimeout           = time.Second * 300
-	waiterBackupTargetSyncedTimeout              = time.Second * 60
-	waiterDeploymentStatusRemovedTimeout         = time.Second * 300
-	waiterLoadTestJobFinishedTimeout             = time.Second * 300
-	waiterAllHostsAvailableTimeout               = time.Second * 600
-	waiterCoreDNSRestartedTimeout                = time.Second * 30
-)
-
 var (
 	namePrefix             = fmt.Sprintf("integration-test-%d", time.Now().Unix())
 	pdsNamespaceLabelKey   = "pds.portworx.com/available"
@@ -216,7 +199,7 @@ func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
 }
 
 func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
-	wait.For(t, waiterDeploymentStatusRemovedTimeout, waiterRetryInterval, func(t tests.T) {
+	wait.For(t, wait.DeploymentStatusRemovedTimeout, wait.RetryInterval, func(t tests.T) {
 		_, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)

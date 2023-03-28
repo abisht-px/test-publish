@@ -24,9 +24,6 @@ import (
 const (
 	pdsEnvironmentLabel = "pds/environment"
 	pdsSystemNamespace  = "pds-system"
-
-	waiterShortRetryInterval      = time.Second * 1
-	waiterCoreDNSRestartedTimeout = time.Second * 30
 )
 
 var pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
@@ -185,7 +182,7 @@ func (tc *TargetCluster) MustFlushDNSCache(ctx context.Context, t tests.T) []str
 	require.NoError(t, err, "Failed to delete CoreDNS pods")
 
 	// Wait for CoreDNS pods to be fully restarted.
-	wait.For(t, waiterCoreDNSRestartedTimeout, waiterShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.CoreDNSRestartedTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		set, err := tc.ListDeployments(ctx, namespace, selector)
 		require.NoError(t, err, "Listing CoreDNS deployments from target cluster.")
 		require.Len(t, set.Items, 1, "Expected a single CoreDNS deployment.")

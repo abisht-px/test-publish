@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -15,11 +14,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
-)
-
-const (
-	waiterBackupStatusSucceededTimeout = time.Second * 300
-	waiterBackupTargetSyncedTimeout    = time.Second * 60
 )
 
 func (c *ControlPlane) CreateS3BackupTarget(ctx context.Context, backupCredentialsID, bucket, region string) (*pds.ModelsBackupTarget, *http.Response, error) {
@@ -48,7 +42,7 @@ func (c *ControlPlane) MustEnsureBackupTargetCreatedInTC(ctx context.Context, t 
 }
 
 func (c *ControlPlane) MustWaitForBackupTargetState(ctx context.Context, t tests.T, backupTargetID, expectedFinalState string) {
-	wait.For(t, waiterBackupTargetSyncedTimeout, waiterShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.BackupTargetSyncedTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		backupTargetState := c.MustGetBackupTargetState(ctx, t, backupTargetID)
 		require.Equalf(t, expectedFinalState, backupTargetState.GetState(),
 			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, c.testPDSDeploymentTargetID)
@@ -73,7 +67,7 @@ func (c *ControlPlane) MustDeleteBackupTarget(ctx context.Context, t tests.T, ba
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
 	resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
-	wait.For(t, waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		_, resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
@@ -90,7 +84,7 @@ func (c *ControlPlane) DeleteBackupTargetIfExists(ctx context.Context, t tests.T
 	}
 	api.NoError(t, resp, err)
 
-	wait.For(t, waiterBackupStatusSucceededTimeout, waiterShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		_, resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
