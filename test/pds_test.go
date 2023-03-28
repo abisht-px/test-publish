@@ -65,9 +65,8 @@ type PDSTestSuite struct {
 	pdsAgentInstallable *helminstaller.InstallableHelmPDS
 	pdsHelmChartVersion string
 
-	testPDSAgentToken string
-	config            environment
-	tokenSource       oauth2.TokenSource
+	config      environment
+	tokenSource oauth2.TokenSource
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -94,8 +93,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHavePDSMetadata(env)
 	s.mustHavePrometheusClient(env)
 	if shouldInstallPDSHelmChart(s.pdsHelmChartVersion) {
-		s.mustHavePDStestServiceAccount(env)
-		s.mustHavePDStestAgentToken(env)
 		s.mustInstallAgent(env)
 	}
 	targetID := s.controlPlane.MustWaitForDeploymentTarget(s.ctx, s.T(), env.pdsDeploymentTargetName)
@@ -127,33 +124,6 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	} else {
 		s.pdsHelmChartVersion = env.pdsHelmChartVersion
 	}
-}
-
-// mustHavePDStestServiceAccount finds PDS Service account in Test PDS tenant with name set in environment and stores its ID as "Test PDS Service Account".
-func (s *PDSTestSuite) mustHavePDStestServiceAccount(env environment) {
-	// TODO: Use service account name query filters
-	serviceAccounts, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(s.ctx, s.controlPlane.TestPDSTenantID).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().NotEmpty(serviceAccounts, "PDS API must return at least one tenant.")
-
-	var testPDSServiceAccountID string
-	for _, serviceAccount := range serviceAccounts.GetData() {
-		if serviceAccount.GetName() == env.pdsServiceAccountName {
-			testPDSServiceAccountID = serviceAccount.GetId()
-			break
-		}
-	}
-	s.Require().NotEmpty(testPDSServiceAccountID, "PDS service account %s not found.", env.pdsServiceAccountName)
-	s.controlPlane.TestPDSServiceAccountID = testPDSServiceAccountID
-}
-
-// mustHavePDStestAgentToken gets "Test PDS Service Account" and stores its Token as "Test PDS Agent Token".
-func (s *PDSTestSuite) mustHavePDStestAgentToken(env environment) {
-	token, resp, err := s.controlPlane.API.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(s.ctx, s.controlPlane.TestPDSServiceAccountID).Execute()
-	api.RequireNoError(s.T(), resp, err)
-	s.Require().Equal(200, resp.StatusCode, "PDS API must return HTTP 200.")
-
-	s.testPDSAgentToken = token.GetToken()
 }
 
 func (s *PDSTestSuite) mustHaveAuthorization(env environment) {
@@ -204,10 +174,12 @@ func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
 }
 
 func (s *PDSTestSuite) mustInstallAgent(env environment) {
+	token := s.controlPlane.MustGetServiceAccountToken(s.ctx, s.T(), env.pdsServiceAccountName)
+
 	provider, err := helminstaller.NewHelmProvider()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
-	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.controlPlane.TestPDSTenantID, s.testPDSAgentToken, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
+	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.controlPlane.TestPDSTenantID, token, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
 
 	installer, err := provider.Installer(env.targetKubeconfig, pdsChartConfig)
 	s.Require().NoError(err, "Cannot get agent installer for version constraints %s.", pdsChartConfig.VersionConstraints)

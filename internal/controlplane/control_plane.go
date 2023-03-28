@@ -20,7 +20,6 @@ type ControlPlane struct {
 	TestPDSProjectID           string
 	TestPDSNamespaceID         string
 	testPDSDeploymentTargetID  string
-	TestPDSServiceAccountID    string
 	TestPDSStorageTemplateID   string
 	TestPDSStorageTemplateName string
 	TestPDSTemplatesMap        map[string]dataServiceTemplateInfo
