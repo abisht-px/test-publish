@@ -38,12 +38,12 @@ func (c *ControlPlane) mustHavePDStestAccount(ctx context.Context, t tests.T, na
 		}
 	}
 	require.NotEmpty(t, testPDSAccountID, "PDS account %s not found.", name)
-	c.TestPDSAccountID = testPDSAccountID
+	c.testPDSAccountID = testPDSAccountID
 }
 
 func (c *ControlPlane) mustHavePDStestTenant(ctx context.Context, t tests.T, name string) {
 	// TODO: Use tenant name query filters
-	tenants, resp, err := c.API.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.TestPDSAccountID).Execute()
+	tenants, resp, err := c.API.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.testPDSAccountID).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, tenants, "PDS API must return at least one tenant.")
 
@@ -79,7 +79,7 @@ func (c *ControlPlane) mustLoadImageVersions(ctx context.Context, t tests.T) {
 	imageVersions, err := c.API.GetAllImageVersions(ctx)
 	require.NoError(t, err, "Error while reading image versions.")
 	require.NotEmpty(t, imageVersions, "No image versions found.")
-	c.ImageVersionSpecList = imageVersions
+	c.imageVersionSpecs = imageVersions
 }
 
 func (c *ControlPlane) mustCreateStorageOptions(ctx context.Context, t tests.T, namePrefix string) {
@@ -96,13 +96,13 @@ func (c *ControlPlane) mustCreateStorageOptions(ctx context.Context, t tests.T, 
 	api.RequireNoError(t, resp, err)
 	require.NoError(t, err)
 
-	c.TestPDSStorageTemplateID = storageTemplateResp.GetId()
-	c.TestPDSStorageTemplateName = storageTemplateResp.GetName()
+	c.testPDSStorageTemplateID = storageTemplateResp.GetId()
+	c.testPDSStorageTemplateName = storageTemplateResp.GetName()
 }
 
 func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tests.T, namePrefix string) {
 	dataServicesTemplates := make(map[string]dataServiceTemplateInfo)
-	for _, imageVersion := range c.ImageVersionSpecList {
+	for _, imageVersion := range c.imageVersionSpecs {
 		templatesSpec, found := dataservices.TemplateSpecs[imageVersion.DataServiceName]
 		if !found {
 			continue
@@ -155,5 +155,5 @@ func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tes
 
 		dataServicesTemplates[imageVersion.DataServiceName] = resultTemplateInfo
 	}
-	c.TestPDSTemplatesMap = dataServicesTemplates
+	c.TestPDSTemplates = dataServicesTemplates
 }

@@ -20,12 +20,12 @@ const (
 )
 
 func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.T, deployment *api.ShortDeploymentSpec) string {
-	image := findImageVersionForRecord(deployment, c.ImageVersionSpecList)
+	image := findImageVersionForRecord(deployment, c.imageVersionSpecs)
 	require.NotNil(t, image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 
 	c.setDeploymentDefaults(deployment)
 
-	deploymentID, err := c.API.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, c.TestPDSNamespaceID)
+	deploymentID, err := c.API.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, c.testPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
@@ -37,9 +37,9 @@ func (c *ControlPlane) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 		deployment.ServiceType = "ClusterIP"
 	}
 	if deployment.StorageOptionName == "" {
-		deployment.StorageOptionName = c.TestPDSStorageTemplateName
+		deployment.StorageOptionName = c.testPDSStorageTemplateName
 	}
-	dsTemplates, found := c.TestPDSTemplatesMap[deployment.DataServiceName]
+	dsTemplates, found := c.TestPDSTemplates[deployment.DataServiceName]
 	if found {
 		if deployment.ResourceSettingsTemplateName == "" {
 			deployment.ResourceSettingsTemplateName = dsTemplates.ResourceTemplates[0].Name
@@ -53,7 +53,7 @@ func (c *ControlPlane) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
-		image := findImageVersionForRecord(spec, s.ImageVersionSpecList)
+		image := findImageVersionForRecord(spec, s.imageVersionSpecs)
 		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
 		req.ImageId = &image.ImageID

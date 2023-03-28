@@ -14,16 +14,15 @@ const (
 type ControlPlane struct {
 	API *api.PDSClient
 
-	// TODO 4915: Unexport fields when all referencing helpers are attached to the controlPlane.
-	TestPDSAccountID           string
+	testPDSAccountID           string
 	TestPDSTenantID            string
 	TestPDSProjectID           string
-	TestPDSNamespaceID         string
+	testPDSNamespaceID         string
 	testPDSDeploymentTargetID  string
-	TestPDSStorageTemplateID   string
-	TestPDSStorageTemplateName string
-	TestPDSTemplatesMap        map[string]dataServiceTemplateInfo
-	ImageVersionSpecList       []api.PDSImageReferenceSpec
+	testPDSStorageTemplateID   string
+	testPDSStorageTemplateName string
+	TestPDSTemplates           map[string]dataServiceTemplateInfo
+	imageVersionSpecs          []api.PDSImageReferenceSpec
 }
 
 func New(apiClient *api.PDSClient) *ControlPlane {

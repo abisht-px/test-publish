@@ -21,13 +21,13 @@ type dataServiceTemplateInfo struct {
 
 // DeleteTestStorageOptions cleans up storage options created specifically for the test run.
 func (c *ControlPlane) DeleteTestStorageOptions(ctx context.Context, t tests.T) {
-	resp, err := c.API.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(ctx, c.TestPDSStorageTemplateID).Execute()
-	api.NoErrorf(t, resp, err, "Deleting test storage options template (%s)", c.TestPDSStorageTemplateID)
+	resp, err := c.API.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(ctx, c.testPDSStorageTemplateID).Execute()
+	api.NoErrorf(t, resp, err, "Deleting test storage options template (%s)", c.testPDSStorageTemplateID)
 }
 
 // DeleteTestApplicationTemplates cleans up application templates created specifically for the test run.
 func (c *ControlPlane) DeleteTestApplicationTemplates(ctx context.Context, t tests.T) {
-	for _, dsTemplate := range c.TestPDSTemplatesMap {
+	for _, dsTemplate := range c.TestPDSTemplates {
 		for _, configTemplateInfo := range dsTemplate.AppConfigTemplates {
 			resp, err := c.API.ApplicationConfigurationTemplatesApi.ApiApplicationConfigurationTemplatesIdDelete(ctx, configTemplateInfo.ID).Execute()
 			api.NoErrorf(t, resp, err, "Deleting configuration template (ID=%s, name=%s).", configTemplateInfo.ID, configTemplateInfo.Name)
