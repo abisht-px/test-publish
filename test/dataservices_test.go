@@ -90,8 +90,8 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -174,8 +174,8 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -359,8 +359,8 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.ImageVersionString())
 				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 				t.Cleanup(func() {
-					s.mustRemoveDeployment(t, deploymentID)
-					s.waitForDeploymentRemoved(t, deploymentID)
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 				})
 
 				// Create.
@@ -512,8 +512,8 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 
 			// Create.
@@ -639,8 +639,8 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 
 			// Create.
@@ -730,8 +730,8 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -817,8 +817,8 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			t.Cleanup(func() {
-				s.mustRemoveDeployment(t, deploymentID)
-				s.waitForDeploymentRemoved(t, deploymentID)
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)

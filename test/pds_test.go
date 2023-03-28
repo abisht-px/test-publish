@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -182,20 +181,6 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 	})
 	err = s.targetCluster.DeletePXCloudCredentials(s.ctx)
 	s.NoError(err, "Cannot delete PX cloud credentials.")
-}
-
-func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
-	resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-}
-
-func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
-	wait.For(t, wait.DeploymentStatusRemovedTimeout, wait.RetryInterval, func(t tests.T) {
-		_, resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
-		assert.Error(t, err)
-		assert.NotNil(t, resp)
-		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
-	})
 }
 
 func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {

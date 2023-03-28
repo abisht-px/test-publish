@@ -2,9 +2,11 @@ package controlplane
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -104,4 +106,18 @@ func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api
 		}
 	}
 	return nil
+}
+
+func (c *ControlPlane) MustRemoveDeployment(ctx context.Context, t *testing.T, deploymentID string) {
+	resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdDelete(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+}
+
+func (c *ControlPlane) MustWaitForDeploymentRemoved(ctx context.Context, t *testing.T, deploymentID string) {
+	wait.For(t, wait.DeploymentStatusRemovedTimeout, wait.RetryInterval, func(t tests.T) {
+		_, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+		assert.Errorf(t, err, "Expected an error response on getting deployment %s.", deploymentID)
+		require.NotNilf(t, resp, "Received no response body while getting deployment %s.", deploymentID)
+		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
+	})
 }
