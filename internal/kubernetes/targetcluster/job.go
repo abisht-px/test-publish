@@ -22,7 +22,7 @@ func (tc *TargetCluster) MustWaitForJobSuccess(ctx context.Context, t tests.T, n
 	// 2. Check the result.
 	job, err := tc.GetJob(ctx, namespace, jobName)
 	require.NoErrorf(t, err, "Getting job %s/%s from target cluster.", namespace, jobName)
-	require.Greaterf(t, job.Status.Succeeded, 0, "Job %s/%s did not succeed.", namespace, jobName)
+	require.Greaterf(t, job.Status.Succeeded, int32(0), "Job %s/%s did not succeed.", namespace, jobName)
 }
 
 func (tc *TargetCluster) MustWaitForJobToFinish(ctx context.Context, t tests.T, namespace string, jobName string, timeout time.Duration, tick time.Duration) {

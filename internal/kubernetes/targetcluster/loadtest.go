@@ -35,7 +35,7 @@ func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *test
 			require.Fail(t, fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
 		}
 	}
-	require.Greater(t, job.Status.Succeeded, 0, "Job %q did not succeed.", jobName)
+	require.Greater(t, job.Status.Succeeded, int32(0), "Job %q did not succeed.", jobName)
 }
 
 func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
