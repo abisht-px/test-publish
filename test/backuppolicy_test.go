@@ -14,18 +14,18 @@ func (s *PDSTestSuite) TestBackupPolicy_CRUD_Ok() {
 	name := fmt.Sprintf("integration-test-%s", nameSuffix)
 	schedule := "* * * * 1"
 	var retention int32 = 1
-	backupPolicy := s.mustCreateBackupPolicy(&name, &schedule, &retention)
+	backupPolicy := s.controlPlane.MustCreateBackupPolicy(s.ctx, s.T(), &name, &schedule, &retention)
 	s.T().Cleanup(func() {
-		_, _ = s.deleteBackupPolicy(backupPolicy.GetId())
+		_, _ = s.controlPlane.DeleteBackupPolicy(s.ctx, backupPolicy.GetId())
 	})
 
-	storedBackupPolicy := s.mustListBackupPolicy(backupPolicy.GetId())
+	storedBackupPolicy := s.controlPlane.MustListBackupPolicy(s.ctx, s.T(), backupPolicy.GetId())
 	s.Require().Equal(storedBackupPolicy.Name, backupPolicy.Name)
 	s.Require().Equal(storedBackupPolicy.Schedules[0].RetentionCount, backupPolicy.Schedules[0].RetentionCount)
 	s.Require().Equal(storedBackupPolicy.Schedules[0].Schedule, backupPolicy.Schedules[0].Schedule)
 	s.Require().Equal(storedBackupPolicy.Schedules[0].Id, backupPolicy.Schedules[0].Id)
 
-	storedBackupPolicy = s.mustGetBackupPolicy(backupPolicy.GetId())
+	storedBackupPolicy = s.controlPlane.MustGetBackupPolicy(s.ctx, s.T(), backupPolicy.GetId())
 	s.Require().Equal(storedBackupPolicy.Name, backupPolicy.Name)
 	s.Require().Equal(storedBackupPolicy.Schedules[0].RetentionCount, backupPolicy.Schedules[0].RetentionCount)
 	s.Require().Equal(storedBackupPolicy.Schedules[0].Schedule, backupPolicy.Schedules[0].Schedule)
@@ -34,12 +34,12 @@ func (s *PDSTestSuite) TestBackupPolicy_CRUD_Ok() {
 	newName := fmt.Sprintf("integration-test-updated-%s", nameSuffix)
 	newSchedule := "* * * * 2"
 	var newRetention int32 = 2
-	backupPolicy = s.mustUpdateBackupPolicy(backupPolicy.GetId(), &newName, &newSchedule, &newRetention)
+	backupPolicy = s.controlPlane.MustUpdateBackupPolicy(s.ctx, s.T(), backupPolicy.GetId(), &newName, &newSchedule, &newRetention)
 	s.Require().Equal(*backupPolicy.Name, newName)
 	s.Require().Equal(*backupPolicy.Schedules[0].Schedule, newSchedule)
 	s.Require().Equal(*backupPolicy.Schedules[0].RetentionCount, newRetention)
 
-	s.mustDeleteBackupPolicy(backupPolicy.GetId())
+	s.controlPlane.MustDeleteBackupPolicy(s.ctx, s.T(), backupPolicy.GetId())
 }
 
 func (s *PDSTestSuite) TestBackupPolicy_CreateDuplicateName_Conflict() {
@@ -48,13 +48,13 @@ func (s *PDSTestSuite) TestBackupPolicy_CreateDuplicateName_Conflict() {
 	name := fmt.Sprintf("integration-test-%s", nameSuffix)
 	schedule := "* * * * *"
 	var retention int32 = 1
-	backupPolicy := s.mustCreateBackupPolicy(&name, &schedule, &retention)
+	backupPolicy := s.controlPlane.MustCreateBackupPolicy(s.ctx, s.T(), &name, &schedule, &retention)
 	// When.
-	newBackupPolicy, resp, err := s.createBackupPolicy(&name, &schedule, &retention)
+	newBackupPolicy, resp, err := s.controlPlane.CreateBackupPolicy(s.ctx, &name, &schedule, &retention)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupPolicy(backupPolicy.GetId())
+		s.controlPlane.MustDeleteBackupPolicy(s.ctx, s.T(), backupPolicy.GetId())
 		// Clean BackupPolicy in case this tests accidentally creates a valid object.
-		_, _ = s.deleteBackupPolicy(newBackupPolicy.GetId())
+		_, _ = s.controlPlane.DeleteBackupPolicy(s.ctx, newBackupPolicy.GetId())
 	})
 	// Then.
 	s.Require().Error(err)
@@ -69,10 +69,10 @@ func (s *PDSTestSuite) TestBackupPolicy_CreateInvalidSchedule_Unprocessable() {
 	schedule := "a s d f g"
 	var retention int32 = 1
 	// When.
-	backupPolicy, resp, err := s.createBackupPolicy(&name, &schedule, &retention)
+	backupPolicy, resp, err := s.controlPlane.CreateBackupPolicy(s.ctx, &name, &schedule, &retention)
 	s.T().Cleanup(func() {
 		// Clean BackupPolicy in case this tests accidentally creates a valid object.
-		_, _ = s.deleteBackupPolicy(backupPolicy.GetId())
+		_, _ = s.controlPlane.DeleteBackupPolicy(s.ctx, backupPolicy.GetId())
 	})
 	// Then.
 	s.Require().Error(err)
@@ -87,12 +87,12 @@ func (s *PDSTestSuite) TestBackupPolicy_UpdateInvalidSchedule_Unprocessable() {
 	validSchedule := "* * * * *"
 	invalidSchedule := "a s d f g"
 	var retention int32 = 1
-	backupPolicy := s.mustCreateBackupPolicy(&name, &validSchedule, &retention)
+	backupPolicy := s.controlPlane.MustCreateBackupPolicy(s.ctx, s.T(), &name, &validSchedule, &retention)
 	s.T().Cleanup(func() {
-		s.mustDeleteBackupPolicy(backupPolicy.GetId())
+		s.controlPlane.MustDeleteBackupPolicy(s.ctx, s.T(), backupPolicy.GetId())
 	})
 	// When.
-	updatedBackupPolicy, resp, err := s.updateBackupPolicy(backupPolicy.GetId(), &name, &invalidSchedule, &retention)
+	updatedBackupPolicy, resp, err := s.controlPlane.UpdateBackupPolicy(s.ctx, backupPolicy.GetId(), &name, &invalidSchedule, &retention)
 	// Then.
 	s.Require().Error(err)
 	s.Require().Equal(http.StatusUnprocessableEntity, resp.StatusCode)
@@ -103,7 +103,7 @@ func (s *PDSTestSuite) TestBackupPolicy_DeleteNonExistent_NotFound() {
 	// Given.
 	id := uuid.New()
 	// When.
-	resp, err := s.deleteBackupPolicy(id.String())
+	resp, err := s.controlPlane.DeleteBackupPolicy(s.ctx, id.String())
 	// Then.
 	s.Require().Error(err)
 	s.Require().Equal(http.StatusNotFound, resp.StatusCode)
