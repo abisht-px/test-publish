@@ -45,7 +45,7 @@ type PDSTestSuite struct {
 	targetCluster       *targetcluster.TargetCluster
 	crossCluster        *crosscluster.CrossClusterHelper
 	prometheusClient    prometheusv1.API
-	pdsAgentInstallable *helminstaller.InstallableHelmPDS
+	pdsAgentInstallable *helminstaller.InstallableHelm
 	pdsHelmChartVersion string
 
 	config      environment
@@ -159,7 +159,7 @@ func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
 func (s *PDSTestSuite) mustInstallAgent(env environment) {
 	token := s.controlPlane.MustGetServiceAccountToken(s.ctx, s.T(), env.pdsServiceAccountName)
 
-	provider, err := helminstaller.NewHelmProvider()
+	provider, err := helminstaller.NewHelmProviderPDS()
 	s.Require().NoError(err, "Cannot create agent installer provider.")
 
 	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.controlPlane.TestPDSTenantID, token, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)

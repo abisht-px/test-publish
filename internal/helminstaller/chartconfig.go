@@ -5,16 +5,16 @@ import (
 	"strings"
 )
 
-type pdsChartConfig struct {
+type ChartConfig struct {
 	VersionConstraints string
-	helmChartVals      map[string]string
+	chartValues        map[string]string
 }
 
 // NewPDSChartConfig stores configuration that's necessary to select certain PDS chart version and fill it with required target cluster config values.
-func NewPDSChartConfig(versionConstraints, tenantID, bearerToken, APIEndpoint, clusterName string) *pdsChartConfig {
-	return &pdsChartConfig{
+func NewPDSChartConfig(versionConstraints, tenantID, bearerToken, APIEndpoint, clusterName string) *ChartConfig {
+	return &ChartConfig{
 		VersionConstraints: versionConstraints,
-		helmChartVals: map[string]string{
+		chartValues: map[string]string{
 			"tenantId":    tenantID,
 			"bearerToken": bearerToken,
 			"apiEndpoint": APIEndpoint,
@@ -23,10 +23,10 @@ func NewPDSChartConfig(versionConstraints, tenantID, bearerToken, APIEndpoint, c
 	}
 }
 
-func (s *pdsChartConfig) CommaSeparatedChartVals() string {
+func (s *ChartConfig) CommaSeparatedChartVals() string {
 	var keyValues []string
 
-	for key, value := range s.helmChartVals {
+	for key, value := range s.chartValues {
 		keyValues = append(keyValues, fmt.Sprintf("%s=%s", key, value))
 	}
 
