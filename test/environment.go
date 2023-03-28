@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 )
 
 const (
@@ -51,20 +52,10 @@ var (
 	defaultPDSDeploymentTargetName = "PDS Integration Test Cluster " + runTimestamp
 )
 
-type backupCredentials struct {
-	s3 s3Credentials
-}
-
-type s3Credentials struct {
-	accessKey string
-	endpoint  string
-	secretKey string
-}
-
 type backupTargetConfig struct {
 	bucket      string
 	region      string
-	credentials backupCredentials
+	credentials controlplane.BackupCredentials
 }
 
 type controlPlaneEnvironment struct {
@@ -124,11 +115,11 @@ func mustHaveEnvVariables(t *testing.T) environment {
 		backupTarget: backupTargetConfig{
 			bucket: mustGetEnvVariable(t, envBackupTargetBucket),
 			region: mustGetEnvVariable(t, envBackupTargetRegion),
-			credentials: backupCredentials{
-				s3: s3Credentials{
-					accessKey: mustGetEnvVariable(t, envS3CredentialsAccessKey),
-					endpoint:  getEnvVariableWithDefault(envS3CredentialsEndpoint, defaultS3Endpoint),
-					secretKey: mustGetEnvVariable(t, envS3CredentialsSecretKey),
+			credentials: controlplane.BackupCredentials{
+				S3: controlplane.S3Credentials{
+					AccessKey: mustGetEnvVariable(t, envS3CredentialsAccessKey),
+					Endpoint:  getEnvVariableWithDefault(envS3CredentialsEndpoint, defaultS3Endpoint),
+					SecretKey: mustGetEnvVariable(t, envS3CredentialsSecretKey),
 				},
 			},
 		},

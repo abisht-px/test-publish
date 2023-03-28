@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/portworx"
 )
 
@@ -14,9 +15,9 @@ func (s *PDSTestSuite) TestBackupTarget_EmptyBackupTarget_Fail() {
 	backupTargetConfig := backupTargetConfig{
 		credentials: s.config.backupTarget.credentials,
 	}
-	backupCredentialsConfig := backupTargetConfig.credentials.s3
-	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
-	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
+	backupCredentialsConfig := backupTargetConfig.credentials.S3
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupCredentialsIfExists(s.ctx, s.T(), backupCredentials.GetId()) })
 
 	// When.
 	backupTarget, response, err := s.controlPlane.CreateS3BackupTarget(s.ctx, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
@@ -33,18 +34,18 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 	backupTargetConfig := backupTargetConfig{
 		bucket: "xxx",
 		region: "xxx",
-		credentials: backupCredentials{
-			s3: s3Credentials{
-				accessKey: "xxx",
-				endpoint:  "xxx",
-				secretKey: "xxx",
+		credentials: controlplane.BackupCredentials{
+			S3: controlplane.S3Credentials{
+				AccessKey: "xxx",
+				Endpoint:  "xxx",
+				SecretKey: "xxx",
 			},
 		},
 	}
 
-	backupCredentialsConfig := backupTargetConfig.credentials.s3
-	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
-	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
+	backupCredentialsConfig := backupTargetConfig.credentials.S3
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupCredentialsIfExists(s.ctx, s.T(), backupCredentials.GetId()) })
 
 	// When.
 	backupTarget, response, err := s.controlPlane.CreateS3BackupTarget(s.ctx, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
@@ -64,10 +65,10 @@ func (s *PDSTestSuite) TestBackupTarget_InvalidNonemptyBackupTarget_Fail() {
 func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 	// Given.
 	backupTargetConfig := s.config.backupTarget
-	backupCredentialsConfig := backupTargetConfig.credentials.s3
+	backupCredentialsConfig := backupTargetConfig.credentials.S3
 
-	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
-	s.T().Cleanup(func() { s.deleteBackupCredentialsIfExists(backupCredentials.GetId()) })
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), backupCredentialsConfig, generateRandomName(backupCredPrefix))
+	s.T().Cleanup(func() { s.controlPlane.DeleteBackupCredentialsIfExists(s.ctx, s.T(), backupCredentials.GetId()) })
 
 	// When.
 	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
@@ -91,8 +92,8 @@ func (s *PDSTestSuite) TestBackupTarget_CreateAndDeleteInTC_Succeed() {
 	s.Require().Equal(backupTargetState.GetPxCredentialsId(), foundPXCloudCredential.ID)
 	s.Require().Equal(backupTargetConfig.bucket, foundPXCloudCredential.Bucket)
 	s.Require().Equal(backupTargetConfig.region, foundPXCloudCredential.AwsCredential.Region)
-	s.Require().Equal(backupCredentialsConfig.accessKey, foundPXCloudCredential.AwsCredential.AccessKey)
-	s.Require().Equal(backupCredentialsConfig.endpoint, foundPXCloudCredential.AwsCredential.Endpoint)
+	s.Require().Equal(backupCredentialsConfig.AccessKey, foundPXCloudCredential.AwsCredential.AccessKey)
+	s.Require().Equal(backupCredentialsConfig.Endpoint, foundPXCloudCredential.AwsCredential.Endpoint)
 
 	// Test deletion of the backup target.
 	s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId())

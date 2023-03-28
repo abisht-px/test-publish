@@ -9,7 +9,7 @@ import (
 const backupCredPrefix = "backup-creds"
 
 func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipleObjectStores_Succeeded() {
-	s3Creds := s.config.backupTarget.credentials.s3
+	s3Creds := s.config.backupTarget.credentials.S3
 	gcpCreds := "{\"creds\": \"fake-creds\"}"
 	accKey := "accountKey"
 	accName := "accountName"
@@ -41,9 +41,9 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 			description: "S3 object store",
 			objectStoreCredentials: apiv1.ControllersCredentials{
 				S3: &apiv1.ModelsS3Credentials{
-					AccessKey: &s3Creds.accessKey,
-					Endpoint:  &s3Creds.endpoint,
-					SecretKey: &s3Creds.secretKey,
+					AccessKey: &s3Creds.AccessKey,
+					Endpoint:  &s3Creds.Endpoint,
+					SecretKey: &s3Creds.SecretKey,
 				},
 			},
 		},
@@ -51,9 +51,9 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 			description: "S3 compatible object store",
 			objectStoreCredentials: apiv1.ControllersCredentials{
 				S3Compatible: &apiv1.ModelsS3CompatibleCredentials{
-					AccessKey: &s3Creds.accessKey,
-					Endpoint:  &s3Creds.endpoint,
-					SecretKey: &s3Creds.secretKey,
+					AccessKey: &s3Creds.AccessKey,
+					Endpoint:  &s3Creds.Endpoint,
+					SecretKey: &s3Creds.SecretKey,
 				},
 			},
 		},
@@ -61,16 +61,16 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 
 	for _, testCase := range testCases {
 		s.Run(testCase.description, func() {
-			createdBackupCreds := s.mustCreateBackupCredentials(s.T(), credName, testCase.objectStoreCredentials)
-			s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
+			createdBackupCreds := s.controlPlane.MustCreateBackupCredentials(s.ctx, s.T(), credName, testCase.objectStoreCredentials)
+			s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId()) })
 
-			backupCreds := s.mustGetBackupCredentials(createdBackupCreds.GetId())
+			backupCreds := s.controlPlane.MustGetBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId())
 			s.Require().Equal(backupCreds.GetName(), credName)
 
-			backupCredList := s.mustListBackupCredentials()
+			backupCredList := s.controlPlane.MustListBackupCredentials(s.ctx, s.T())
 			s.Require().True(nameExistsInCredentialList(backupCredList, credName))
 
-			cloudConfig := s.mustGetBackupCredentialsNoSecrets(createdBackupCreds.GetId())
+			cloudConfig := s.controlPlane.MustGetBackupCredentialsNoSecrets(s.ctx, s.T(), createdBackupCreds.GetId())
 			switch {
 			case cloudConfig.Google != nil:
 				s.Require().NotNil(cloudConfig.Google)
@@ -80,10 +80,10 @@ func (s *PDSTestSuite) TestBackupCredentials_CreateAndFetchCredentialsForMultipl
 				s.Require().Equal(cloudConfig.Azure.GetAccountName(), accName)
 			case cloudConfig.S3 != nil:
 				s.Require().NotNil(cloudConfig.S3)
-				s.Require().Equal(cloudConfig.S3.GetAccessKey(), s3Creds.accessKey)
+				s.Require().Equal(cloudConfig.S3.GetAccessKey(), s3Creds.AccessKey)
 			case cloudConfig.S3Compatible != nil:
 				s.Require().NotNil(cloudConfig.S3Compatible)
-				s.Require().Equal(cloudConfig.S3Compatible.GetAccessKey(), s3Creds.accessKey)
+				s.Require().Equal(cloudConfig.S3Compatible.GetAccessKey(), s3Creds.AccessKey)
 			default:
 				s.Fail("On of the configurations need to be provided!")
 			}
@@ -103,11 +103,11 @@ func (s *PDSTestSuite) TestBackupCredentials_DuplicateCredentialsCreation_Result
 		},
 	}
 
-	createdBackupCreds := s.mustCreateBackupCredentials(s.T(), credName, credentials)
-	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
+	createdBackupCreds := s.controlPlane.MustCreateBackupCredentials(s.ctx, s.T(), credName, credentials)
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId()) })
 
 	// When.
-	_, httpResponse, err := s.createBackupCredentials(credName, credentials)
+	_, httpResponse, err := s.controlPlane.CreateBackupCredentials(s.ctx, credName, credentials)
 
 	// Then.
 	s.Require().Equal(http.StatusConflict, httpResponse.StatusCode)
@@ -119,19 +119,19 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsNonAssociatedWithTarget_
 	credName := generateRandomName(backupCredPrefix)
 	updatedName := generateRandomName("updated-" + backupCredPrefix)
 	updatedJsonKey := "{\"creds\": \"fake-creds2\"}"
-	createdBackupCreds := s.mustCreateGoogleBackupCredentials(s.T(), credName)
-	s.T().Cleanup(func() { s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId()) })
+	createdBackupCreds := s.controlPlane.MustCreateGoogleBackupCredentials(s.ctx, s.T(), credName)
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId()) })
 
-	backupCreds := s.mustGetBackupCredentials(createdBackupCreds.GetId())
+	backupCreds := s.controlPlane.MustGetBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId())
 	s.Require().Equal(backupCreds.GetName(), credName)
 
 	// When.
-	s.mustUpdateGoogleBackupCredentials(createdBackupCreds.GetId(), updatedName, updatedJsonKey)
+	s.controlPlane.MustUpdateGoogleBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId(), updatedName, updatedJsonKey)
 
 	// Then.
-	backupCreds = s.mustGetBackupCredentials(createdBackupCreds.GetId())
+	backupCreds = s.controlPlane.MustGetBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId())
 	s.Require().Equal(backupCreds.GetName(), updatedName)
-	backupCredList := s.mustListBackupCredentials()
+	backupCredList := s.controlPlane.MustListBackupCredentials(s.ctx, s.T())
 	s.Require().True(nameExistsInCredentialList(backupCredList, updatedName))
 	s.Require().False(nameExistsInCredentialList(backupCredList, credName))
 }
@@ -141,26 +141,26 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 	// Given.
 	credName := generateRandomName(backupCredPrefix)
 	backupTargetConfig := s.config.backupTarget
-	s3Creds := backupTargetConfig.credentials.s3
+	s3Creds := backupTargetConfig.credentials.S3
 	updatedAccessKey := "BRANDNEWACCESSKEY"
 	updatedCredentials := apiv1.ControllersCredentials{
 		S3: &apiv1.ModelsS3Credentials{
-			Endpoint:  &s3Creds.endpoint,
+			Endpoint:  &s3Creds.Endpoint,
 			AccessKey: &updatedAccessKey,
-			SecretKey: &s3Creds.secretKey,
+			SecretKey: &s3Creds.SecretKey,
 		},
 	}
 
-	backupCredentials := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), s3Creds, credName)
 	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 	s.T().Cleanup(func() {
 		s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId())
-		s.mustDeleteBackupCredentials(s.T(), backupCredentials.GetId())
+		s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), backupCredentials.GetId())
 	})
 	s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, s.T(), backupTarget.GetId())
 
 	// When.
-	_, httpResponse, err := s.updateBackupCredentials(backupCredentials.GetId(), "new-name", updatedCredentials)
+	_, httpResponse, err := s.controlPlane.UpdateBackupCredentials(s.ctx, backupCredentials.GetId(), "new-name", updatedCredentials)
 
 	// Then.
 	s.Require().Equal(http.StatusConflict, httpResponse.StatusCode)
@@ -170,29 +170,29 @@ func (s *PDSTestSuite) TestBackupCredentials_UpdateCredsAssociatedWithTarget_Fai
 func (s *PDSTestSuite) TestBackupCredentials_DeleteCredsNonAssociatedWithTarget_Succeeded() {
 	// Given.
 	credName := generateRandomName(backupCredPrefix)
-	createdBackupCreds := s.mustCreateGoogleBackupCredentials(s.T(), credName)
+	createdBackupCreds := s.controlPlane.MustCreateGoogleBackupCredentials(s.ctx, s.T(), credName)
 
 	// When.
-	s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId())
+	s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId())
 
 	// Then.
-	_, httpResponse, _ := s.getBackupCredentials(createdBackupCreds.GetId())
+	_, httpResponse, _ := s.controlPlane.GetBackupCredentials(s.ctx, createdBackupCreds.GetId())
 	s.Require().Equal(http.StatusNotFound, httpResponse.StatusCode)
 }
 
 func (s *PDSTestSuite) TestBackupCredentials_DeleteCredsAssociatedWithTarget_Failed() {
 	// Given.
 	credName := generateRandomName(backupCredPrefix)
-	s3Creds := s.config.backupTarget.credentials.s3
-	createdBackupCreds := s.mustCreateS3BackupCredentials(s.T(), s3Creds, credName)
+	s3Creds := s.config.backupTarget.credentials.S3
+	createdBackupCreds := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), s3Creds, credName)
 	createdBackupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), createdBackupCreds.GetId(), s.config.backupTarget.bucket, s.config.backupTarget.region)
 	s.T().Cleanup(func() {
 		s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), createdBackupTarget.GetId())
-		s.mustDeleteBackupCredentials(s.T(), createdBackupCreds.GetId())
+		s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), createdBackupCreds.GetId())
 	})
 
 	// When.
-	httpResponse, err := s.deleteBackupCredentials(createdBackupCreds.GetId())
+	httpResponse, err := s.controlPlane.DeleteBackupCredentials(s.ctx, createdBackupCreds.GetId())
 
 	// Then.
 	s.Require().Equal(http.StatusConflict, httpResponse.StatusCode)

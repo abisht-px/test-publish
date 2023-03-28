@@ -183,9 +183,9 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
-			s3Creds := backupTargetConfig.credentials.s3
-			backupCredentials := s.mustCreateS3BackupCredentials(t, s3Creds, name)
-			t.Cleanup(func() { s.mustDeleteBackupCredentials(t, backupCredentials.GetId()) })
+			s3Creds := backupTargetConfig.credentials.S3
+			backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
+			t.Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId()) })
 
 			backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 			s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
