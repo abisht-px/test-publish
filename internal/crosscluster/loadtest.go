@@ -33,18 +33,18 @@ func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.
 }
 
 func (c *CrossClusterHelper) mustCreateLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) (string, string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 	deploymentName := deployment.GetClusterResourceName()
 
-	namespace, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespace, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := c.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := c.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
-	dsImage, resp, err := c.controlPlane.API.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
+	dsImage, resp, err := c.controlPlane.PDS.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dsImageCreatedAt := dsImage.GetCreatedAt()
 

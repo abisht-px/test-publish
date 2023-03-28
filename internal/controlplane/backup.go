@@ -16,13 +16,13 @@ func (c *ControlPlane) MustCreateBackup(ctx context.Context, t tests.T, deployme
 		BackupTargetId: pointer.String(backupTargetID),
 		BackupType:     pointer.String("adhoc"),
 	}
-	backup, resp, err := c.API.BackupsApi.ApiDeploymentsIdBackupsPost(ctx, deploymentID).Body(requestBody).Execute()
+	backup, resp, err := c.PDS.BackupsApi.ApiDeploymentsIdBackupsPost(ctx, deploymentID).Body(requestBody).Execute()
 	api.RequireNoError(t, resp, err)
 
 	return backup
 }
 
 func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID string) {
-	resp, err := c.API.BackupsApi.ApiBackupsIdDelete(ctx, backupID).Execute()
+	resp, err := c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).Execute()
 	api.RequireNoError(t, resp, err)
 }

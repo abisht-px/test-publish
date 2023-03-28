@@ -14,10 +14,10 @@ import (
 )
 
 func (c *CrossClusterHelper) MustWaitForLoadBalancerServicesReady(ctx context.Context, t tests.T, deploymentID string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -39,10 +39,10 @@ func (c *CrossClusterHelper) MustWaitForLoadBalancerServicesReady(ctx context.Co
 }
 
 func (c *CrossClusterHelper) MustWaitForLoadBalancerHostsAccessibleIfNeeded(ctx context.Context, t tests.T, deploymentID string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := c.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := c.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
@@ -51,7 +51,7 @@ func (c *CrossClusterHelper) MustWaitForLoadBalancerHostsAccessibleIfNeeded(ctx 
 		return
 	}
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 	namespace := namespaceModel.GetName()
 

@@ -18,9 +18,9 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	// Create a user api key.
 	keyName := "test-api-key-" + random.AlphaNumericString(10)
 	expireDate := time.Now().AddDate(0, 0, 1)
-	key, err := s.ControlPlane.API.CreateUserAPIKey(expireDate, keyName)
+	key, err := s.ControlPlane.PDS.CreateUserAPIKey(expireDate, keyName)
 	s.Require().NoError(err, "could not create api key")
-	apiKeyClient, err := api.NewPDSClient(context.Background(), s.ControlPlane.API.URL, api.LoginCredentials{BearerToken: *key.JwtToken})
+	apiKeyClient, err := api.NewPDSClient(context.Background(), s.ControlPlane.PDS.URL, api.LoginCredentials{BearerToken: *key.JwtToken})
 	s.Require().NoError(err, "could not create auth context for api call")
 
 	// Try the token: list accounts.
@@ -31,7 +31,7 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	s.Require().NotEmpty(accounts)
 
 	// Disable the token.
-	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
+	response, err = s.ControlPlane.PDS.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
 		pdsApi.RequestsPatchUserAPIKeyRequest{
 			Enabled: pointer.Bool(false),
 		}).Execute()
@@ -43,7 +43,7 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	s.Require().Equal(http.StatusUnauthorized, response.StatusCode)
 
 	// Enable the token again.
-	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
+	response, err = s.ControlPlane.PDS.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
 		pdsApi.RequestsPatchUserAPIKeyRequest{
 			Enabled: pointer.Bool(true),
 		}).Execute()
@@ -58,7 +58,7 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	s.Require().NotEmpty(accounts)
 
 	// Disable the token.
-	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
+	response, err = s.ControlPlane.PDS.UserAPIKeyApi.ApiUserApiKeyIdPatch(context.Background(), *key.Id).Body(
 		pdsApi.RequestsPatchUserAPIKeyRequest{
 			Enabled: pointer.Bool(false),
 		}).Execute()
@@ -66,7 +66,7 @@ func (s *ControlPlaneTestSuite) TestUserAPIKey_SanityCheck() {
 	s.Require().Equal(http.StatusOK, response.StatusCode)
 
 	// Delete the token.
-	response, err = s.ControlPlane.API.UserAPIKeyApi.ApiUserApiKeyIdDelete(context.Background(), *key.Id).Execute()
+	response, err = s.ControlPlane.PDS.UserAPIKeyApi.ApiUserApiKeyIdDelete(context.Background(), *key.Id).Execute()
 	api.RequireNoError(s.T(), response, err)
 	s.Require().Equal(http.StatusNoContent, response.StatusCode)
 

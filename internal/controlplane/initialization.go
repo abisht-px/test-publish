@@ -5,12 +5,21 @@ import (
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
+	"github.com/portworx/pds-integration-test/internal/prometheus"
 	"github.com/portworx/pds-integration-test/internal/tests"
 )
+
+func (c *ControlPlane) MustSetupPrometheus(t tests.T, apiURL string, tokenSource oauth2.TokenSource) {
+	require.NotEmpty(t, c.TestPDSTenantID, "Test tenant is not set up. Control plane entities must be set up before Prometheus.")
+	promAPI, err := prometheus.NewClient(apiURL, c.TestPDSTenantID, tokenSource)
+	require.NoError(t, err, "Failed to set up Prometheus client for tenant %s at URL %s.", c.TestPDSTenantID, apiURL)
+	c.Prometheus = promAPI
+}
 
 func (c *ControlPlane) MustInitializeTestData(
 	ctx context.Context, t tests.T,
@@ -26,7 +35,7 @@ func (c *ControlPlane) MustInitializeTestData(
 
 func (c *ControlPlane) mustHavePDStestAccount(ctx context.Context, t tests.T, name string) {
 	// TODO: Use account name query filters
-	accounts, resp, err := c.API.AccountsApi.ApiAccountsGet(ctx).Execute()
+	accounts, resp, err := c.PDS.AccountsApi.ApiAccountsGet(ctx).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, accounts, "PDS API must return at least one account.")
 
@@ -43,7 +52,7 @@ func (c *ControlPlane) mustHavePDStestAccount(ctx context.Context, t tests.T, na
 
 func (c *ControlPlane) mustHavePDStestTenant(ctx context.Context, t tests.T, name string) {
 	// TODO: Use tenant name query filters
-	tenants, resp, err := c.API.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.testPDSAccountID).Execute()
+	tenants, resp, err := c.PDS.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.testPDSAccountID).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, tenants, "PDS API must return at least one tenant.")
 
@@ -60,7 +69,7 @@ func (c *ControlPlane) mustHavePDStestTenant(ctx context.Context, t tests.T, nam
 
 func (c *ControlPlane) mustHavePDStestProject(ctx context.Context, t tests.T, name string) {
 	// TODO: Use project name query filters
-	projects, resp, err := c.API.ProjectsApi.ApiTenantsIdProjectsGet(ctx, c.TestPDSTenantID).Execute()
+	projects, resp, err := c.PDS.ProjectsApi.ApiTenantsIdProjectsGet(ctx, c.TestPDSTenantID).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, projects, "PDS API must return at least one project.")
 
@@ -76,7 +85,7 @@ func (c *ControlPlane) mustHavePDStestProject(ctx context.Context, t tests.T, na
 }
 
 func (c *ControlPlane) mustLoadImageVersions(ctx context.Context, t tests.T) {
-	imageVersions, err := c.API.GetAllImageVersions(ctx)
+	imageVersions, err := c.PDS.GetAllImageVersions(ctx)
 	require.NoError(t, err, "Error while reading image versions.")
 	require.NotEmpty(t, imageVersions, "No image versions found.")
 	c.imageVersionSpecs = imageVersions
@@ -90,7 +99,7 @@ func (c *ControlPlane) mustCreateStorageOptions(ctx context.Context, t tests.T, 
 		Fs:     pointer.StringPtr("xfs"),
 		Fg:     pointer.BoolPtr(false),
 	}
-	storageTemplateResp, resp, err := c.API.StorageOptionsTemplatesApi.
+	storageTemplateResp, resp, err := c.PDS.StorageOptionsTemplatesApi.
 		ApiTenantsIdStorageOptionsTemplatesPost(ctx, c.TestPDSTenantID).
 		Body(storageTemplate).Execute()
 	api.RequireNoError(t, resp, err)
@@ -120,7 +129,7 @@ func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tes
 			}
 			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
-			configTemplate, resp, err := c.API.ApplicationConfigurationTemplatesApi.
+			configTemplate, resp, err := c.PDS.ApplicationConfigurationTemplatesApi.
 				ApiTenantsIdApplicationConfigurationTemplatesPost(ctx, c.TestPDSTenantID).
 				Body(configTemplateBody).Execute()
 			api.RequireNoError(t, resp, err)
@@ -140,7 +149,7 @@ func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tes
 			}
 			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
-			resourceTemplate, resp, err := c.API.ResourceSettingsTemplatesApi.
+			resourceTemplate, resp, err := c.PDS.ResourceSettingsTemplatesApi.
 				ApiTenantsIdResourceSettingsTemplatesPost(ctx, c.TestPDSTenantID).
 				Body(resourceTemplateBody).Execute()
 			api.RequireNoError(t, resp, err)

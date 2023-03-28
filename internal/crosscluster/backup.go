@@ -13,10 +13,10 @@ import (
 )
 
 func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t tests.T, deploymentID, backupName string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()

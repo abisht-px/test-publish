@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql/parser"
@@ -25,7 +24,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
-	"github.com/portworx/pds-integration-test/internal/prometheus"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
@@ -44,12 +42,10 @@ type PDSTestSuite struct {
 	controlPlane        *controlplane.ControlPlane
 	targetCluster       *targetcluster.TargetCluster
 	crossCluster        *crosscluster.CrossClusterHelper
-	prometheusClient    prometheusv1.API
 	pdsAgentInstallable *helminstaller.InstallableHelm
 	pdsHelmChartVersion string
 
-	config      environment
-	tokenSource oauth2.TokenSource
+	config environment
 }
 
 func TestPDSSuite(t *testing.T) {
@@ -71,7 +67,6 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.config = env
 	s.mustHaveTargetCluster(env)
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
-	s.mustHaveAuthorization(env)
 	s.mustHaveControlPlane(env)
 	s.mustHavePDSMetadata(env)
 	s.mustHavePrometheusClient(env)
@@ -98,7 +93,7 @@ func (s *PDSTestSuite) TearDownSuite() {
 
 // mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
 func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
-	metadata, resp, err := s.controlPlane.API.MetadataApi.ApiMetadataGet(s.ctx).Execute()
+	metadata, resp, err := s.controlPlane.PDS.MetadataApi.ApiMetadataGet(s.ctx).Execute()
 	api.RequireNoError(s.T(), resp, err)
 
 	// If user didn't specify the helm chart version, let's use the one configured in PDS API.
@@ -109,25 +104,21 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	}
 }
 
-func (s *PDSTestSuite) mustHaveAuthorization(env environment) {
-	var tokenSource oauth2.TokenSource
-	apiToken := env.pdsToken
-	if apiToken == "" {
-		var err error
-		tokenSource, err = auth.GetTokenSourceByPassword(
-			s.ctx,
-			env.controlPlane.LoginCredentials.TokenIssuerURL,
-			env.controlPlane.LoginCredentials.IssuerClientID,
-			env.controlPlane.LoginCredentials.IssuerClientSecret,
-			env.controlPlane.LoginCredentials.Username,
-			env.controlPlane.LoginCredentials.Password,
-		)
-		s.Require().NoError(err, "Cannot create token source")
-	} else {
-		tokenSource = auth.GetTokenSourceByToken(apiToken)
+func (s *PDSTestSuite) mustCreateTokenSource(env environment) oauth2.TokenSource {
+	if env.pdsToken != "" {
+		return auth.GetTokenSourceByToken(env.pdsToken)
 	}
 
-	s.tokenSource = tokenSource
+	tokenSource, err := auth.GetTokenSourceByPassword(
+		s.ctx,
+		env.controlPlane.LoginCredentials.TokenIssuerURL,
+		env.controlPlane.LoginCredentials.IssuerClientID,
+		env.controlPlane.LoginCredentials.IssuerClientSecret,
+		env.controlPlane.LoginCredentials.Username,
+		env.controlPlane.LoginCredentials.Password,
+	)
+	s.Require().NoError(err, "Cannot create token source.")
+	return tokenSource
 }
 
 func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
@@ -141,13 +132,13 @@ func (s *PDSTestSuite) mustHaveControlPlane(env environment) {
 		env.controlPlane.ProjectName,
 		namePrefix)
 	s.controlPlane = controlPlane
+
+	s.mustHavePrometheusClient(env)
 }
 
 func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
-	promAPI, err := prometheus.NewClient(env.controlPlane.PrometheusAPI, s.controlPlane.TestPDSTenantID, s.tokenSource)
-	s.Require().NoError(err)
-
-	s.prometheusClient = promAPI
+	tokenSource := s.mustCreateTokenSource(env)
+	s.controlPlane.MustSetupPrometheus(s.T(), env.controlPlane.PrometheusAPI, tokenSource)
 }
 
 func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
@@ -194,13 +185,13 @@ func (s *PDSTestSuite) uninstallAgent(env environment) {
 }
 
 func (s *PDSTestSuite) mustRemoveDeployment(t *testing.T, deploymentID string) {
-	resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
+	resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdDelete(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 }
 
 func (s *PDSTestSuite) waitForDeploymentRemoved(t *testing.T, deploymentID string) {
 	wait.For(t, wait.DeploymentStatusRemovedTimeout, wait.RetryInterval, func(t tests.T) {
-		_, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+		_, resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
@@ -232,10 +223,10 @@ func (s *PDSTestSuite) mustHaveTargetClusterNamespaces(name string) {
 }
 
 func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {
-	deployment, resp, err := s.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	deployment, resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := s.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := s.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(s.ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
@@ -248,7 +239,7 @@ func (s *PDSTestSuite) mustVerifyMetrics(t *testing.T, deploymentID string) {
 		pdsDeploymentIDMatch := parser.MustLabelMatcher(labels.MatchEqual, "pds_deployment_id", deploymentID)
 		expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
 
-		queryResult, _, err := s.prometheusClient.Query(s.ctx, expectedMetric.String(), time.Now())
+		queryResult, _, err := s.controlPlane.Prometheus.Query(s.ctx, expectedMetric.String(), time.Now())
 		require.NoError(t, err, "prometheus: query error")
 
 		require.IsType(t, model.Vector{}, queryResult, "prometheus: wrong result model")

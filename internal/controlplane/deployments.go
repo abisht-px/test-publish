@@ -22,7 +22,7 @@ func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.
 
 	c.setDeploymentDefaults(deployment)
 
-	deploymentID, err := c.API.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, c.testPDSNamespaceID)
+	deploymentID, err := c.PDS.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, c.testPDSNamespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
@@ -60,28 +60,28 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 		req.NodeCount = &nodeCount
 	}
 
-	deployment, resp, err := s.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := s.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	if spec.ResourceSettingsTemplateName != "" {
-		resourceTemplate, err := s.API.GetResourceSettingsTemplateByName(ctx, s.TestPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		resourceTemplate, err := s.PDS.GetResourceSettingsTemplateByName(ctx, s.TestPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ResourceSettingsTemplateId = resourceTemplate.Id
 	}
 
 	if spec.AppConfigTemplateName != "" {
-		appConfigTemplate, err := s.API.GetAppConfigTemplateByName(ctx, s.TestPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		appConfigTemplate, err := s.PDS.GetAppConfigTemplateByName(ctx, s.TestPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
 	}
 
-	_, resp, err = s.API.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()
+	_, resp, err = s.PDS.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()
 	api.RequireNoErrorf(t, resp, err, "update %s deployment", deploymentID)
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
 	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
-		deployment, resp, err := c.API.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
+		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
 		err = api.ExtractErrorDetails(resp, err)
 		require.NoError(t, err, "Getting deployment %q state.", deploymentID)
 

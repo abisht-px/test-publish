@@ -28,7 +28,7 @@ func (c *ControlPlane) CreateS3BackupTarget(ctx context.Context, backupCredentia
 		Region:              &region,
 		Type:                pointer.String("s3"),
 	}
-	return c.API.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(ctx, tenantID).Body(requestBody).Execute()
+	return c.PDS.BackupTargetsApi.ApiTenantsIdBackupTargetsPost(ctx, tenantID).Body(requestBody).Execute()
 }
 
 func (c *ControlPlane) MustCreateS3BackupTarget(ctx context.Context, t tests.T, backupCredentialsID, bucket, region string) *pds.ModelsBackupTarget {
@@ -50,7 +50,7 @@ func (c *ControlPlane) MustWaitForBackupTargetState(ctx context.Context, t tests
 }
 
 func (c *ControlPlane) MustGetBackupTargetState(ctx context.Context, t tests.T, backupTargetID string) pds.ModelsBackupTargetState {
-	backupTargetStates, resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdStatesGet(ctx, backupTargetID).Execute()
+	backupTargetStates, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdStatesGet(ctx, backupTargetID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	for _, backupTargetState := range backupTargetStates.GetData() {
@@ -65,10 +65,10 @@ func (c *ControlPlane) MustGetBackupTargetState(ctx context.Context, t tests.T, 
 func (c *ControlPlane) MustDeleteBackupTarget(ctx context.Context, t tests.T, backupTargetID string) {
 	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
+	resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
 	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
-		_, resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
+		_, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)
@@ -78,14 +78,14 @@ func (c *ControlPlane) MustDeleteBackupTarget(ctx context.Context, t tests.T, ba
 func (c *ControlPlane) DeleteBackupTargetIfExists(ctx context.Context, t tests.T, backupTargetID string) {
 	// The force=true parameter ensures that all the associated backup target states are deleted even if api-workers fail
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
-	resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
+	resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
 	if resp.StatusCode == http.StatusNotFound {
 		return
 	}
 	api.NoError(t, resp, err)
 
 	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
-		_, resp, err := c.API.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
+		_, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
 		assert.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup target %s is not deleted.", backupTargetID)

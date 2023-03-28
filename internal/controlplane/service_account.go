@@ -12,7 +12,7 @@ import (
 
 func (c *ControlPlane) mustGetServiceAccountID(ctx context.Context, t tests.T, name string) string {
 	// TODO: Use service account name query filters
-	serviceAccounts, resp, err := c.API.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(ctx, c.TestPDSTenantID).Execute()
+	serviceAccounts, resp, err := c.PDS.ServiceAccountsApi.ApiTenantsIdServiceAccountsGet(ctx, c.TestPDSTenantID).Execute()
 	api.RequireNoErrorf(t, resp, err, "Getting service account %s under tenant %s.", name, c.TestPDSTenantID)
 	require.NotEmpty(t, serviceAccounts, "PDS API must return at least one tenant.")
 
@@ -29,7 +29,7 @@ func (c *ControlPlane) mustGetServiceAccountID(ctx context.Context, t tests.T, n
 
 func (c *ControlPlane) MustGetServiceAccountToken(ctx context.Context, t tests.T, serviceAccountName string) string {
 	serviceAccountID := c.mustGetServiceAccountID(ctx, t, serviceAccountName)
-	token, resp, err := c.API.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(ctx, serviceAccountID).Execute()
+	token, resp, err := c.PDS.ServiceAccountsApi.ApiServiceAccountsIdTokenGet(ctx, serviceAccountID).Execute()
 	api.RequireNoErrorf(t, resp, err, "Getting token for service account %s.", serviceAccountName)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "PDS API must return HTTP 200.")
 

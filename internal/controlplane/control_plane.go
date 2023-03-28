@@ -1,11 +1,14 @@
 package controlplane
 
 import (
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+
 	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 type ControlPlane struct {
-	API *api.PDSClient
+	PDS        *api.PDSClient
+	Prometheus prometheusv1.API
 
 	testPDSAccountID           string
 	TestPDSTenantID            string
@@ -20,6 +23,6 @@ type ControlPlane struct {
 
 func New(apiClient *api.PDSClient) *ControlPlane {
 	return &ControlPlane{
-		API: apiClient,
+		PDS: apiClient,
 	}
 }

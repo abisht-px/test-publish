@@ -14,10 +14,10 @@ import (
 )
 
 func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t tests.T, deploymentID string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -29,10 +29,10 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t 
 }
 
 func (c *CrossClusterHelper) MustWaitForStatefulSetReadyAndUpdatedReplicas(ctx context.Context, t tests.T, deploymentID string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
@@ -46,13 +46,13 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReadyAndUpdatedReplicas(ctx c
 }
 
 func (c *CrossClusterHelper) MustWaitForStatefulSetImage(ctx context.Context, t tests.T, deploymentID, imageTag string) {
-	deployment, resp, err := c.controlPlane.API.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	namespaceModel, resp, err := c.controlPlane.API.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
 	api.RequireNoError(t, resp, err)
 
-	dataService, resp, err := c.controlPlane.API.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
+	dataService, resp, err := c.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
