@@ -12,6 +12,8 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
+	"github.com/portworx/pds-integration-test/internal/tests"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 var (
@@ -544,7 +546,7 @@ var (
 	}
 )
 
-func (c *ControlPlane) MustVerifyMetrics(ctx context.Context, t *testing.T, deploymentID string) {
+func (c *ControlPlane) MustWaitForMetricsReported(ctx context.Context, t *testing.T, deploymentID string) {
 	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
@@ -552,25 +554,28 @@ func (c *ControlPlane) MustVerifyMetrics(ctx context.Context, t *testing.T, depl
 	api.RequireNoError(t, resp, err)
 	dataServiceType := dataService.GetName()
 
-	require.Contains(t, dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics")
+	require.Contains(t, dataServiceExpectedMetrics, dataServiceType, "%s data service has no defined expected metrics", dataServiceType)
 	expectedMetrics := dataServiceExpectedMetrics[dataServiceType]
 
-	var missingMetrics []model.LabelValue
-	for _, expectedMetric := range expectedMetrics {
-		// Add deployment ID to the metric label filter.
-		pdsDeploymentIDMatch := parser.MustLabelMatcher(labels.MatchEqual, "pds_deployment_id", deploymentID)
-		expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
+	// Wait at most 2 minutes, as the prometheus polling interval is 1 minute.
+	wait.For(t, 2*time.Minute, wait.RetryInterval, func(t tests.T) {
+		var missingMetrics []model.LabelValue
+		for _, expectedMetric := range expectedMetrics {
+			// Add deployment ID to the metric label filter.
+			pdsDeploymentIDMatch := parser.MustLabelMatcher(labels.MatchEqual, "pds_deployment_id", deploymentID)
+			expectedMetric.LabelMatchers = append(expectedMetric.LabelMatchers, pdsDeploymentIDMatch)
 
-		queryResult, _, err := c.Prometheus.Query(ctx, expectedMetric.String(), time.Now())
-		require.NoError(t, err, "prometheus: query error")
+			queryResult, _, err := c.Prometheus.Query(ctx, expectedMetric.String(), time.Now())
+			require.NoError(t, err, "prometheus: query error")
 
-		require.IsType(t, model.Vector{}, queryResult, "prometheus: wrong result model")
-		queryResultMetrics := queryResult.(model.Vector)
+			require.IsType(t, model.Vector{}, queryResult, "prometheus: wrong result model")
+			queryResultMetrics := queryResult.(model.Vector)
 
-		if len(queryResultMetrics) == 0 {
-			missingMetrics = append(missingMetrics, model.LabelValue(expectedMetric.Name))
+			if len(queryResultMetrics) == 0 {
+				missingMetrics = append(missingMetrics, model.LabelValue(expectedMetric.Name))
+			}
 		}
-	}
 
-	require.Equalf(t, len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
+		require.Equalf(t, len(missingMetrics), 0, "%s: prometheus missing %d/%d metrics: %v", dataServiceType, len(missingMetrics), len(expectedMetrics), missingMetrics)
+	})
 }
