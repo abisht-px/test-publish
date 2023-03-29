@@ -18,7 +18,8 @@ const (
 	DeploymentTargetStatusHealthyTimeout   = time.Minute * 10
 	DeploymentTargetStatusUnhealthyTimeout = time.Second * 300
 	DeploymentStatusHealthyTimeout         = time.Second * 600
-	StatefulSetReadyAndUpdatedReplicas     = time.Minute * 10
+	StatefulSetReady                       = time.Minute * 10
+	StatefulSetChanged                     = time.Minute * 1
 	LoadBalancerServicesReady              = time.Second * 300
 	BackupStatusSucceededTimeout           = time.Second * 300
 	BackupTargetSyncedTimeout              = time.Second * 60
