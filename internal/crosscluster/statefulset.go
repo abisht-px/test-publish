@@ -110,6 +110,8 @@ func getDatabaseImage(deploymentType string, set *appsv1.StatefulSet) (string, e
 		containerName = "elasticsearch"
 	case dataservices.Consul:
 		containerName = "consul"
+	case dataservices.SqlServer:
+		containerName = "sqlserver"
 	default:
 		return "", fmt.Errorf("unknown database type: %s", deploymentType)
 	}

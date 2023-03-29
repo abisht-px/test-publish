@@ -17,6 +17,7 @@ const (
 	Postgres      = "PostgreSQL"
 	RabbitMQ      = "RabbitMQ"
 	Redis         = "Redis"
+	SqlServer     = "MS SQL Server"
 	ZooKeeper     = "ZooKeeper"
 	ElasticSearch = "Elasticsearch"
 	Consul        = "Consul"
@@ -301,6 +302,31 @@ var (
 			},
 		},
 		Redis: {
+			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
+				templateNameDefault: {
+					ConfigItems: []pds.ModelsConfigItem{},
+				},
+			},
+			ResourceTemplates: map[string]pds.ControllersCreateResourceSettingsTemplateRequest{
+				templateNameSmall: {
+					Name:           pointer.StringPtr(templateNameSmall),
+					CpuRequest:     pointer.StringPtr("0.5"),
+					CpuLimit:       pointer.StringPtr("0.75"),
+					MemoryRequest:  pointer.StringPtr("1G"),
+					MemoryLimit:    pointer.StringPtr("2G"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+				templateNameMed: {
+					Name:           pointer.StringPtr(templateNameMed),
+					CpuRequest:     pointer.StringPtr("0.75"),
+					CpuLimit:       pointer.StringPtr("1"),
+					MemoryRequest:  pointer.StringPtr("1500M"),
+					MemoryLimit:    pointer.StringPtr("2500M"),
+					StorageRequest: pointer.StringPtr("5G"),
+				},
+			},
+		},
+		SqlServer: {
 			ConfigurationTemplates: map[string]pds.ControllersCreateApplicationConfigurationTemplateRequest{
 				templateNameDefault: {
 					ConfigItems: []pds.ModelsConfigItem{},

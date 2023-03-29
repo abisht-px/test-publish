@@ -44,6 +44,9 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 	require.NoErrorf(t, err, "Could not get password for database %s/%s.", namespace, deploymentName)
 	env := []corev1.EnvVar{
 		{
+			Name:  "KIND",
+			Value: *dataService.ShortName,
+		}, {
 			Name:  "HOST",
 			Value: host,
 		}, {

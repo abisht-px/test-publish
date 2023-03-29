@@ -515,6 +515,18 @@ var (
 			{Name: "redis_expired_keys_total"},
 			{Name: "redis_memory_used_bytes"},
 		},
+		dataservices.SqlServer: {
+			// mssql_client_connections{pds_deployment_id=":deployment_id"}
+			// mssql_transactions{pds_deployment_id=":deployment_id"}
+			// mssql_user_errors{pds_deployment_id=":deployment_id"}
+			// mssql_deadlocks{pds_deployment_id=":deployment_id"}
+			// mssql_available_physical_memory_kb{pds_deployment_id=":deployment_id"}
+			{Name: "mssql_client_connections"},
+			{Name: "mssql_transactions"},
+			{Name: "mssql_user_errors"},
+			{Name: "mssql_deadlocks"},
+			{Name: "mssql_available_physical_memory_kb"},
+		},
 		dataservices.ZooKeeper: {
 			// zookeeper_num_alive_connections{pds_deployment_id=":deployment_id"}
 			// zookeeper_auth_failed_count{pds_deployment_id=":deployment_id"}
