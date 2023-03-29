@@ -20,7 +20,7 @@ const (
 
 func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
 	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.LoadTestJobFinishedTimeout, wait.ShortRetryInterval)
+	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.StandardTimeout, wait.ShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := tc.GetJob(ctx, namespace, jobName)

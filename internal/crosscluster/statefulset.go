@@ -21,7 +21,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, wait.StatefulSetReady, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")
@@ -54,7 +54,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetChanged(ctx context.Context, 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, wait.StatefulSetChanged, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		updateRevision := set.Status.UpdateRevision
@@ -74,7 +74,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetImage(ctx context.Context, t 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 

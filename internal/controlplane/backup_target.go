@@ -42,7 +42,7 @@ func (c *ControlPlane) MustEnsureBackupTargetCreatedInTC(ctx context.Context, t 
 }
 
 func (c *ControlPlane) MustWaitForBackupTargetState(ctx context.Context, t tests.T, backupTargetID, expectedFinalState string) {
-	wait.For(t, wait.BackupTargetSyncedTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.ShortTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		backupTargetState := c.MustGetBackupTargetState(ctx, t, backupTargetID)
 		require.Equalf(t, expectedFinalState, backupTargetState.GetState(),
 			"Backup target %s failed to end up in %s state to deployment target %s.", backupTargetID, expectedFinalState, c.testPDSDeploymentTargetID)
@@ -67,7 +67,7 @@ func (c *ControlPlane) MustDeleteBackupTarget(ctx context.Context, t tests.T, ba
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
 	resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
-	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		_, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)
@@ -84,7 +84,7 @@ func (c *ControlPlane) DeleteBackupTargetIfExists(ctx context.Context, t tests.T
 	}
 	api.NoError(t, resp, err)
 
-	wait.For(t, wait.BackupStatusSucceededTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		_, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)

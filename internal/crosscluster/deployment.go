@@ -23,7 +23,7 @@ func (c *CrossClusterHelper) MustWaitForDeploymentInitialized(ctx context.Contex
 	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
 	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
 
-	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		clusterInitJob, err := c.targetCluster.GetJob(ctx, namespace, clusterInitJobName)
 		require.NoErrorf(t, err, "Getting clusterInitJob %s/%s for deployment %s.", namespace, clusterInitJobName, deploymentID)
 		require.Truef(t, isJobSucceeded(clusterInitJob), "CluterInitJob %s/%s for deployment %s not successful.", namespace, clusterInitJobName, deploymentID)

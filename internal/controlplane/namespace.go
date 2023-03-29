@@ -22,7 +22,7 @@ func (c *ControlPlane) MustWaitForNamespaceStatus(ctx context.Context, t tests.T
 		namespace *pds.ModelsNamespace
 		err       error
 	)
-	wait.For(t, wait.NamespaceExistsTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.QuickCheckTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		namespace, err = c.PDS.GetNamespaceByName(ctx, c.testPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)
@@ -38,7 +38,7 @@ func (c *ControlPlane) MustNeverGetNamespaceByName(ctx context.Context, t tests.
 			namespace, err := c.PDS.GetNamespaceByName(ctx, c.testPDSDeploymentTargetID, name)
 			return err != nil && namespace != nil
 		},
-		wait.NamespaceExistsTimeout, wait.ShortRetryInterval,
+		wait.QuickCheckTimeout, wait.ShortRetryInterval,
 		"Namespace %s was not expected to be found in control plane.", name,
 	)
 }

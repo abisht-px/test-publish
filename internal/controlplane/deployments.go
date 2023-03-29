@@ -82,7 +82,7 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, wait.DeploymentStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
 		err = api.ExtractErrorDetails(resp, err)
 		require.NoError(t, err, "Getting deployment %q state.", deploymentID)
@@ -114,7 +114,7 @@ func (c *ControlPlane) MustRemoveDeployment(ctx context.Context, t *testing.T, d
 }
 
 func (c *ControlPlane) MustWaitForDeploymentRemoved(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, wait.DeploymentStatusRemovedTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		_, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 		assert.Errorf(t, err, "Expected an error response on getting deployment %s.", deploymentID)
 		require.NotNilf(t, resp, "Received no response body while getting deployment %s.", deploymentID)

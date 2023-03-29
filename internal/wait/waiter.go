@@ -13,22 +13,16 @@ const (
 	ShortRetryInterval = time.Second * 1
 	RetryInterval      = time.Second * 10
 
-	DeploymentTargetNameExistsTimeout      = time.Second * 90
-	NamespaceExistsTimeout                 = time.Second * 30
-	DeploymentTargetStatusHealthyTimeout   = time.Minute * 10
-	DeploymentTargetStatusUnhealthyTimeout = time.Second * 300
-	DeploymentStatusHealthyTimeout         = time.Second * 600
-	StatefulSetReady                       = time.Minute * 10
-	StatefulSetChanged                     = time.Minute * 1
-	LoadBalancerServicesReady              = time.Second * 300
-	BackupStatusSucceededTimeout           = time.Second * 300
-	BackupTargetSyncedTimeout              = time.Second * 60
-	DeploymentStatusRemovedTimeout         = time.Second * 300
-	LoadTestJobFinishedTimeout             = time.Second * 300
-	HostCheckFinishedTimeout               = time.Second * 60
-	AllHostsAvailableTimeout               = time.Second * 600
-	CoreDNSRestartedTimeout                = time.Second * 30
-	JobFinishedTimeout                     = time.Second * 60
+	// LongTimeout is generally appropriate for highly resource-intensive operations,
+	// which are expected to take a long time to reconcile.
+	LongTimeout = time.Minute * 10
+	// StandardTimeout is the normal expected waiting period for I/O-bound resources.
+	StandardTimeout = time.Minute * 5
+	// ShortTimeout is intended for lightweight resource reconciliations.
+	ShortTimeout = time.Minute * 1
+	// QuickCheckTimeout is appropriate operations which aren't constrained by waiting
+	// for resource provisioning (e.g. API-only operations, data roundtrips).
+	QuickCheckTimeout = time.Second * 30
 )
 
 func For(t tests.T, timeout time.Duration, tick time.Duration, fn func(t tests.T)) {

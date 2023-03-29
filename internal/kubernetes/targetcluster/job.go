@@ -17,7 +17,7 @@ import (
 
 func (tc *TargetCluster) MustWaitForJobSuccess(ctx context.Context, t tests.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.JobFinishedTimeout, wait.ShortRetryInterval)
+	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.ShortTimeout, wait.ShortRetryInterval)
 
 	// 2. Check the result.
 	job, err := tc.GetJob(ctx, namespace, jobName)

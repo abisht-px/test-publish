@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,13 +18,13 @@ func (c *ControlPlane) SetTestDeploymentTarget(targetID string) {
 }
 
 func (c *ControlPlane) MustWaitForDeploymentTarget(ctx context.Context, t tests.T, name string) (targetID string) {
-	wait.For(t, wait.DeploymentTargetNameExistsTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
 		var err error
 		targetID, err = c.PDS.GetDeploymentTargetIDByName(ctx, c.TestPDSTenantID, name)
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", name)
 	})
 
-	wait.For(t, wait.DeploymentTargetStatusHealthyTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		err := c.PDS.CheckDeploymentTargetHealth(ctx, targetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", targetID)
 	})
@@ -32,7 +33,8 @@ func (c *ControlPlane) MustWaitForDeploymentTarget(ctx context.Context, t tests.
 
 // DeleteTestDeploymentTarget deletes the default test target that was registered to the control plane.
 func (s *ControlPlane) DeleteTestDeploymentTarget(ctx context.Context, t tests.T) {
-	wait.For(t, wait.DeploymentTargetStatusUnhealthyTimeout, wait.RetryInterval, func(t tests.T) {
+	// Expect the target to be evaluated as unhealthy within 5 minutes (grace period from last received heartbeat).
+	wait.For(t, 5*time.Minute, wait.RetryInterval, func(t tests.T) {
 		err := s.PDS.CheckDeploymentTargetHealth(ctx, s.testPDSDeploymentTargetID)
 		assert.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
 	})
