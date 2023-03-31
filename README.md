@@ -2,7 +2,8 @@
 
 End-to-end test definitions for PDS.
 
-The test is intended to be run inside a Jenkins pipeline against a Docker image.
+The test is intended to be run inside a [Jenkins pipeline](https://jenkins.pwx.dev.purestorage.com/job/PDS/job/integration-test/)
+against a Docker image.
 Control plane and a target cluster is required, but not spawned by the test - these must be provisioned separately
 and their connection details injected via environment variables.
 
@@ -62,6 +63,14 @@ repositories:
   username: <PX_USER>
 EOT
 ```
+
+## Running on Jenkins
+
+The [integration test job] on Jenkins is configured to be compatible with the test images.
+
+You need to be on VPN to access Jenkins.
+
+Use [`Build with parameters`](https://jenkins.pwx.dev.purestorage.com/job/PDS/job/integration-test/build) to trigger a run.
 
 ## Running tests locally
 
