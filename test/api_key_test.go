@@ -1,4 +1,4 @@
-package control_plane_only
+package test
 
 import (
 	"context"

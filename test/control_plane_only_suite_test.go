@@ -1,4 +1,4 @@
-package control_plane_only
+package test
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
-	"github.com/portworx/pds-integration-test/test"
 )
 
 type ControlPlaneTestSuite struct {
@@ -23,12 +22,12 @@ func TestControlPlaneTestSuite(t *testing.T) {
 
 func (s *ControlPlaneTestSuite) SetupSuite() {
 	// Try to load .env file from the root of the project.
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load("../.env")
 	if err == nil {
 		s.T().Log("successfully loaded .env file")
 	}
 
-	config := test.MustHaveControlPlaneEnvVariables(s.T())
+	config := MustHaveControlPlaneEnvVariables(s.T())
 
 	apiClient, err := api.NewPDSClient(context.Background(), config.ControlPlaneAPI, config.LoginCredentials)
 	s.Require().NoError(err, "could not create Control Plane API client")
