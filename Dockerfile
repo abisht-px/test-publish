@@ -13,14 +13,18 @@ COPY Makefile Makefile
 COPY test/ test/
 COPY internal/ internal/
 
+RUN wget -qO- https://github.com/jstemmer/go-junit-report/releases/download/v2.0.0/go-junit-report-v2.0.0-linux-amd64.tar.gz | tar xzv
+
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o pds-test ./test
 
-# Use distroless as minimal base image to package the test binary.
-# Refer to https://github.com/GoogleContainerTools/distroless for more details.
-FROM gcr.io/distroless/static:nonroot
+# Use alpine as minimal base image to package the test binary.
+FROM alpine:3.17.3
+
+ENV PDS_JUNIT_REPORT_FILEPATH=report.xml
+
 WORKDIR /
 COPY --from=builder /workspace/pds-test .
+COPY --from=builder /workspace/go-junit-report .
 
-USER nonroot:nonroot
+ENTRYPOINT ["/bin/sh", "-c", "/pds-test -test.v | /go-junit-report -iocopy -set-exit-code -out $PDS_JUNIT_REPORT_FILEPATH"]
 
-ENTRYPOINT ["/pds-test", "-test.v"]
