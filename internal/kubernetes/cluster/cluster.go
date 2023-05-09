@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -85,6 +87,18 @@ func (c *Cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
 	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
 	return result, err
+}
+
+func (c *Cluster) GetPDSDeployment(ctx context.Context, namespace, database, name string) (runtime.Object, error) {
+	path := fmt.Sprintf("apis/deployments.pds.io/v1/namespaces/%s/%s/%s", namespace, database, name)
+	res, err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Get()
+	return res, err
+}
+
+func (c *Cluster) DeletePDSDeployment(ctx context.Context, namespace, database, name string) error {
+	path := fmt.Sprintf("apis/deployments.pds.io/v1/namespaces/%s/%s/%s", namespace, database, name)
+	err := c.Clientset.RESTClient().Delete().AbsPath(path).Do(ctx).Error()
+	return err
 }
 
 func (c *Cluster) GetDNSEndpoints(ctx context.Context, namespace, nameFilter string, recordTypeFilter string) ([]string, error) {

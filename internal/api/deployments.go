@@ -26,6 +26,7 @@ type ShortDeploymentSpec struct {
 	ResourceSettingsTemplateName string `yaml:"resource_settings_template_name"`
 	ServiceType                  string `yaml:"service_type"`
 	NamePrefix                   string `yaml:"name_prefix"`
+	CRDNamePlural                string `yaml:"crd_name_plurals"`
 	NodeCount                    int    `yaml:"node_count"`
 }
 
