@@ -31,14 +31,18 @@ const (
 	VolumeSnapshotFailedErrorCode BackupJobErrorCode = "VolumeSnapshotFailed"
 	// PXCloudCredentialsNotFoundErrorCode means the associated PX Credentials could not be found in the PX cluster.
 	PXCloudCredentialsNotFoundErrorCode BackupJobErrorCode = "PXCloudCredentialsNotFound"
+	// VolumeSnapshotCreationErrorCode means that there was a problem during volume creation.
+	VolumeSnapshotCreationErrorCode BackupJobErrorCode = "VolumeSnapshotCreationError"
+	// NoAssociatedDeploymentErrorCode means that the deployment backup was supposed to be performed on, does not exist.
+	NoAssociatedDeploymentErrorCode BackupJobErrorCode = "NoAssociatedDeployment"
 )
 
 var (
 	PDSUserID int64 = 30021
 )
 
-// BackupJobStatus defines the observed state of a BackupJob
-type BackupJobStatus struct {
+// InlineBackupJobStatus defines the observed state of a BackupJob
+type InlineBackupJobStatus struct {
 	// +optional
 	StartTime *metav1.Time `json:"startTime,omitempty"`
 	// +optional
@@ -54,6 +58,9 @@ type BackupJobStatus struct {
 	// This field is usually populated by messages from specific K8s resource where the backup job process failed.
 	// +optional
 	ErrorMessage string `json:"errorMessage,omitempty"`
+	// ID of the Portworx CloudSnap necessary for the restore operation.
+	// +optional
+	CloudSnapID string `json:"cloudSnapID,omitempty"`
 }
 
 // BackupSpec defines the desired state of Backup
@@ -98,7 +105,7 @@ type BackupStatus struct {
 	// +optional
 	Failed int32 `json:"failed,omitempty"`
 	// +optional
-	BackupJobs []BackupJobStatus `json:"backupJobs,omitempty"`
+	BackupJobs []InlineBackupJobStatus `json:"backupJobs,omitempty"`
 	// +optional
 	Error string `json:"error,omitempty"`
 }

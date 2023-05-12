@@ -18,8 +18,11 @@ package endpoint
 
 import (
 	"fmt"
+	"net/netip"
 	"sort"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,6 +36,10 @@ const (
 	RecordTypeTXT = "TXT"
 	// RecordTypeSRV is a RecordType enum value
 	RecordTypeSRV = "SRV"
+	// RecordTypeNS is a RecordType enum value
+	RecordTypeNS = "NS"
+	// RecordTypePTR is a RecordType enum value
+	RecordTypePTR = "PTR"
 )
 
 // TTL is a structure defining the TTL of a DNS record
@@ -69,7 +76,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are completely identical
+// Same compares to Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -78,14 +85,14 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(o)
 
 	for i, e := range t {
-		if e != o[i] {
+		if !strings.EqualFold(e, o[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-// IsLess should fulfill the requirement to compare two targets and chosse the 'lesser' one.
+// IsLess should fulfill the requirement to compare two targets and choose the 'lesser' one.
 // In the past target was a simple string so simple string comparison could be used. Now we define 'less'
 // as either being the shorter list of targets or where the first entry is less.
 // FIXME We really need to define under which circumstances a list Targets is considered 'less'
@@ -103,7 +110,40 @@ func (t Targets) IsLess(o Targets) bool {
 
 	for i, e := range t {
 		if e != o[i] {
-			return e < o[i]
+			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
+			// This prevents behavior like `1-2-3-4.example.com` being "less" than `1.2.3.4` when doing lexicographical string comparison.
+			ipA, err := netip.ParseAddr(e)
+			if err != nil {
+				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
+				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
+				// non-obvious issues with the records being created.
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
+
+			ipB, err := netip.ParseAddr(o[i])
+			if err != nil {
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
+
+			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
+			// If one is a valid IP and the other is not, prefer the IP address (consider it "less").
+			// If neither is a valid IP, use lexicographical string comparison to determine which string sorts first alphabetically.
+			switch {
+			case ipA.IsValid() && ipB.IsValid():
+				return ipA.Less(ipB)
+			case ipA.IsValid() && !ipB.IsValid():
+				return true
+			case !ipA.IsValid() && ipB.IsValid():
+				return false
+			default:
+				return e < o[i]
+			}
 		}
 	}
 	return false
@@ -126,6 +166,8 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
 	RecordType string `json:"recordType,omitempty"`
+	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+	SetIdentifier string `json:"setIdentifier,omitempty"`
 	// TTL for the record
 	RecordTTL TTL `json:"recordTTL,omitempty"`
 	// Labels stores labels defined for the Endpoint
@@ -148,6 +190,13 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
 
+	for _, label := range strings.Split(dnsName, ".") {
+		if len(label) > 63 {
+			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+			return nil
+		}
+	}
+
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Targets:    cleanTargets,
@@ -155,6 +204,12 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
 	}
+}
+
+// WithSetIdentifier applies the given set identifier to the endpoint.
+func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
+	e.SetIdentifier = setIdentifier
+	return e
 }
 
 // WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
@@ -182,7 +237,7 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProp
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific)
+	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
@@ -203,8 +258,12 @@ type DNSEndpointStatus struct {
 // DNSEndpoint is a contract that a user-specified CRD must implement to be used as a source for external-dns.
 // The user-specified CRD should also have the status sub-resource.
 // +k8s:openapi-gen=true
+// +groupName=externaldns.k8s.io
 // +kubebuilder:resource:path=dnsendpoints
+// +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +versionName=v1alpha1
+
 type DNSEndpoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -213,6 +272,7 @@ type DNSEndpoint struct {
 	Status DNSEndpointStatus `json:"status,omitempty"`
 }
 
+// +kubebuilder:object:root=true
 // DNSEndpointList is a list of DNSEndpoint objects
 type DNSEndpointList struct {
 	metav1.TypeMeta `json:",inline"`

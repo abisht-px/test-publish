@@ -6,6 +6,7 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 
+	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
@@ -41,4 +42,14 @@ func (c *ControlPlane) MustNeverGetNamespaceByName(ctx context.Context, t tests.
 		wait.QuickCheckTimeout, wait.ShortRetryInterval,
 		"Namespace %s was not expected to be found in control plane.", name,
 	)
+}
+
+func (c *ControlPlane) MustGetNamespaceForDeployment(ctx context.Context, t tests.T, deploymentID string) string {
+	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespace, resp, err := c.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+
+	return namespace.GetName()
 }

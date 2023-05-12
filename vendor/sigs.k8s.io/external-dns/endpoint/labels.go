@@ -23,10 +23,8 @@ import (
 	"strings"
 )
 
-var (
-	// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
-	ErrInvalidHeritage = errors.New("heritage is unknown or not found")
-)
+// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
+var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
 
 const (
 	heritage = "external-dns"
@@ -38,6 +36,9 @@ const (
 	// AWSSDDescriptionLabel label responsible for storing raw owner/resource combination information in the Labels
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
 	AWSSDDescriptionLabel = "aws-sd-description"
+
+	// DualstackLabelKey is the name of the label that identifies dualstack endpoints
+	DualstackLabelKey = "dualstack"
 )
 
 // Labels store metadata related to the endpoint

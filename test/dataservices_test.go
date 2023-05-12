@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 )
@@ -110,7 +113,7 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 	}
 }
 
-func (s *PDSTestSuite) TestDataService_Backup() {
+func (s *PDSTestSuite) TestDataService_BackupRestore() {
 	if *skipBackups {
 		s.T().Skip("Backup tests skipped.")
 	}
@@ -185,13 +188,26 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+			restoreName := generateRandomName("restore")
+			namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
 			t.Cleanup(func() {
 				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+
+				// TODO: that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
+				//   	target operator reports deletion of data service CR to the control plane, it is based on the
+				//      pds/deployment-id label in the CR; so if we delete the restored data service CR first, deployment in CP
+				//      will be deleted as part of it and it breaks the overall cleanup process).
+				err := s.targetCluster.DeletePDSDeployment(s.ctx, namespace, dataservices.ToPluralName(deployment.DataServiceName), restoreName)
+				if !apierrors.IsNotFound(err) {
+					require.NoError(t, err)
+				}
 			})
 			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+
+			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, "", deploymentID)
 
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
@@ -206,6 +222,22 @@ func (s *PDSTestSuite) TestDataService_Backup() {
 			backup := s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
 			s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
 			t.Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId()) })
+
+			if !isRestoreTestReadyFor(deployment.DataServiceName) {
+				return
+			}
+
+			s.crossCluster.MustCreateRestore(s.ctx, t, deploymentID, backup.GetClusterResourceName(), restoreName)
+			s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, deploymentID, restoreName)
+			t.Cleanup(func() {
+				err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
+				require.NoError(t, err)
+			})
+
+			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, deploymentID, restoreName)
+			s.crossCluster.MustRunReadLoadTestJob(s.ctx, t, deploymentID, restoreName, deploymentID)
+
+			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, restoreName, "")
 		})
 	}
 }
@@ -870,4 +902,8 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			s.controlPlane.MustWaitForMetricsReported(s.ctx, t, deploymentID)
 		})
 	}
+}
+
+func isRestoreTestReadyFor(dataServiceName string) bool {
+	return dataServiceName == dataservices.Postgres
 }

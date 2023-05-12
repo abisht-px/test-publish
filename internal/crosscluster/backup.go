@@ -49,6 +49,20 @@ func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t t
 	require.True(t, isBackupSucceeded(pdsBackup))
 }
 
+func getBackupSnapshotID(backup *backupsv1.Backup) (string, error) {
+	if !isBackupSucceeded(backup) {
+		return "", fmt.Errorf("no succeded backups")
+	}
+	var snapshotID string
+	if len(backup.Status.BackupJobs) > 0 {
+		snapshotID = backup.Status.BackupJobs[0].CloudSnapID
+	}
+	if snapshotID == "" {
+		return "", fmt.Errorf("snapshot id is empty")
+	}
+	return snapshotID, nil
+}
+
 func isBackupFinished(backup *backupsv1.Backup) bool {
 	return isBackupSucceeded(backup) || isBackupFailed(backup)
 }

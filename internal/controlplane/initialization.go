@@ -93,11 +93,11 @@ func (c *ControlPlane) mustLoadImageVersions(ctx context.Context, t tests.T) {
 
 func (c *ControlPlane) mustCreateStorageOptions(ctx context.Context, t tests.T, namePrefix string) {
 	storageTemplate := pds.ControllersCreateStorageOptionsTemplateRequest{
-		Name:   pointer.StringPtr(namePrefix),
-		Repl:   pointer.Int32Ptr(1),
-		Secure: pointer.BoolPtr(false),
-		Fs:     pointer.StringPtr("xfs"),
-		Fg:     pointer.BoolPtr(false),
+		Name:   pointer.String(namePrefix),
+		Repl:   pointer.Int32(1),
+		Secure: pointer.Bool(false),
+		Fs:     pointer.String("xfs"),
+		Fg:     pointer.Bool(false),
 	}
 	storageTemplateResp, resp, err := c.PDS.StorageOptionsTemplatesApi.
 		ApiTenantsIdStorageOptionsTemplatesPost(ctx, c.TestPDSTenantID).
@@ -125,7 +125,7 @@ func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tes
 		for _, configTemplateSpec := range templatesSpec.ConfigurationTemplates {
 			configTemplateBody := configTemplateSpec
 			if configTemplateBody.Name == nil {
-				configTemplateBody.Name = pointer.StringPtr(namePrefix)
+				configTemplateBody.Name = pointer.String(namePrefix)
 			}
 			configTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 
@@ -145,7 +145,7 @@ func (c *ControlPlane) mustCreateApplicationTemplates(ctx context.Context, t tes
 		for _, resourceTemplateSpec := range templatesSpec.ResourceTemplates {
 			resourceTemplateBody := resourceTemplateSpec
 			if resourceTemplateBody.Name == nil {
-				resourceTemplateBody.Name = pointer.StringPtr(namePrefix)
+				resourceTemplateBody.Name = pointer.String(namePrefix)
 			}
 			resourceTemplateBody.DataServiceId = pds.PtrString(imageVersion.DataServiceID)
 

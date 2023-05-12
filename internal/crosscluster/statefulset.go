@@ -30,6 +30,23 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t 
 	})
 }
 
+func (c *CrossClusterHelper) MustWaitForRestoredStatefulSetReady(ctx context.Context, t tests.T, deploymentID, restoreName string) {
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespace := namespaceModel.GetName()
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, restoreName)
+		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", restoreName)
+		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")
+		// Also check the UpdatedReplicas count, so we are sure that all nodes are updated to the current version.
+		require.Equalf(t, *deployment.NodeCount, set.Status.UpdatedReplicas, "UpdatedReplicas don't match desired NodeCount.")
+	})
+}
+
 func (c *CrossClusterHelper) MustGetStatefulSetUpdateRevision(ctx context.Context, t tests.T, deploymentID string) string {
 	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)

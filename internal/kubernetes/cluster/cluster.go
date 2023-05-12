@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -87,6 +88,45 @@ func (c *Cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
 	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
 	return result, err
+}
+
+func (c *Cluster) CreatePDSRestore(ctx context.Context, namespace, name, credentialName, snapID string) (*backupsv1.Restore, error) {
+	body := &backupsv1.Restore{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "backups.pds.io/v1",
+			Kind:       "Restore",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: backupsv1.RestoreSpec{
+			DeploymentName:      name,
+			CloudCredentialName: credentialName,
+			PXCloudSnapID:       snapID,
+		},
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	result := &backupsv1.Restore{}
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/restores", namespace)
+	err = c.Clientset.RESTClient().Post().AbsPath(path).Body(raw).Do(ctx).Into(result)
+	return result, err
+}
+
+func (c *Cluster) GetPDSRestore(ctx context.Context, namespace, name string) (*backupsv1.Restore, error) {
+	result := &backupsv1.Restore{}
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/restores/%s", namespace, name)
+	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
+	return result, err
+}
+
+func (c *Cluster) DeletePDSRestore(ctx context.Context, namespace, name string) error {
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/restores/%s", namespace, name)
+	err := c.Clientset.RESTClient().Delete().AbsPath(path).Do(ctx).Error()
+	return err
 }
 
 func (c *Cluster) GetPDSDeployment(ctx context.Context, namespace, database, name string) (runtime.Object, error) {

@@ -3,6 +3,7 @@ package targetcluster
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,7 +39,7 @@ func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *test
 	require.Greater(t, job.Status.Succeeded, int32(0), "Job %q did not succeed.", jobName)
 }
 
-func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace string, nodeCount *int32) []corev1.EnvVar {
+func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace, mode, seed string, nodeCount *int32) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
 	password, err := tc.getDBPassword(ctx, namespace, deploymentName)
 	require.NoErrorf(t, err, "Could not get password for database %s/%s.", namespace, deploymentName)
@@ -46,19 +47,37 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 		{
 			Name:  "KIND",
 			Value: *dataService.ShortName,
-		}, {
+		},
+		{
 			Name:  "HOST",
 			Value: host,
-		}, {
+		},
+		{
 			Name:  "PASSWORD",
 			Value: password,
-		}, {
+		},
+		{
 			Name:  "ITERATIONS",
 			Value: "1",
-		}, {
+		},
+		{
 			Name:  "FAIL_ON_ERROR",
 			Value: "true",
-		}}
+		},
+	}
+	if mode != "" {
+		env = append(env, corev1.EnvVar{
+			Name:  "MODE",
+			Value: mode,
+		})
+	}
+	if seed != "" {
+		seed := strings.ReplaceAll(seed, "-", "")
+		env = append(env, corev1.EnvVar{
+			Name:  "SEED",
+			Value: seed,
+		})
+	}
 
 	dataServiceType := dataService.GetName()
 	switch dataServiceType {
