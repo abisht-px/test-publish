@@ -273,7 +273,7 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 		return "", fmt.Errorf("getting DNS details for tenant %s: %w", tenantID, err)
 	}
 
-	pdsDeployment := pdsApi.NewControllersCreateProjectDeployment()
+	pdsDeployment := pdsApi.NewRequestsCreateProjectDeploymentRequest()
 	pdsDeployment.SetApplicationConfigurationTemplateId(appConfig.GetId())
 	pdsDeployment.SetDeploymentTargetId(deploymentTargetID)
 	pdsDeployment.SetDnsZone(dns.GetDnsZone())

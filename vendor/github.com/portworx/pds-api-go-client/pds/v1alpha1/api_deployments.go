@@ -386,7 +386,7 @@ type ApiApiDeploymentsIdEventsGetRequest struct {
 }
 
 
-func (r ApiApiDeploymentsIdEventsGetRequest) Execute() (*ControllersEventsResponse, *http.Response, error) {
+func (r ApiApiDeploymentsIdEventsGetRequest) Execute() (*ServiceDeploymentResourceEvents, *http.Response, error) {
 	return r.ApiService.ApiDeploymentsIdEventsGetExecute(r)
 }
 
@@ -408,13 +408,13 @@ func (a *DeploymentsApiService) ApiDeploymentsIdEventsGet(ctx context.Context, i
 }
 
 // Execute executes the request
-//  @return ControllersEventsResponse
-func (a *DeploymentsApiService) ApiDeploymentsIdEventsGetExecute(r ApiApiDeploymentsIdEventsGetRequest) (*ControllersEventsResponse, *http.Response, error) {
+//  @return ServiceDeploymentResourceEvents
+func (a *DeploymentsApiService) ApiDeploymentsIdEventsGetExecute(r ApiApiDeploymentsIdEventsGetRequest) (*ServiceDeploymentResourceEvents, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *ControllersEventsResponse
+		localVarReturnValue  *ServiceDeploymentResourceEvents
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DeploymentsApiService.ApiDeploymentsIdEventsGet")
@@ -501,8 +501,14 @@ type ApiApiDeploymentsIdGetRequest struct {
 	ctx context.Context
 	ApiService *DeploymentsApiService
 	id string
+	expand *string
 }
 
+// Expand the result with related entities (allowed values: deployment_target, namespace)
+func (r ApiApiDeploymentsIdGetRequest) Expand(expand string) ApiApiDeploymentsIdGetRequest {
+	r.expand = &expand
+	return r
+}
 
 func (r ApiApiDeploymentsIdGetRequest) Execute() (*ModelsDeployment, *http.Response, error) {
 	return r.ApiService.ApiDeploymentsIdGetExecute(r)
@@ -547,6 +553,9 @@ func (a *DeploymentsApiService) ApiDeploymentsIdGetExecute(r ApiApiDeploymentsId
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.expand != nil {
+		localVarQueryParams.Add("expand", parameterToString(*r.expand, ""))
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -760,7 +769,7 @@ type ApiApiDeploymentsIdStatusGetRequest struct {
 }
 
 
-func (r ApiApiDeploymentsIdStatusGetRequest) Execute() (*ControllersStatusResponse, *http.Response, error) {
+func (r ApiApiDeploymentsIdStatusGetRequest) Execute() (*ServiceDeploymentStatus, *http.Response, error) {
 	return r.ApiService.ApiDeploymentsIdStatusGetExecute(r)
 }
 
@@ -782,13 +791,13 @@ func (a *DeploymentsApiService) ApiDeploymentsIdStatusGet(ctx context.Context, i
 }
 
 // Execute executes the request
-//  @return ControllersStatusResponse
-func (a *DeploymentsApiService) ApiDeploymentsIdStatusGetExecute(r ApiApiDeploymentsIdStatusGetRequest) (*ControllersStatusResponse, *http.Response, error) {
+//  @return ServiceDeploymentStatus
+func (a *DeploymentsApiService) ApiDeploymentsIdStatusGetExecute(r ApiApiDeploymentsIdStatusGetRequest) (*ServiceDeploymentStatus, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *ControllersStatusResponse
+		localVarReturnValue  *ServiceDeploymentStatus
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DeploymentsApiService.ApiDeploymentsIdStatusGet")
@@ -1101,12 +1110,12 @@ type ApiApiProjectsIdDeploymentsPostRequest struct {
 	ctx context.Context
 	ApiService *DeploymentsApiService
 	id string
-	body *ControllersCreateProjectDeployment
+	body *RequestsCreateProjectDeploymentRequest
 	localOnly *bool
 }
 
 // Request body containing the deployment config
-func (r ApiApiProjectsIdDeploymentsPostRequest) Body(body ControllersCreateProjectDeployment) ApiApiProjectsIdDeploymentsPostRequest {
+func (r ApiApiProjectsIdDeploymentsPostRequest) Body(body RequestsCreateProjectDeploymentRequest) ApiApiProjectsIdDeploymentsPostRequest {
 	r.body = &body
 	return r
 }

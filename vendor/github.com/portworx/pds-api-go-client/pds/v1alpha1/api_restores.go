@@ -24,262 +24,37 @@ var (
 	_ context.Context
 )
 
-// BackupJobsApiService BackupJobsApi service
-type BackupJobsApiService service
+// RestoresApiService RestoresApi service
+type RestoresApiService service
 
-type ApiApiBackupJobsIdDeleteRequest struct {
+type ApiApiBackupJobsIdRestorePostRequest struct {
 	ctx context.Context
-	ApiService *BackupJobsApiService
+	ApiService *RestoresApiService
 	id string
+	body *RequestsCreateRestoreRequest
 }
 
-
-func (r ApiApiBackupJobsIdDeleteRequest) Execute() (*http.Response, error) {
-	return r.ApiService.ApiBackupJobsIdDeleteExecute(r)
-}
-
-/*
-ApiBackupJobsIdDelete Delete BackupJob
-
-Removes a single BackupJob
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id BackupJob ID (must be valid UUID)
- @return ApiApiBackupJobsIdDeleteRequest
-*/
-func (a *BackupJobsApiService) ApiBackupJobsIdDelete(ctx context.Context, id string) ApiApiBackupJobsIdDeleteRequest {
-	return ApiApiBackupJobsIdDeleteRequest{
-		ApiService: a,
-		ctx: ctx,
-		id: id,
-	}
-}
-
-// Execute executes the request
-func (a *BackupJobsApiService) ApiBackupJobsIdDeleteExecute(r ApiApiBackupJobsIdDeleteRequest) (*http.Response, error) {
-	var (
-		localVarHTTPMethod   = http.MethodDelete
-		localVarPostBody     interface{}
-		formFiles            []formFile
-	)
-
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "BackupJobsApiService.ApiBackupJobsIdDelete")
-	if err != nil {
-		return nil, &GenericOpenAPIError{error: err.Error()}
-	}
-
-	localVarPath := localBasePath + "/api/backup-jobs/{id}"
-	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	// to determine the Content-Type header
-	localVarHTTPContentTypes := []string{}
-
-	// set Content-Type header
-	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
-	if localVarHTTPContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
-	}
-
-	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{}
-
-	// set Accept header
-	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
-	if localVarHTTPHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
-	}
-	if r.ctx != nil {
-		// API Key Authentication
-		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
-			if apiKey, ok := auth["ApiKeyAuth"]; ok {
-				var key string
-				if apiKey.Prefix != "" {
-					key = apiKey.Prefix + " " + apiKey.Key
-				} else {
-					key = apiKey.Key
-				}
-				localVarHeaderParams["Authorization"] = key
-			}
-		}
-	}
-	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
-	if err != nil {
-		return nil, err
-	}
-
-	localVarHTTPResponse, err := a.client.callAPI(req)
-	if err != nil || localVarHTTPResponse == nil {
-		return localVarHTTPResponse, err
-	}
-
-	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
-	localVarHTTPResponse.Body.Close()
-	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
-	if err != nil {
-		return localVarHTTPResponse, err
-	}
-
-	if localVarHTTPResponse.StatusCode >= 300 {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: localVarHTTPResponse.Status,
-		}
-		return localVarHTTPResponse, newErr
-	}
-
-	return localVarHTTPResponse, nil
-}
-
-type ApiApiBackupJobsIdGetRequest struct {
-	ctx context.Context
-	ApiService *BackupJobsApiService
-	id string
-}
-
-
-func (r ApiApiBackupJobsIdGetRequest) Execute() (*ModelsBackupJob, *http.Response, error) {
-	return r.ApiService.ApiBackupJobsIdGetExecute(r)
-}
-
-/*
-ApiBackupJobsIdGet Get BackupJob
-
-Fetches a BackupJob
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id BackupJob ID (must be valid UUID)
- @return ApiApiBackupJobsIdGetRequest
-*/
-func (a *BackupJobsApiService) ApiBackupJobsIdGet(ctx context.Context, id string) ApiApiBackupJobsIdGetRequest {
-	return ApiApiBackupJobsIdGetRequest{
-		ApiService: a,
-		ctx: ctx,
-		id: id,
-	}
-}
-
-// Execute executes the request
-//  @return ModelsBackupJob
-func (a *BackupJobsApiService) ApiBackupJobsIdGetExecute(r ApiApiBackupJobsIdGetRequest) (*ModelsBackupJob, *http.Response, error) {
-	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *ModelsBackupJob
-	)
-
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "BackupJobsApiService.ApiBackupJobsIdGet")
-	if err != nil {
-		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
-	}
-
-	localVarPath := localBasePath + "/api/backup-jobs/{id}"
-	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	// to determine the Content-Type header
-	localVarHTTPContentTypes := []string{}
-
-	// set Content-Type header
-	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
-	if localVarHTTPContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
-	}
-
-	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json"}
-
-	// set Accept header
-	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
-	if localVarHTTPHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
-	}
-	if r.ctx != nil {
-		// API Key Authentication
-		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
-			if apiKey, ok := auth["ApiKeyAuth"]; ok {
-				var key string
-				if apiKey.Prefix != "" {
-					key = apiKey.Prefix + " " + apiKey.Key
-				} else {
-					key = apiKey.Key
-				}
-				localVarHeaderParams["Authorization"] = key
-			}
-		}
-	}
-	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
-	if err != nil {
-		return localVarReturnValue, nil, err
-	}
-
-	localVarHTTPResponse, err := a.client.callAPI(req)
-	if err != nil || localVarHTTPResponse == nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
-	localVarHTTPResponse.Body.Close()
-	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
-	if err != nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	if localVarHTTPResponse.StatusCode >= 300 {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: localVarHTTPResponse.Status,
-		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-	if err != nil {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: err.Error(),
-		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	return localVarReturnValue, localVarHTTPResponse, nil
-}
-
-type ApiApiBackupJobsIdPutRequest struct {
-	ctx context.Context
-	ApiService *BackupJobsApiService
-	id string
-	body *RequestsPutBackupJobRequest
-}
-
-// Request body containing backup job details
-func (r ApiApiBackupJobsIdPutRequest) Body(body RequestsPutBackupJobRequest) ApiApiBackupJobsIdPutRequest {
+// Request body containing information about required restore
+func (r ApiApiBackupJobsIdRestorePostRequest) Body(body RequestsCreateRestoreRequest) ApiApiBackupJobsIdRestorePostRequest {
 	r.body = &body
 	return r
 }
 
-func (r ApiApiBackupJobsIdPutRequest) Execute() (*ModelsBackupJob, *http.Response, error) {
-	return r.ApiService.ApiBackupJobsIdPutExecute(r)
+func (r ApiApiBackupJobsIdRestorePostRequest) Execute() (*ModelsRestore, *http.Response, error) {
+	return r.ApiService.ApiBackupJobsIdRestorePostExecute(r)
 }
 
 /*
-ApiBackupJobsIdPut Upsert BackupJob
+ApiBackupJobsIdRestorePost Start Restore
 
-Updates a BackupJob if ID exists, Creates new BackupJob if not
+Starts restore of given BackupJob
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id BackupJob ID (must be UUID)
- @return ApiApiBackupJobsIdPutRequest
+ @param id BackupJob ID (must be valid UUID)
+ @return ApiApiBackupJobsIdRestorePostRequest
 */
-func (a *BackupJobsApiService) ApiBackupJobsIdPut(ctx context.Context, id string) ApiApiBackupJobsIdPutRequest {
-	return ApiApiBackupJobsIdPutRequest{
+func (a *RestoresApiService) ApiBackupJobsIdRestorePost(ctx context.Context, id string) ApiApiBackupJobsIdRestorePostRequest {
+	return ApiApiBackupJobsIdRestorePostRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
@@ -287,21 +62,21 @@ func (a *BackupJobsApiService) ApiBackupJobsIdPut(ctx context.Context, id string
 }
 
 // Execute executes the request
-//  @return ModelsBackupJob
-func (a *BackupJobsApiService) ApiBackupJobsIdPutExecute(r ApiApiBackupJobsIdPutRequest) (*ModelsBackupJob, *http.Response, error) {
+//  @return ModelsRestore
+func (a *RestoresApiService) ApiBackupJobsIdRestorePostExecute(r ApiApiBackupJobsIdRestorePostRequest) (*ModelsRestore, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodPut
+		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *ModelsBackupJob
+		localVarReturnValue  *ModelsRestore
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "BackupJobsApiService.ApiBackupJobsIdPut")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "RestoresApiService.ApiBackupJobsIdRestorePost")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/backup-jobs/{id}"
+	localVarPath := localBasePath + "/api/backup-jobs/{id}/restore"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -381,28 +156,28 @@ func (a *BackupJobsApiService) ApiBackupJobsIdPutExecute(r ApiApiBackupJobsIdPut
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiApiBackupsIdJobsGetRequest struct {
+type ApiApiRestoresIdGetRequest struct {
 	ctx context.Context
-	ApiService *BackupJobsApiService
+	ApiService *RestoresApiService
 	id string
 }
 
 
-func (r ApiApiBackupsIdJobsGetRequest) Execute() (*ControllersBackupJobsResponse, *http.Response, error) {
-	return r.ApiService.ApiBackupsIdJobsGetExecute(r)
+func (r ApiApiRestoresIdGetRequest) Execute() (*ModelsRestore, *http.Response, error) {
+	return r.ApiService.ApiRestoresIdGetExecute(r)
 }
 
 /*
-ApiBackupsIdJobsGet List Backup's Jobs
+ApiRestoresIdGet Get Restore
 
-Retrieves a list of BackupJobs associated to this Backup
+Fetches a Restore
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id Backup ID (must be valid UUID)
- @return ApiApiBackupsIdJobsGetRequest
+ @param id Restore ID (must be valid UUID)
+ @return ApiApiRestoresIdGetRequest
 */
-func (a *BackupJobsApiService) ApiBackupsIdJobsGet(ctx context.Context, id string) ApiApiBackupsIdJobsGetRequest {
-	return ApiApiBackupsIdJobsGetRequest{
+func (a *RestoresApiService) ApiRestoresIdGet(ctx context.Context, id string) ApiApiRestoresIdGetRequest {
+	return ApiApiRestoresIdGetRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
@@ -410,21 +185,21 @@ func (a *BackupJobsApiService) ApiBackupsIdJobsGet(ctx context.Context, id strin
 }
 
 // Execute executes the request
-//  @return ControllersBackupJobsResponse
-func (a *BackupJobsApiService) ApiBackupsIdJobsGetExecute(r ApiApiBackupsIdJobsGetRequest) (*ControllersBackupJobsResponse, *http.Response, error) {
+//  @return ModelsRestore
+func (a *RestoresApiService) ApiRestoresIdGetExecute(r ApiApiRestoresIdGetRequest) (*ModelsRestore, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *ControllersBackupJobsResponse
+		localVarReturnValue  *ModelsRestore
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "BackupJobsApiService.ApiBackupsIdJobsGet")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "RestoresApiService.ApiRestoresIdGet")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/backups/{id}/jobs"
+	localVarPath := localBasePath + "/api/restores/{id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -448,6 +223,135 @@ func (a *BackupJobsApiService) ApiBackupsIdJobsGetExecute(r ApiApiBackupsIdJobsG
 	if localVarHTTPHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
 	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["ApiKeyAuth"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
+type ApiApiRestoresIdUpdateStatusPostRequest struct {
+	ctx context.Context
+	ApiService *RestoresApiService
+	id string
+	body *RequestsUpdateRestoreStatusRequest
+}
+
+// Request body containing the status update
+func (r ApiApiRestoresIdUpdateStatusPostRequest) Body(body RequestsUpdateRestoreStatusRequest) ApiApiRestoresIdUpdateStatusPostRequest {
+	r.body = &body
+	return r
+}
+
+func (r ApiApiRestoresIdUpdateStatusPostRequest) Execute() (*ModelsRestore, *http.Response, error) {
+	return r.ApiService.ApiRestoresIdUpdateStatusPostExecute(r)
+}
+
+/*
+ApiRestoresIdUpdateStatusPost Update Restore Status
+
+Updates a Restore Status
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @param id Restore ID (must be valid UUID)
+ @return ApiApiRestoresIdUpdateStatusPostRequest
+*/
+func (a *RestoresApiService) ApiRestoresIdUpdateStatusPost(ctx context.Context, id string) ApiApiRestoresIdUpdateStatusPostRequest {
+	return ApiApiRestoresIdUpdateStatusPostRequest{
+		ApiService: a,
+		ctx: ctx,
+		id: id,
+	}
+}
+
+// Execute executes the request
+//  @return ModelsRestore
+func (a *RestoresApiService) ApiRestoresIdUpdateStatusPostExecute(r ApiApiRestoresIdUpdateStatusPostRequest) (*ModelsRestore, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodPost
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *ModelsRestore
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "RestoresApiService.ApiRestoresIdUpdateStatusPost")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/restores/{id}/update-status"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.body == nil {
+		return localVarReturnValue, nil, reportError("body is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"*/*"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	// body params
+	localVarPostBody = r.body
 	if r.ctx != nil {
 		// API Key Authentication
 		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {

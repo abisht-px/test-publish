@@ -79,6 +79,8 @@ type APIClient struct {
 
 	DataServicesApi *DataServicesApiService
 
+	DeploymentManifestsApi *DeploymentManifestsApiService
+
 	DeploymentTargetsApi *DeploymentTargetsApiService
 
 	DeploymentsApi *DeploymentsApiService
@@ -96,6 +98,8 @@ type APIClient struct {
 	ProjectsApi *ProjectsApiService
 
 	ResourceSettingsTemplatesApi *ResourceSettingsTemplatesApiService
+
+	RestoresApi *RestoresApiService
 
 	RolesApi *RolesApiService
 
@@ -153,6 +157,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.BackupTargetsApi = (*BackupTargetsApiService)(&c.common)
 	c.BackupsApi = (*BackupsApiService)(&c.common)
 	c.DataServicesApi = (*DataServicesApiService)(&c.common)
+	c.DeploymentManifestsApi = (*DeploymentManifestsApiService)(&c.common)
 	c.DeploymentTargetsApi = (*DeploymentTargetsApiService)(&c.common)
 	c.DeploymentsApi = (*DeploymentsApiService)(&c.common)
 	c.GlobalRoleBindingsApi = (*GlobalRoleBindingsApiService)(&c.common)
@@ -162,6 +167,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.ProjectRoleBindingsApi = (*ProjectRoleBindingsApiService)(&c.common)
 	c.ProjectsApi = (*ProjectsApiService)(&c.common)
 	c.ResourceSettingsTemplatesApi = (*ResourceSettingsTemplatesApiService)(&c.common)
+	c.RestoresApi = (*RestoresApiService)(&c.common)
 	c.RolesApi = (*RolesApiService)(&c.common)
 	c.SampleTemplatesApi = (*SampleTemplatesApiService)(&c.common)
 	c.ServiceAccountsApi = (*ServiceAccountsApiService)(&c.common)

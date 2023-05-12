@@ -16,6 +16,7 @@ import (
 
 const (
 	pdsDeploymentHealthStateHealthy = "Healthy"
+	pdsDeploymentHealthAvailable    = "Available"
 )
 
 func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.T, deployment *api.ShortDeploymentSpec) string {
@@ -84,11 +85,30 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
 	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
-		err = api.ExtractErrorDetails(resp, err)
-		require.NoError(t, err, "Getting deployment %q state.", deploymentID)
+		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
 
 		healthState := deployment.GetHealth()
 		require.Equal(t, pdsDeploymentHealthStateHealthy, healthState, "Deployment %q is in state %q.", deploymentID, healthState)
+	})
+}
+
+func (c *ControlPlane) MustWaitForDeploymentReplicas(ctx context.Context, t *testing.T, deploymentID string, expectedReplicas int32) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
+		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
+
+		replicas := deployment.GetReplicas()
+		require.Equal(t, expectedReplicas, replicas, "Deployment %q has %q replicas.", deploymentID, replicas)
+	})
+}
+
+func (c *ControlPlane) MustWaitForDeploymentAvailable(ctx context.Context, t *testing.T, deploymentID string) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Expand("deployment_manifest").Execute()
+		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
+
+		healthState := deployment.GetDeploymentManifest().Health
+		require.Equal(t, pdsDeploymentHealthAvailable, *healthState, "Deployment %q is in state %q.", deploymentID, healthState)
 	})
 }
 
