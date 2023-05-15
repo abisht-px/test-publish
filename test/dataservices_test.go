@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	skipBackups = flag.Bool("skip-backups", false, "Skip tests related to backups.")
+	skipBackups          = flag.Bool("skip-backups", false, "Skip tests related to backups.")
+	skipBackupsMultinode = flag.Bool("skip-backups-multinode", true, "Skip tests related to backups which are run on multi-node data services.")
 )
 
 func (s *PDSTestSuite) TestDataService_WriteData() {
@@ -139,6 +140,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			NodeCount:       1,
 		},
 		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.6",
+			NodeCount:       3,
+		},
+		{
 			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.6",
 			NodeCount:       1,
@@ -183,7 +189,12 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("backup-%s-%s", deployment.DataServiceName, deployment.ImageVersionString()), func(t *testing.T) {
+
+		if *skipBackupsMultinode && deployment.NodeCount > 1 {
+			s.T().Skipf("Backup tests for the %d node %s data services is disabled.", deployment.NodeCount, deployment.DataServiceName)
+		}
+
+		s.T().Run(fmt.Sprintf("backup-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
@@ -194,7 +205,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 
-				// TODO: that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
+				// TODO(DS-5494): that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
 				//   	target operator reports deletion of data service CR to the control plane, it is based on the
 				//      pds/deployment-id label in the CR; so if we delete the restored data service CR first, deployment in CP
 				//      will be deleted as part of it and it breaks the overall cleanup process).
