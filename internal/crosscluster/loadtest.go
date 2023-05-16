@@ -28,7 +28,7 @@ var loadTestImages = map[string]string{
 	dataservices.MongoDB:       "portworx/pds-loadtests:mongodb-0.0.1",
 	dataservices.MySQL:         "portworx/pds-loadtests:mysql-0.0.3",
 	dataservices.ElasticSearch: "portworx/pds-loadtests:elasticsearch-0.0.2",
-	dataservices.Consul:        "portworx/pds-loadtests:consul-0.0.1",
+	dataservices.Consul:        "portworx/pds-loadtests:sample-load-0.0.9",
 	dataservices.Postgres:      "portworx/pds-loadtests:sample-load-0.0.9",
 	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.9",
 }

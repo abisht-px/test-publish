@@ -155,6 +155,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			NodeCount:       1,
 		},
 		{
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.14.0",
+			NodeCount:       3,
+		},
+		{
 			DataServiceName: dataservices.Redis,
 			ImageVersionTag: "7.0.5",
 			NodeCount:       1,
@@ -916,5 +921,10 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 }
 
 func isRestoreTestReadyFor(dataServiceName string) bool {
-	return dataServiceName == dataservices.Postgres
+	switch dataServiceName {
+	case dataservices.Consul,
+		dataservices.Postgres:
+		return true
+	}
+	return false
 }
