@@ -19,18 +19,18 @@ const (
 )
 
 var loadTestImages = map[string]string{
-	dataservices.Cassandra:     "portworx/pds-loadtests:cassandra-0.0.5",
-	dataservices.Couchbase:     "portworx/pds-loadtests:couchbase-0.0.3",
-	dataservices.Redis:         "portworx/pds-loadtests:redis-0.0.3",
-	dataservices.ZooKeeper:     "portworx/pds-loadtests:zookeeper-0.0.2",
-	dataservices.Kafka:         "portworx/pds-loadtests:kafka-0.0.3",
-	dataservices.RabbitMQ:      "portworx/pds-loadtests:rabbitmq-0.0.2",
-	dataservices.MongoDB:       "portworx/pds-loadtests:mongodb-0.0.1",
-	dataservices.MySQL:         "portworx/pds-loadtests:mysql-0.0.3",
-	dataservices.ElasticSearch: "portworx/pds-loadtests:elasticsearch-0.0.2",
-	dataservices.Consul:        "portworx/pds-loadtests:sample-load-0.0.9",
-	dataservices.Postgres:      "portworx/pds-loadtests:sample-load-0.0.9",
-	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.9",
+	dataservices.Cassandra:     "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Couchbase:     "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Redis:         "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.ZooKeeper:     "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Kafka:         "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.RabbitMQ:      "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.MongoDB:       "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.MySQL:         "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.ElasticSearch: "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Consul:        "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Postgres:      "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.12",
 }
 
 func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
