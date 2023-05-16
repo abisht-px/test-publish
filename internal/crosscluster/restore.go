@@ -40,7 +40,7 @@ func (c *CrossClusterHelper) MustEnsureRestoreSuccessful(ctx context.Context, t 
 	namespace := namespaceModel.GetName()
 
 	// 1. Wait for the restore to finish.
-	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		pdsRestore, err := c.targetCluster.GetPDSRestore(ctx, namespace, restoreName)
 		require.NoErrorf(t, err, "Getting restore %s/%s for deployment %s from target cluster.", namespace, restoreName, deploymentID)
 		require.Truef(t, isRestoreFinished(pdsRestore), "Restore %s for the deployment %s did not finish.", restoreName, deploymentID)

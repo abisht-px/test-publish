@@ -165,6 +165,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			NodeCount:       1,
 		},
 		{
+			DataServiceName: dataservices.Redis,
+			ImageVersionTag: "7.0.5",
+			NodeCount:       6,
+		},
+		{
 			DataServiceName: dataservices.MySQL,
 			ImageVersionTag: "8.0.31",
 			NodeCount:       1,
@@ -195,11 +200,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 	for _, d := range deployments {
 		deployment := d
 
-		if *skipBackupsMultinode && deployment.NodeCount > 1 {
-			s.T().Skipf("Backup tests for the %d node %s data services is disabled.", deployment.NodeCount, deployment.DataServiceName)
-		}
-
 		s.T().Run(fmt.Sprintf("backup-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+			if *skipBackupsMultinode && deployment.NodeCount > 1 {
+				t.Skipf("Backup tests for the %d node %s data services is disabled.", deployment.NodeCount, deployment.DataServiceName)
+			}
+
 			t.Parallel()
 
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
@@ -923,7 +928,8 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 func isRestoreTestReadyFor(dataServiceName string) bool {
 	switch dataServiceName {
 	case dataservices.Consul,
-		dataservices.Postgres:
+		dataservices.Postgres,
+		dataservices.Redis:
 		return true
 	}
 	return false
