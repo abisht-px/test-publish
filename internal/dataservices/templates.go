@@ -403,7 +403,7 @@ func ToPluralName(dataServiceName string) string {
 	case Redis:
 		return "redis"
 	case SqlServer:
-		return "sqls"
+		return "sqlservers"
 	case ZooKeeper:
 		return "zookeepers"
 	}

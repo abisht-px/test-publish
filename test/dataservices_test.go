@@ -189,12 +189,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			ImageVersionTag: "7.1.1",
 			NodeCount:       1,
 		},
-		// SQL Server is not enabled yet.
-		//{
-		//	DataServiceName: dataservices.SqlServer,
-		//	ImageVersionTag: "2019-CU18-rhel-8.5",
-		//	NodeCount:       1,
-		//},
+		{
+			DataServiceName: dataservices.SqlServer,
+			ImageVersionTag: "2019-CU18-rhel-8.5",
+			NodeCount:       1,
+		},
 	}
 
 	for _, d := range deployments {
@@ -929,7 +928,8 @@ func isRestoreTestReadyFor(dataServiceName string) bool {
 	switch dataServiceName {
 	case dataservices.Consul,
 		dataservices.Postgres,
-		dataservices.Redis:
+		dataservices.Redis,
+		dataservices.SqlServer:
 		return true
 	}
 	return false

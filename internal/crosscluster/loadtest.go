@@ -30,7 +30,7 @@ var loadTestImages = map[string]string{
 	dataservices.ElasticSearch: "portworx/pds-loadtests:sample-load-0.0.12",
 	dataservices.Consul:        "portworx/pds-loadtests:sample-load-0.0.12",
 	dataservices.Postgres:      "portworx/pds-loadtests:sample-load-0.0.12",
-	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.13",
 }
 
 func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
