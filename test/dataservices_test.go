@@ -180,6 +180,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			NodeCount:       1,
 		},
 		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.3",
+			NodeCount:       3,
+		},
+		{
 			DataServiceName: dataservices.ElasticSearch,
 			ImageVersionTag: "8.5.2",
 			NodeCount:       1,
@@ -927,6 +932,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 func isRestoreTestReadyFor(dataServiceName string) bool {
 	switch dataServiceName {
 	case dataservices.Consul,
+		dataservices.MongoDB,
 		dataservices.Postgres,
 		dataservices.Redis,
 		dataservices.SqlServer:
