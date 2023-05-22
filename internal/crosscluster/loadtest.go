@@ -20,7 +20,7 @@ const (
 
 var loadTestImages = map[string]string{
 	dataservices.Cassandra:     "portworx/pds-loadtests:sample-load-0.0.12",
-	dataservices.Couchbase:     "portworx/pds-loadtests:sample-load-0.0.12",
+	dataservices.Couchbase:     "portworx/pds-loadtests:sample-load-0.0.14",
 	dataservices.Redis:         "portworx/pds-loadtests:sample-load-0.0.12",
 	dataservices.ZooKeeper:     "portworx/pds-loadtests:sample-load-0.0.12",
 	dataservices.Kafka:         "portworx/pds-loadtests:sample-load-0.0.12",
