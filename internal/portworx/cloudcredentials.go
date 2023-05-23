@@ -3,6 +3,7 @@ package portworx
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
@@ -85,4 +86,17 @@ func (p *Portworx) DeletePXCloudCredentials(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (p *Portworx) FindCloudCredentialByName(ctx context.Context, name string) (*PXCloudCredential, error) {
+	credentials, err := p.ListPXCloudCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, credential := range credentials {
+		if credential.Name == name {
+			return &credential, nil
+		}
+	}
+	return nil, fmt.Errorf("cloud credential '%s' not found", name)
 }
