@@ -7,12 +7,14 @@ import (
 
 type ChartConfig struct {
 	VersionConstraints string
+	ReleaseName        string
 	chartValues        map[string]string
 }
 
 // NewPDSChartConfig stores configuration that's necessary to select certain PDS chart version and fill it with required target cluster config values.
 func NewPDSChartConfig(versionConstraints, tenantID, bearerToken, APIEndpoint, clusterName string) *ChartConfig {
 	return &ChartConfig{
+		ReleaseName:        pdsReleaseName,
 		VersionConstraints: versionConstraints,
 		chartValues: map[string]string{
 			"tenantId":    tenantID,

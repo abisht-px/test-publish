@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	pdsRepoName  = "pds"
-	pdsChartName = "pds-target"
-	pdsNamespace = "pds-system"
-	pdsRepoURL   = "https://portworx.github.io/pds-charts"
+	pdsRepoName    = "pds"
+	pdsChartName   = "pds-target"
+	pdsReleaseName = "pds"
+	pdsNamespace   = "pds-system"
+	pdsRepoURL     = "https://portworx.github.io/pds-charts"
 )
 
 type HelmArtifactProvider struct {
@@ -28,6 +29,7 @@ type InstallableHelm struct {
 	restGetter   genericclioptions.RESTClientGetter
 	chartValues  string
 	chartVersion string
+	releaseName  string
 }
 
 func nullWriter(format string, v ...interface{}) {}
@@ -82,11 +84,12 @@ func (p *HelmArtifactProvider) Installer(kubeconfig string, chartConfig *ChartCo
 		chartVersion:         matchingVersions[0],
 		restGetter:           restClientGetter,
 		chartValues:          chartConfig.CommaSeparatedChartVals(),
+		releaseName:          chartConfig.ReleaseName,
 	}, nil
 }
 
 func (i *InstallableHelm) Install(ctx context.Context) error {
-	return i.client.InstallChartVersion(ctx, i.restGetter, i.repoName, i.repoName, i.chartName, i.chartVersion, i.chartValues, nullWriter)
+	return i.client.InstallChartVersion(ctx, i.restGetter, i.repoName, i.releaseName, i.chartName, i.chartVersion, i.chartValues, nullWriter)
 }
 
 func (i *InstallableHelm) Version() string {
@@ -94,5 +97,5 @@ func (i *InstallableHelm) Version() string {
 }
 
 func (i *InstallableHelm) Uninstall(ctx context.Context) error {
-	return i.client.UninstallChartVersion(ctx, i.restGetter, i.repoName, nullWriter)
+	return i.client.UninstallChartVersion(ctx, i.restGetter, i.releaseName, nullWriter)
 }
