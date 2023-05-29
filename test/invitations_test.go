@@ -3,6 +3,7 @@ package test
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/portworx/pds-integration-test/internal/api"
 )
@@ -23,6 +24,11 @@ func (s *PDSTestSuite) TestInvitations_CreateInvitation_Fail() {
 	s.Require().Error(err)
 	s.Require().NotNil(response)
 	s.Require().Equal(http.StatusUnprocessableEntity, response.StatusCode)
+
+	// deleting invitation.
+	response, err = s.controlPlane.DeleteInvitation(s.ctx, uuid.New().String())
+	s.Require().Error(err)
+	s.Require().Equal(http.StatusNotFound, response.StatusCode)
 }
 
 func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_Pass() {
@@ -43,15 +49,15 @@ func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_Pass() {
 	}
 	s.Require().True(found)
 
-	// checking patch invitation
+	// checking patch invitation.
 	response = s.controlPlane.MustPatchAccountInvitation(s.ctx, s.T(), "account-admin", *createdInvitation.Id)
 	s.Require().Equal(http.StatusNoContent, response.StatusCode)
 
 	fetchedInvitation := s.controlPlane.MustGetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
-	// verifying patch
+	// verifying patch.
 	s.Require().Equal(fetchedInvitation.GetRoleName(), "account-admin")
 
-	// deleting invitation
+	// deleting invitation.
 	response = s.controlPlane.MustDeleteInvitation(s.ctx, s.T(), *createdInvitation.Id)
 	s.Require().Equal(http.StatusNoContent, response.StatusCode)
 }

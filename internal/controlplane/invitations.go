@@ -46,8 +46,11 @@ func (c *ControlPlane) MustPatchAccountInvitation(ctx context.Context, t tests.T
 }
 
 func (c *ControlPlane) MustDeleteInvitation(ctx context.Context, t tests.T, id string) *http.Response {
-	req := c.PDS.AccountsRoleInvitationsApi.ApiAccountRoleInvitationsIdDelete(ctx, id)
-	resp, err := c.PDS.AccountsRoleInvitationsApi.ApiAccountRoleInvitationsIdDeleteExecute(req)
+	resp, err := c.DeleteInvitation(ctx, id)
 	api.RequireNoError(t, resp, err)
 	return resp
+}
+
+func (c *ControlPlane) DeleteInvitation(ctx context.Context, id string) (*http.Response, error) {
+	return c.PDS.AccountsRoleInvitationsApi.ApiAccountRoleInvitationsIdDelete(ctx, id).Execute()
 }
