@@ -84,12 +84,11 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 			ImageVersionTag: "7.1.1",
 			NodeCount:       1,
 		},
-		// SQL Server is not enabled yet.
-		//{
-		//	DataServiceName: dataservices.SqlServer,
-		//	ImageVersionTag: "2019-CU18-rhel-8.5",
-		//	NodeCount:       1,
-		//},
+		{
+			DataServiceName: dataservices.SqlServer,
+			ImageVersionTag: "2019-CU18",
+			NodeCount:       1,
+		},
 	}
 
 	for _, d := range deployments {
@@ -206,7 +205,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU18-rhel-8.5",
+			ImageVersionTag: "2019-CU18",
 			NodeCount:       1,
 		},
 	}
@@ -712,15 +711,14 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			},
 			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.ZooKeeper].ResourceTemplates[1].Name,
 		},
-		// SQL Server is not enabled yet.
-		//{
-		//	spec: api.ShortDeploymentSpec{
-		//		DataServiceName: dataservices.SqlServer,
-		//		ImageVersionTag: "2019-CU18-rhel-8.5",
-		//		NodeCount:       1,
-		//	},
-		//	scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.SqlServer].ResourceTemplates[1].Name,
-		//},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.SqlServer,
+				ImageVersionTag: "2019-CU18",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.SqlServer].ResourceTemplates[1].Name,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -814,12 +812,11 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			ImageVersionTag: "7.1.1",
 			NodeCount:       3,
 		},
-		// SQL Server is not enabled yet.
-		//{
-		//	DataServiceName: dataservices.SqlServer,
-		//	ImageVersionTag: "2019-CU18-rhel-8.5",
-		//	NodeCount:       1,
-		//},
+		{
+			DataServiceName: dataservices.SqlServer,
+			ImageVersionTag: "2019-CU18",
+			NodeCount:       1,
+		},
 	}
 
 	for _, d := range deployments {
@@ -907,12 +904,11 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			ImageVersionTag: "14.6",
 			NodeCount:       1,
 		},
-		// SQL Server is not enabled yet.
-		//{
-		//	DataServiceName: dataservices.SqlServer,
-		//	ImageVersionTag: "2019-CU18-rhel-8.5",
-		//	NodeCount:       1,
-		//},
+		{
+			DataServiceName: dataservices.SqlServer,
+			ImageVersionTag: "2019-CU18",
+			NodeCount:       1,
+		},
 	}
 
 	for _, d := range deployments {
