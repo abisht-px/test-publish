@@ -9,17 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
@@ -30,16 +30,18 @@ const (
 )
 
 type Cluster struct {
-	config     *rest.Config
-	Clientset  *kubernetes.Clientset
-	MetaClient metadata.Interface
+	config            *rest.Config
+	Clientset         *kubernetes.Clientset
+	MetaClient        metadata.Interface
+	CtrlRuntimeClient ctrlclient.Client
 }
 
-func NewCluster(config *rest.Config, clientset *kubernetes.Clientset, metaClient metadata.Interface) (*Cluster, error) {
+func NewCluster(config *rest.Config, clientset *kubernetes.Clientset, metaClient metadata.Interface, ctrlRuntimeClient ctrlclient.Client) (*Cluster, error) {
 	return &Cluster{
-		config:     config,
-		Clientset:  clientset,
-		MetaClient: metaClient,
+		config:            config,
+		Clientset:         clientset,
+		MetaClient:        metaClient,
+		CtrlRuntimeClient: ctrlRuntimeClient,
 	}, nil
 }
 

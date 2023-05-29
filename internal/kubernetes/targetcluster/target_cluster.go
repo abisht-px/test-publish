@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/clientcmd"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/portworx/pds-integration-test/internal/kubernetes/cluster"
 	"github.com/portworx/pds-integration-test/internal/portworx"
@@ -45,6 +47,18 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 	if err != nil {
 		return nil, err
 	}
+
+	ctrlRuntimeClient, err := ctrlclient.New(config, ctrlclient.Options{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Every custom resource has to be added to the scheme in order to make it work with the controller-runtime client.
+	err = certmanagerv1.AddToScheme(ctrlRuntimeClient.Scheme())
+	if err != nil {
+		return nil, err
+	}
+
 	metaClient, err := metadata.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -56,7 +70,7 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 	}
 	px := portworx.New(clientset.CoreV1().RESTClient(), pxNamespace)
 
-	cluster, err := cluster.NewCluster(config, clientset, metaClient)
+	cluster, err := cluster.NewCluster(config, clientset, metaClient, ctrlRuntimeClient)
 	if err != nil {
 		return nil, err
 	}

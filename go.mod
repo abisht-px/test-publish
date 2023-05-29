@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver v1.5.0
+	github.com/cert-manager/cert-manager v1.12.0
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.51.0
 	github.com/google/uuid v1.3.0
@@ -26,6 +27,7 @@ require (
 	k8s.io/cli-runtime v0.27.1
 	k8s.io/client-go v0.27.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 	sigs.k8s.io/external-dns v0.13.2
 )
 
@@ -80,6 +82,7 @@ require (
 	github.com/esimonov/ifshort v1.0.4 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
+	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
@@ -284,7 +287,7 @@ require (
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 	oras.land/oras-go v1.2.2 // indirect
-	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e // indirect
+	sigs.k8s.io/gateway-api v0.6.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.1 // indirect
