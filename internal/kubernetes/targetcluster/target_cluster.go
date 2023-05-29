@@ -189,8 +189,8 @@ func (tc *TargetCluster) MustFlushDNSCache(ctx context.Context, t tests.T) []str
 
 		deployment := set.Items[0]
 		replicas := deployment.Status.Replicas
-		require.Equalf(t, replicas, deployment.Status.ReadyReplicas, "Not all replicas of deployment %s are ready.", deployment.ClusterName)
-		require.Equalf(t, replicas, deployment.Status.UpdatedReplicas, "Not all replicas of deployment %s are updated.", deployment.ClusterName)
+		require.Equalf(t, replicas, deployment.Status.ReadyReplicas, "Not all replicas of deployment %s are ready.", deployment.Name)
+		require.Equalf(t, replicas, deployment.Status.UpdatedReplicas, "Not all replicas of deployment %s are updated.", deployment.Name)
 	})
 
 	// Get and return new CoreDNS pod IPs.

@@ -32,7 +32,7 @@ func (c *CrossClusterHelper) MustWaitForLoadBalancerServicesReady(ctx context.Co
 				ingress := svc.Status.LoadBalancer.Ingress
 				require.NotEqualf(t, 0, len(ingress),
 					"External ingress for service %s of deployment %s not assigned.",
-					svc.GetClusterName(), deployment.GetClusterResourceName())
+					svc.Name, deployment.GetClusterResourceName())
 			}
 		}
 	})
