@@ -15,6 +15,11 @@ const (
 	pdsReleaseName = "pds"
 	pdsNamespace   = "pds-system"
 	pdsRepoURL     = "https://portworx.github.io/pds-charts"
+
+	certManagerRepoName  = "jetstack"
+	certManagerChartName = "cert-manager"
+	certManagerNamespace = "cert-manager"
+	certManagerRepoURL   = "https://charts.jetstack.io"
 )
 
 type HelmArtifactProvider struct {
@@ -36,6 +41,10 @@ func nullWriter(format string, v ...interface{}) {}
 
 func NewHelmProviderPDS() (*HelmArtifactProvider, error) {
 	return newHelmProvider(pdsChartName, pdsRepoName, pdsRepoURL, pdsNamespace)
+}
+
+func NewHelmProviderCertManager() (*HelmArtifactProvider, error) {
+	return newHelmProvider(certManagerChartName, certManagerRepoName, certManagerRepoURL, certManagerNamespace)
 }
 
 func newHelmProvider(chartName, repoName, repoURL, namespace string) (*HelmArtifactProvider, error) {
