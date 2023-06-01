@@ -22,7 +22,7 @@ func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t t
 	namespace := namespaceModel.GetName()
 
 	// 1. Wait for the backup to finish.
-	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		pdsBackup, err := c.targetCluster.GetPDSBackup(ctx, namespace, backupName)
 		require.NoErrorf(t, err, "Getting backup %s/%s for deployment %s from target cluster.", namespace, backupName, deploymentID)
 		require.Truef(t, isBackupFinished(pdsBackup), "Backup %s for the deployment %s did not finish.", backupName, deploymentID)

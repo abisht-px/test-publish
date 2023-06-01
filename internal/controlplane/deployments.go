@@ -83,7 +83,7 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
 		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
 

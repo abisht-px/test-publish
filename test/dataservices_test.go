@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -148,6 +149,12 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			ImageVersionTag: "4.0.6",
 			NodeCount:       1,
 		},
+		// TODO(DS-5591): Restore is failing, enabled it after a fix.
+		// {
+		// 	DataServiceName: dataservices.Cassandra,
+		// 	ImageVersionTag: "4.0.6",
+		// 	NodeCount:       3,
+		// },
 		{
 			DataServiceName: dataservices.Consul,
 			ImageVersionTag: "1.14.0",
@@ -268,7 +275,14 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 				require.NoError(t, err)
 			})
 
+			s.targetCluster.MustWaitForDatabaseModeNormal(s.ctx, t, namespace, restoreName)
 			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, deploymentID, restoreName)
+			// TODO(DS-5548): Cassandra may be unavailable even if it passes the readiness check.
+			//                Add a timeout before running the load test.
+			if deployment.DataServiceName == dataservices.Cassandra {
+				time.Sleep(2 * time.Minute)
+			}
+
 			s.crossCluster.MustRunReadLoadTestJob(s.ctx, t, deploymentID, restoreName, deploymentID)
 
 			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, restoreName, "")
@@ -937,7 +951,8 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 func isRestoreTestReadyFor(dataServiceName string) bool {
 	switch dataServiceName {
-	case dataservices.Consul,
+	case dataservices.Cassandra,
+		dataservices.Consul,
 		dataservices.ElasticSearch,
 		dataservices.MongoDB,
 		dataservices.Postgres,

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -141,6 +142,13 @@ func (c *Cluster) DeletePDSDeployment(ctx context.Context, namespace, database, 
 	path := fmt.Sprintf("apis/deployments.pds.io/v1/namespaces/%s/%s/%s", namespace, database, name)
 	err := c.Clientset.RESTClient().Delete().AbsPath(path).Do(ctx).Error()
 	return err
+}
+
+func (c *Cluster) GetPDSDatabase(ctx context.Context, namespace, name string) (*deploymentsv1.Database, error) {
+	result := &deploymentsv1.Database{}
+	path := fmt.Sprintf("apis/deployments.pds.io/v1/namespaces/%s/databases/%s", namespace, name)
+	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
+	return result, err
 }
 
 func (c *Cluster) GetDNSEndpoints(ctx context.Context, namespace, nameFilter string, recordTypeFilter string) ([]string, error) {
