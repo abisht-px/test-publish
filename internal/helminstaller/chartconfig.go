@@ -28,6 +28,7 @@ func NewPDSChartConfig(versionConstraints, tenantID, bearerToken, APIEndpoint, c
 // NewCertManagerChartConfig stores configuration that's necessary to select certain cert-manager chart version and fill it with required config values.
 func NewCertManagerChartConfig(versionConstraints string) *ChartConfig {
 	return &ChartConfig{
+		ReleaseName:        certManagerReleaseName,
 		VersionConstraints: versionConstraints,
 		chartValues: map[string]string{
 			"installCRDs": "true",

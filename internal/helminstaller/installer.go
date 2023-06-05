@@ -16,10 +16,11 @@ const (
 	pdsNamespace   = "pds-system"
 	pdsRepoURL     = "https://portworx.github.io/pds-charts"
 
-	certManagerRepoName  = "jetstack"
-	certManagerChartName = "cert-manager"
-	certManagerNamespace = "cert-manager"
-	certManagerRepoURL   = "https://charts.jetstack.io"
+	certManagerRepoName    = "jetstack"
+	certManagerChartName   = "cert-manager"
+	certManagerReleaseName = "cert-manager"
+	certManagerNamespace   = "cert-manager"
+	certManagerRepoURL     = "https://charts.jetstack.io"
 )
 
 type HelmArtifactProvider struct {
