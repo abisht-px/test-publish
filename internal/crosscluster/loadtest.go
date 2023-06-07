@@ -74,9 +74,9 @@ func (c *CrossClusterHelper) mustCreateLoadTestJob(ctx context.Context, t *testi
 	api.RequireNoError(t, resp, err)
 	dsImageCreatedAt := dsImage.GetCreatedAt()
 
-	jobName := fmt.Sprintf("%s-loadtest-%d", deployment.GetClusterResourceName(), time.Now().Unix())
+	jobName := fmt.Sprintf("%s-loadtest-%d", deploymentName, time.Now().Unix())
 	if mode != "" {
-		jobName = fmt.Sprintf("%s-loadtest-%s-%d", deployment.GetClusterResourceName(), mode, time.Now().Unix())
+		jobName = fmt.Sprintf("%s-loadtest-%s-%d", deploymentName, mode, time.Now().Unix())
 	}
 
 	image, err := getLoadTestJobImage(dataServiceType)

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
-	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +21,8 @@ import (
 	"k8s.io/client-go/rest"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/external-dns/endpoint"
+
+	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
 )
