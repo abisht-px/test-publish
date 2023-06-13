@@ -63,18 +63,19 @@ var (
 					parser.MustLabelMatcher(labels.MatchRegexp, "clientrequest", ".*Write.*"),
 				},
 			},
-			{
-				Name: "cassandra_clientrequest_timeouts_count",
-				LabelMatchers: []*labels.Matcher{
-					parser.MustLabelMatcher(labels.MatchNotRegexp, "clientrequest", ".*Write.*"),
-				},
-			},
-			{
-				Name: "cassandra_clientrequest_timeouts_count",
-				LabelMatchers: []*labels.Matcher{
-					parser.MustLabelMatcher(labels.MatchRegexp, "clientrequest", ".*Write.*"),
-				},
-			},
+			// These 2 metrics are disabled, as Cassandra loadtests are not able to trigger these (DS-5554).
+			//{
+			//	Name: "cassandra_clientrequest_timeouts_count",
+			//	LabelMatchers: []*labels.Matcher{
+			//		parser.MustLabelMatcher(labels.MatchNotRegexp, "clientrequest", ".*Write.*"),
+			//	},
+			//},
+			//{
+			//	Name: "cassandra_clientrequest_timeouts_count",
+			//	LabelMatchers: []*labels.Matcher{
+			//		parser.MustLabelMatcher(labels.MatchRegexp, "clientrequest", ".*Write.*"),
+			//	},
+			//},
 		},
 		dataservices.Couchbase: {
 			// cbnode_interestingstats_curr_items{pds_deployment_id=":deployment_id"}
