@@ -22,18 +22,21 @@ func (c *ControlPlane) CreateInvitation(ctx context.Context, t tests.T, email, r
 func (c *ControlPlane) MustListAccountInvitations(ctx context.Context, t tests.T) *pds.ModelsPaginatedResultModelsAccountRoleInvitation {
 	req := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGet(ctx, c.testPDSAccountID)
 	invitations, resp, err := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGetExecute(req)
+	require.NotNil(t, invitations)
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, invitations.GetData())
 	return invitations
 }
 
-func (c *ControlPlane) MustGetAccountInvitation(ctx context.Context, t tests.T, invitationID string) *pds.ModelsAccountRoleInvitation {
-	req := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGet(ctx, c.testPDSAccountID)
-	req.Id2(invitationID)
-	invitations, resp, err := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGetExecute(req)
-	api.RequireNoError(t, resp, err)
+func (c *ControlPlane) GetAccountInvitation(ctx context.Context, t tests.T, invitationID string) *pds.ModelsAccountRoleInvitation {
+	invitations := c.MustListAccountInvitations(ctx, t)
 	require.NotEmpty(t, invitations.GetData())
-	return &invitations.GetData()[0]
+	for _, invitation := range invitations.GetData() {
+		if *invitation.Id == invitationID {
+			return &invitation
+		}
+	}
+	return nil
 }
 
 func (c *ControlPlane) MustPatchAccountInvitation(ctx context.Context, t tests.T, role, invitationID string) *http.Response {

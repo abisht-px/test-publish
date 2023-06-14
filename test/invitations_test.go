@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+
 	"github.com/portworx/pds-integration-test/internal/api"
 )
 
@@ -25,18 +27,24 @@ func (s *PDSTestSuite) TestInvitations_CreateInvitation_Fail() {
 	s.Require().NotNil(response)
 	s.Require().Equal(http.StatusUnprocessableEntity, response.StatusCode)
 
-	// deleting invitation.
+	// deleting invitation with id does not exists.
 	response, err = s.controlPlane.DeleteInvitation(s.ctx, uuid.New().String())
 	s.Require().Error(err)
 	s.Require().Equal(http.StatusNotFound, response.StatusCode)
+
+	// deleting invitation with invalid invitation id.
+	response, err = s.controlPlane.DeleteInvitation(s.ctx, "invalid_invitation_id")
+	s.Require().Error(err)
+	s.Require().Equal(http.StatusBadRequest, response.StatusCode)
 }
 
-func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_Pass() {
-	// valid email and valid user role.
+func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_OK() {
+	// create invitation.
 	response, err := s.controlPlane.CreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
 	api.RequireNoError(s.T(), response, err)
 	s.Require().Equal(http.StatusOK, response.StatusCode)
 
+	// List invitations.
 	result := s.controlPlane.MustListAccountInvitations(s.ctx, s.T())
 	found := false
 	var createdInvitation pds.ModelsAccountRoleInvitation
@@ -53,11 +61,15 @@ func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_Pass() {
 	response = s.controlPlane.MustPatchAccountInvitation(s.ctx, s.T(), "account-admin", *createdInvitation.Id)
 	s.Require().Equal(http.StatusNoContent, response.StatusCode)
 
-	fetchedInvitation := s.controlPlane.MustGetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
+	fetchedInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
 	// verifying patch.
-	s.Require().Equal(fetchedInvitation.GetRoleName(), "account-admin")
+	s.Require().Equal("account-admin", fetchedInvitation.GetRoleName())
 
 	// deleting invitation.
 	response = s.controlPlane.MustDeleteInvitation(s.ctx, s.T(), *createdInvitation.Id)
 	s.Require().Equal(http.StatusNoContent, response.StatusCode)
+
+	// verifying deletion.
+	deletedInvitations := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
+	s.Require().Nil(deletedInvitations)
 }
