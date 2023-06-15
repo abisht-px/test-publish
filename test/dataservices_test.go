@@ -367,6 +367,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Consul,
+				ImageVersionTag: "1.14.0",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"1.14.7"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Redis,
 				ImageVersionTag: "7.0.0",
 				NodeCount:       1,
@@ -388,6 +396,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				NodeCount:       1,
 			},
 			targetVersions: []string{"7.0.5"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.5",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"7.0.9"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
