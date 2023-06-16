@@ -375,6 +375,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.ElasticSearch,
+				ImageVersionTag: "8.5.2",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"8.8.0"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Redis,
 				ImageVersionTag: "7.0.0",
 				NodeCount:       1,
