@@ -26,7 +26,7 @@ func (c *CrossClusterHelper) MustWaitForDeploymentInitialized(ctx context.Contex
 	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		clusterInitJob, err := c.targetCluster.GetJob(ctx, namespace, clusterInitJobName)
 		require.NoErrorf(t, err, "Getting clusterInitJob %s/%s for deployment %s.", namespace, clusterInitJobName, deploymentID)
-		require.Truef(t, isJobSucceeded(clusterInitJob), "CluterInitJob %s/%s for deployment %s not successful.", namespace, clusterInitJobName, deploymentID)
+		require.Truef(t, isJobSucceeded(clusterInitJob), "ClusterInitJob %s/%s for deployment %s not successful.", namespace, clusterInitJobName, deploymentID)
 
 		nodeInitJob, err := c.targetCluster.GetJob(ctx, namespace, nodeInitJobName)
 		require.NoErrorf(t, err, "Getting nodeInitJob %s/%s for deployment %s.", namespace, nodeInitJobName, deploymentID)

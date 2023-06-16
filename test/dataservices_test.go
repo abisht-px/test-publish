@@ -10,6 +10,8 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
+	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
+	"github.com/portworx/pds-integration-test/internal/random"
 )
 
 var (
@@ -17,7 +19,7 @@ var (
 	skipBackupsMultinode = flag.Bool("skip-backups-multinode", true, "Skip tests related to backups which are run on multi-node data services.")
 )
 
-func (s *PDSTestSuite) TestDataService_WriteData() {
+func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dataservices.Postgres,
@@ -93,11 +95,23 @@ func (s *PDSTestSuite) TestDataService_WriteData() {
 
 	for _, d := range deployments {
 		deployment := d
-		s.T().Run(fmt.Sprintf("write-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+		s.T().Run(fmt.Sprintf("deploy-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
 			t.Parallel()
 
-			deployment.NamePrefix = fmt.Sprintf("write-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+			// Create namespace with PSA policy set
+			psaPolicy := getSupportedPSAPolicy(deployment.DataServiceName)
+			namespaceName := "it-" + psaPolicy + "-" + random.AlphaNumericString(4)
+			namespace := psa.NewNamespace(namespaceName, psaPolicy, true)
+			_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
+			t.Cleanup(func() {
+				_ = s.targetCluster.DeleteNamespace(s.ctx, namespaceName)
+			})
+			s.Require().NoError(err)
+			modelsNamespace := s.controlPlane.MustWaitForNamespaceStatus(s.ctx, t, namespaceName, "available")
+			namespaceID := modelsNamespace.GetId()
+
+			deployment.NamePrefix = fmt.Sprintf("deploy-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpecIntoNamespace(s.ctx, t, &deployment, namespaceID)
 			t.Cleanup(func() {
 				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
@@ -985,4 +999,14 @@ func isRestoreTestReadyFor(dataServiceName string) bool {
 		return true
 	}
 	return false
+}
+
+func getSupportedPSAPolicy(dataServiceName string) string {
+	// https://pds.docs.portworx.com/concepts/pod-security-admission/#supported-security-levels-for-pds-resources
+	switch dataServiceName {
+	case dataservices.Cassandra:
+		return psa.PSAPolicyPrivileged
+	default:
+		return psa.PSAPolicyRestricted
+	}
 }
