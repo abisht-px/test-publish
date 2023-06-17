@@ -33,6 +33,16 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.6",
 			NodeCount:       1,
 		},
@@ -63,7 +73,7 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.9",
+			ImageVersionTag: "3.10.22",
 			NodeCount:       1,
 		},
 		{
@@ -157,6 +167,27 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			ImageVersionTag: "14.6",
 			NodeCount:       3,
 		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       3,
+		},
+
 		{
 			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.10",
@@ -366,6 +397,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.0.27",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.0.29"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "4.0.4",
 				NodeCount:       1,
 			},
@@ -457,7 +496,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "3.10.6",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"3.10.9"},
+			targetVersions: []string{"3.10.22"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -465,7 +504,15 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "3.10.7",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"3.10.9"},
+			targetVersions: []string{"3.10.22"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.RabbitMQ,
+				ImageVersionTag: "3.10.9",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.10.22"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -555,6 +602,22 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.0.29",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.11.15",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "4.0.6",
 				NodeCount:       1,
 			},
@@ -595,7 +658,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.9",
+				ImageVersionTag: "3.10.22",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -684,6 +747,22 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.0.29",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Cassandra].ResourceTemplates[1].Name,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.11.15",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Cassandra].ResourceTemplates[1].Name,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "4.0.6",
 				NodeCount:       1,
 			},
@@ -708,7 +787,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.9",
+				ImageVersionTag: "3.10.22",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.RabbitMQ].ResourceTemplates[1].Name,
@@ -819,6 +898,16 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.6",
 			NodeCount:       3,
 		},
@@ -839,7 +928,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.9",
+			ImageVersionTag: "3.10.22",
 			NodeCount:       3,
 		},
 		{
@@ -900,6 +989,16 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.6",
 			NodeCount:       3,
 		},
@@ -936,7 +1035,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		},
 		{
 			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.9",
+			ImageVersionTag: "3.10.22",
 			NodeCount:       3,
 		},
 		{
