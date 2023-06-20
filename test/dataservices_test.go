@@ -1200,6 +1200,17 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 			ImageVersionTag: "14.6",
 			NodeCount:       3,
 		},
+		// MongoDB
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.3",
+			NodeCount:       2,
+		},
 	}
 
 	for _, d := range deployments {

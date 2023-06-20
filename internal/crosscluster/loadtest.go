@@ -21,21 +21,23 @@ const (
 
 	PDSUser        = "pds"
 	PDSReplaceUser = "pds_replace_user"
+
+	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.0.20"
 )
 
 var loadTestImages = map[string]string{
-	dataservices.Cassandra:     "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.Couchbase:     "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.Redis:         "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.ZooKeeper:     "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.Kafka:         "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.RabbitMQ:      "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.MongoDB:       "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.MySQL:         "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.ElasticSearch: "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.Consul:        "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.Postgres:      "portworx/pds-loadtests:sample-load-0.0.18",
-	dataservices.SqlServer:     "portworx/pds-loadtests:sample-load-0.0.18",
+	dataservices.Cassandra:     DefaultLoadTestImage,
+	dataservices.Couchbase:     DefaultLoadTestImage,
+	dataservices.Redis:         DefaultLoadTestImage,
+	dataservices.ZooKeeper:     DefaultLoadTestImage,
+	dataservices.Kafka:         DefaultLoadTestImage,
+	dataservices.RabbitMQ:      DefaultLoadTestImage,
+	dataservices.MongoDB:       DefaultLoadTestImage,
+	dataservices.MySQL:         DefaultLoadTestImage,
+	dataservices.ElasticSearch: DefaultLoadTestImage,
+	dataservices.Consul:        DefaultLoadTestImage,
+	dataservices.Postgres:      DefaultLoadTestImage,
+	dataservices.SqlServer:     DefaultLoadTestImage,
 }
 
 func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
