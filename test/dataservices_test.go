@@ -60,7 +60,7 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.0",
+			ImageVersionTag: "3.8.1",
 			NodeCount:       3,
 		},
 		{
@@ -71,6 +71,11 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		{
 			DataServiceName: dataservices.Kafka,
 			ImageVersionTag: "3.2.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.4.1",
 			NodeCount:       1,
 		},
 		{
@@ -100,7 +105,7 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU18",
+			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
 		},
 	}
@@ -262,7 +267,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU18",
+			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
 		},
 	}
@@ -524,6 +529,22 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			},
 			targetVersions: []string{"8.0.31"},
 		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.SqlServer,
+				ImageVersionTag: "2019-CU18",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"2019-CU20"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.ZooKeeper,
+				ImageVersionTag: "3.8.0",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.8.1"},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -653,9 +674,17 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Kafka,
 				ImageVersionTag: "3.2.3",
-				NodeCount:       1,
+				NodeCount:       3,
 			},
-			scaleTo: 2,
+			scaleTo: 5,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.4.1",
+				NodeCount:       3,
+			},
+			scaleTo: 5,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -781,7 +810,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.3",
+				ImageVersionTag: "3.4.1",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -837,7 +866,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.ZooKeeper,
-				ImageVersionTag: "3.8.0",
+				ImageVersionTag: "3.8.1",
 				NodeCount:       3,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -845,7 +874,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.SqlServer,
-				ImageVersionTag: "2019-CU18",
+				ImageVersionTag: "2019-CU20",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -920,12 +949,12 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.0",
+			ImageVersionTag: "3.8.1",
 			NodeCount:       3,
 		},
 		{
 			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
+			ImageVersionTag: "3.4.1",
 			NodeCount:       3,
 		},
 		{
@@ -955,7 +984,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU18",
+			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
 		},
 	}
@@ -1017,7 +1046,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		// },
 		{
 			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
+			ImageVersionTag: "3.4.1",
 			NodeCount:       3,
 		},
 		{
@@ -1047,7 +1076,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		},
 		{
 			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.0",
+			ImageVersionTag: "3.8.1",
 			NodeCount:       3,
 		},
 		{
@@ -1057,7 +1086,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU18",
+			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
 		},
 	}
