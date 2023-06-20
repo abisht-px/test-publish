@@ -39,7 +39,18 @@ func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *test
 	require.Greater(t, job.Status.Succeeded, int32(0), "Job %q did not succeed.", jobName)
 }
 
-func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace, mode, seed string, nodeCount *int32) []corev1.EnvVar {
+func (tc *TargetCluster) MustWaitForLoadTestFailure(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
+	// 1. Wait for the job to finish.
+	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.StandardTimeout, wait.ShortRetryInterval)
+
+	// 2. Check the result.
+	job, err := tc.GetJob(ctx, namespace, jobName)
+	require.NoError(t, err)
+
+	require.Greater(t, job.Status.Failed, int32(0), "Job %q did not fail.", jobName)
+}
+
+func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace, mode, seed, user string, nodeCount *int32, extraEnv map[string]string) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
 	password, err := tc.getDBPassword(ctx, namespace, deploymentName)
 	require.NoErrorf(t, err, "Could not get password for database %s/%s.", namespace, deploymentName)
@@ -88,7 +99,6 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 		} else {
 			clusterMode = "false"
 		}
-		var user = "pds"
 		if dsImageCreatedAt != "" {
 			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, dsImageCreatedAt)
 			if err == nil && dsCreatedAt.Before(pdsUserInRedisIntroducedAt) {
@@ -98,14 +108,30 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 		}
 		env = append(env,
 			corev1.EnvVar{
-				Name:  "PDS_USER",
-				Value: user,
-			},
-			corev1.EnvVar{
 				Name:  "CLUSTER_MODE",
 				Value: clusterMode,
 			},
 		)
+	}
+
+	// Set user.
+	if user == "" {
+		user = "pds"
+	}
+	env = append(env, corev1.EnvVar{
+		Name:  "PDS_USER",
+		Value: user,
+	})
+
+	// Set extra env.
+	if len(extraEnv) > 0 {
+		for name, value := range extraEnv {
+			env = append(env,
+				corev1.EnvVar{
+					Name:  name,
+					Value: value,
+				})
+		}
 	}
 
 	return env

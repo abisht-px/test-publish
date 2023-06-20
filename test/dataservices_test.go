@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
 	"github.com/portworx/pds-integration-test/internal/random"
@@ -328,7 +330,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 
 			s.crossCluster.MustRunReadLoadTestJob(s.ctx, t, deploymentID, restoreName, deploymentID)
 
-			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, restoreName, "")
+			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, restoreName, crosscluster.PDSUser)
 		})
 	}
 }
@@ -1080,6 +1082,122 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 			// Try to get DS metrics from prometheus.
 			s.controlPlane.MustWaitForMetricsReported(s.ctx, t, deploymentID)
+		})
+	}
+}
+
+func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
+	deployments := []api.ShortDeploymentSpec{
+		// Cassandra
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.27",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.27",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.13",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.13",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.0.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.0.6",
+			NodeCount:       2,
+		},
+		// Couchbase
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       3,
+		},
+		// PostgreSQL
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.18",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.18",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.13",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.13",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.9",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.9",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.6",
+			NodeCount:       3,
+		},
+	}
+
+	for _, d := range deployments {
+		deployment := d
+		s.T().Run(fmt.Sprintf("userdel-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+			t.Parallel()
+
+			deployment.NamePrefix = fmt.Sprintf("userdel-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+			t.Cleanup(func() {
+				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+			})
+			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+			// Delete 'pds' user.
+			s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
+			// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
+			s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, "", crosscluster.PDSUser)
+			// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
+			time.Sleep(30 * time.Second)
+			// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
+			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, "", crosscluster.PDSReplaceUser)
 		})
 	}
 }
