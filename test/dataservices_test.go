@@ -744,7 +744,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "14.6",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Postgres].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -752,7 +752,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "3.0.29",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Cassandra].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -760,7 +760,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "3.11.15",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Cassandra].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -768,7 +768,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "4.0.6",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Cassandra].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -776,7 +776,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "1.14.0",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Consul].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -784,7 +784,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "3.2.3",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Kafka].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -792,7 +792,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "3.10.22",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.RabbitMQ].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -800,7 +800,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "8.0.31",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.MySQL].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -808,7 +808,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "6.0.2",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.MongoDB].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -816,7 +816,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "8.5.2",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.ElasticSearch].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -824,7 +824,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "7.1.1",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Couchbase].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -832,7 +832,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "7.0.5",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.Redis].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -840,7 +840,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "3.8.0",
 				NodeCount:       3,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.ZooKeeper].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -848,7 +848,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				ImageVersionTag: "2019-CU18",
 				NodeCount:       1,
 			},
-			scaleToResourceTemplate: s.controlPlane.TestPDSTemplates[dataservices.SqlServer].ResourceTemplates[1].Name,
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 	}
 
