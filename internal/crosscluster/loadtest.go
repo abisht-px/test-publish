@@ -22,7 +22,7 @@ const (
 	PDSUser        = "pds"
 	PDSReplaceUser = "pds_replace_user"
 
-	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.0.20"
+	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.1.0"
 )
 
 var loadTestImages = map[string]string{

@@ -1218,6 +1218,17 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 			ImageVersionTag: "6.0.3",
 			NodeCount:       2,
 		},
+		// MySQL
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.31",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.31",
+			NodeCount:       2,
+		},
 	}
 
 	for _, d := range deployments {
