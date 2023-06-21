@@ -9,6 +9,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/hashicorp/go-multierror"
+	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -64,13 +65,18 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 		return nil, err
 	}
 
+	openStorageClient, err := openstorage.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
 	pxNamespace, err := portworx.FindPXNamespace(ctx, clientset.CoreV1())
 	if err != nil {
 		return nil, err
 	}
 	px := portworx.New(clientset.CoreV1().RESTClient(), pxNamespace)
 
-	cluster, err := cluster.NewCluster(config, clientset, metaClient, ctrlRuntimeClient)
+	cluster, err := cluster.NewCluster(config, clientset, metaClient, ctrlRuntimeClient, openStorageClient)
 	if err != nil {
 		return nil, err
 	}

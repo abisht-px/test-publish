@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	openstoragev1 "github.com/libopenstorage/operator/pkg/apis/core/v1"
+	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,14 +41,22 @@ type Cluster struct {
 	Clientset         *kubernetes.Clientset
 	MetaClient        metadata.Interface
 	CtrlRuntimeClient ctrlclient.Client
+	OpenStorageClient *openstorage.Clientset
 }
 
-func NewCluster(config *rest.Config, clientset *kubernetes.Clientset, metaClient metadata.Interface, ctrlRuntimeClient ctrlclient.Client) (*Cluster, error) {
+func NewCluster(
+	config *rest.Config,
+	clientset *kubernetes.Clientset,
+	metaClient metadata.Interface,
+	ctrlRuntimeClient ctrlclient.Client,
+	openStorageClient *openstorage.Clientset,
+) (*Cluster, error) {
 	return &Cluster{
 		config:            config,
 		Clientset:         clientset,
 		MetaClient:        metaClient,
 		CtrlRuntimeClient: ctrlRuntimeClient,
+		OpenStorageClient: openStorageClient,
 	}, nil
 }
 
@@ -274,4 +286,35 @@ func (c *Cluster) GetPodLogs(ctx context.Context, pod *corev1.Pod, since time.Ti
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	return buf.String(), err
+}
+
+func (c *Cluster) GetCSIDriver(ctx context.Context, name string) (*storagev1.CSIDriver, error) {
+	return c.Clientset.StorageV1().CSIDrivers().Get(ctx, name, metav1.GetOptions{})
+}
+
+func (c *Cluster) ListStorageClusters(ctx context.Context, namespace string) (*openstoragev1.StorageClusterList, error) {
+	return c.OpenStorageClient.CoreV1().StorageClusters(namespace).List(ctx, metav1.ListOptions{})
+}
+
+// FindStorageCluster finds the storage cluster singleton in the cluster.
+func (c *Cluster) FindStorageCluster(ctx context.Context) (*openstoragev1.StorageCluster, error) {
+	storageClusters, err := c.ListStorageClusters(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	if len(storageClusters.Items) == 0 {
+		return nil, errors.New("no storage cluster found")
+	}
+	if len(storageClusters.Items) > 1 {
+		return nil, errors.New("multiple storage clusters found")
+	}
+	return &storageClusters.Items[0], nil
+}
+
+func (c *Cluster) UpdateStorageCluster(ctx context.Context, storageCluster *openstoragev1.StorageCluster) (*openstoragev1.StorageCluster, error) {
+	return c.OpenStorageClient.CoreV1().StorageClusters(storageCluster.Namespace).Update(ctx, storageCluster, metav1.UpdateOptions{})
+}
+
+func (c *Cluster) ListStorageNodes(ctx context.Context, namespace string) (*openstoragev1.StorageNodeList, error) {
+	return c.OpenStorageClient.CoreV1().StorageNodes(namespace).List(ctx, metav1.ListOptions{})
 }

@@ -13,19 +13,19 @@ import (
 var ErrNoPXServiceFound = errors.New("no PX service found")
 
 type Portworx struct {
-	namespace  string
+	Namespace  string
 	restClient rest.Interface
 }
 
 func New(restClient rest.Interface, namespace string) Portworx {
 	return Portworx{
 		restClient: restClient,
-		namespace:  namespace,
+		Namespace:  namespace,
 	}
 }
 
 func (p *Portworx) buildPXAPIRequest(baseRequest *rest.Request, pathSuffix string) *rest.Request {
-	return baseRequest.Namespace(p.namespace).
+	return baseRequest.Namespace(p.Namespace).
 		Resource("services").
 		Name("portworx-api:9021").
 		SubResource("proxy").

@@ -164,7 +164,7 @@ github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
 github.com/docker/cli/cli/config/credentials
 github.com/docker/cli/cli/config/types
-# github.com/docker/distribution v2.8.1+incompatible
+# github.com/docker/distribution v2.8.2+incompatible
 ## explicit
 github.com/docker/distribution
 github.com/docker/distribution/digestset
@@ -563,6 +563,15 @@ github.com/leonklingele/grouper/pkg/analyzer/vars
 github.com/lib/pq
 github.com/lib/pq/oid
 github.com/lib/pq/scram
+# github.com/libopenstorage/operator v0.0.0-20230607211220-2738c68a93db
+## explicit; go 1.19
+github.com/libopenstorage/operator/pkg/apis/core/v1
+github.com/libopenstorage/operator/pkg/apis/portworx
+github.com/libopenstorage/operator/pkg/apis/portworx/v1
+github.com/libopenstorage/operator/pkg/client/clientset/versioned
+github.com/libopenstorage/operator/pkg/client/clientset/versioned/scheme
+github.com/libopenstorage/operator/pkg/client/clientset/versioned/typed/core/v1
+github.com/libopenstorage/operator/pkg/client/clientset/versioned/typed/portworx/v1
 # github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
 ## explicit
 github.com/liggitt/tabwriter
@@ -722,6 +731,10 @@ github.com/portworx/pds-operator-backups/api/v1
 # github.com/portworx/pds-operator-deployments/api v0.0.0-20230502072252-6da1280d53f4
 ## explicit; go 1.20
 github.com/portworx/pds-operator-deployments/api/v1
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.46.0
+## explicit; go 1.14
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/client_golang v1.15.1
 ## explicit; go 1.17
 github.com/prometheus/client_golang/api
@@ -1399,7 +1412,7 @@ k8s.io/apiserver/pkg/endpoints/deprecation
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/resource
-# k8s.io/client-go v0.27.1
+# k8s.io/client-go v12.0.0+incompatible => k8s.io/client-go v0.27.1
 ## explicit; go 1.20
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1
@@ -1743,3 +1756,4 @@ sigs.k8s.io/yaml
 # github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 # github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5
 # github.anim.dreamworks.com/golang/utils => github.com/portworx/golang_utils v0.0.0-20181008202924-011984e32408
+# k8s.io/client-go => k8s.io/client-go v0.27.1

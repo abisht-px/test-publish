@@ -11,8 +11,10 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.7
+	github.com/libopenstorage/operator v0.0.0-20230607211220-2738c68a93db
 	github.com/portworx/pds-api-go-client v0.0.0-20230504082536-d95e3535ebdb
 	github.com/portworx/pds-operator-backups/api v0.0.0-20230505075235-64dc12ad925a
+	github.com/portworx/pds-operator-deployments/api v0.0.0-20230502072252-6da1280d53f4
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.0.0-20211217191541-41f1a8125e66
@@ -25,7 +27,7 @@ require (
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 	k8s.io/cli-runtime v0.27.1
-	k8s.io/client-go v0.27.1
+	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	sigs.k8s.io/controller-runtime v0.15.0-alpha.0.0.20230511044310-c2e3d6d6350e
 	sigs.k8s.io/external-dns v0.13.2
@@ -72,7 +74,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/docker/cli v20.10.24+incompatible // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v20.10.24+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -201,7 +203,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.0.6 // indirect
-	github.com/portworx/pds-operator-deployments/api v0.0.0-20230502072252-6da1280d53f4 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.46.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/quasilyte/go-ruleguard v0.3.18 // indirect
@@ -299,4 +301,5 @@ replace (
 	github.anim.dreamworks.com/golang/rest => github.com/portworx/golang_rest v0.0.0-20200403193337-ceb5657f6c7c
 	github.anim.dreamworks.com/golang/tonic => github.com/portworx/golang_tonic v1.3.0-rc5
 	github.anim.dreamworks.com/golang/utils => github.com/portworx/golang_utils v0.0.0-20181008202924-011984e32408
+	k8s.io/client-go => k8s.io/client-go v0.27.1
 )
