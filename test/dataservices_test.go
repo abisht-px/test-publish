@@ -45,7 +45,7 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.6",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       1,
 		},
 		{
@@ -194,7 +194,6 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			ImageVersionTag: "3.11.15",
 			NodeCount:       3,
 		},
-
 		{
 			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.10",
@@ -427,6 +426,14 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.0.6",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"4.0.10"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Consul,
 				ImageVersionTag: "1.14.0",
 				NodeCount:       1,
@@ -641,7 +648,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.6",
+				ImageVersionTag: "4.0.10",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -794,7 +801,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.6",
+				ImageVersionTag: "4.0.10",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -939,7 +946,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.6",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       3,
 		},
 		{
@@ -1030,7 +1037,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.6",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       3,
 		},
 		{
@@ -1140,12 +1147,12 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.6",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.6",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       2,
 		},
 		// Couchbase
