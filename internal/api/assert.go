@@ -37,3 +37,23 @@ func RequireNoErrorf(t tests.T, resp *http.Response, err error, msg string, args
 	}
 	t.FailNow()
 }
+
+func RequireErrorWithStatus(t tests.T, resp *http.Response, err error, expectedStatus uint) {
+	t.Helper()
+	if assert.Error(t, err, "PDS API call returned no error when expected to do so.") ||
+		assert.NotNil(t, resp, "Received empty response when expecting error status.") ||
+		assert.Equal(t, expectedStatus, resp.StatusCode, "Received status code is different than expected.") {
+		return
+	}
+	t.FailNow()
+}
+
+func RequireNoErrorWithStatus(t tests.T, resp *http.Response, err error, expectedStatus uint) {
+	t.Helper()
+	if NoError(t, resp, err) ||
+		assert.NotNil(t, resp, "Received empty response.") ||
+		assert.Equal(t, expectedStatus, resp.StatusCode, "Received status code is different than expected.") {
+		return
+	}
+	t.FailNow()
+}

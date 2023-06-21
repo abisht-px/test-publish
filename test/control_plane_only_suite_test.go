@@ -13,7 +13,9 @@ import (
 
 type ControlPlaneTestSuite struct {
 	suite.Suite
+	ctx          context.Context
 	ControlPlane *controlplane.ControlPlane
+	config       controlPlaneEnvironment
 }
 
 func TestControlPlaneTestSuite(t *testing.T) {
@@ -27,10 +29,17 @@ func (s *ControlPlaneTestSuite) SetupSuite() {
 		s.T().Log("successfully loaded .env file")
 	}
 
-	config := MustHaveControlPlaneEnvVariables(s.T())
+	s.ctx = context.Background()
 
+	config := mustHaveControlPlaneEnvVariables(s.T())
+	s.config = config
 	apiClient, err := api.NewPDSClient(context.Background(), config.ControlPlaneAPI, config.LoginCredentials)
 	s.Require().NoError(err, "could not create Control Plane API client")
 
 	s.ControlPlane = controlplane.New(apiClient)
+	s.ControlPlane.MustInitializeTestData(s.ctx, s.T(),
+		config.AccountName,
+		config.TenantName,
+		config.ProjectName,
+		namePrefix)
 }

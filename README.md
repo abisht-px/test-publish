@@ -28,18 +28,28 @@ For instructions how to run tests locally, see [Running tests locally](#running-
 
 ### Secrets
 
-| Key                         | Description                                                                         |
-|-----------------------------|-------------------------------------------------------------------------------------|
-| SECRET_TOKEN_ISSUER_URL     | Base URL of the token issuer that can provide us with a bearer token.               |
-| SECRET_ISSUER_CLIENT_ID     | ClientID to be used when querying the token issuer.                                 |
-| SECRET_ISSUER_CLIENT_SECRET | Secret to authenticate with the issuer.                                             |
-| SECRET_PDS_USERNAME         | Username of a PDS user on the control plane. This user must already be pre-created. |
-| SECRET_PDS_PASSWORD         | Password corresponding to the PDS user.                                             |
-| SECRET_PDS_TOKEN            | User api token (can have custom expiration date)                                    |
-| PDS_S3CREDENTIALS_ACCESSKEY | AWS access key used for the pds backup credentials.                                 |
-| PDS_S3CREDENTIALS_SECRETKEY | AWS secret key used for the pds backup credentials.                                 |
+| Key                           | Description                                                                         |
+|-------------------------------|-------------------------------------------------------------------------------------|
+| SECRET_TOKEN_ISSUER_URL       | Base URL of the token issuer that can provide us with a bearer token.               |
+| SECRET_ISSUER_CLIENT_ID       | ClientID to be used when querying the token issuer.                                 |
+| SECRET_ISSUER_CLIENT_SECRET   | Secret to authenticate with the issuer.                                             |
+| SECRET_PDS_USERNAME           | Username of a PDS user on the control plane. This user must already be pre-created. |
+| SECRET_PDS_PASSWORD           | Password corresponding to the PDS user.                                             |
+| SECRET_PDS_TOKEN              | User api token (can have custom expiration date)                                    |
+| PDS_S3CREDENTIALS_ACCESSKEY   | AWS access key used for the pds backup credentials.                                 |
+| PDS_S3CREDENTIALS_SECRETKEY   | AWS secret key used for the pds backup credentials.                                 |
+| SECRET_PDS_AUTH_USER_USERNAME | Username of a existing PDS user on the control plane for the Auth test.             |
+| SECRET_PDS_AUTH_USER_PASSWORD | Password corresponding to the PDS Auth test user.                                   |
+| SECRET_PDS_AUTH_USER_TOKEN    | Auth test user api token (can have custom expiration date)                          |
 
-NOTE: `SECRET_PDS_TOKEN` can be used for auth instead of user/password one.
+NOTE:
+
+* `SECRET_PDS_TOKEN` can be used for auth instead of user/password one.
+* `SECRET_PDS_AUTH_USER_TOKEN` can be used for auth instead of user/password one.
+* The Auth User must be existing user in the control plane environment. During the test the role bindings for the
+user are changed in the selected Account. And at the end of the test there will be no role for the user. You should use
+different user than the main for the tests! Also the test cannot be run in parallel, as there will be race condition on
+the bindings.
 
 Make sure you have added helm chart manually to your local.
 Since minihelm looks for this entry it fails if you do not define this.
