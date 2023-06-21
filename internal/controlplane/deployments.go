@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -24,20 +25,26 @@ const (
 )
 
 func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.T, deployment *api.ShortDeploymentSpec) string {
-	return c.MustDeployDeploymentSpecIntoNamespace(ctx, t, deployment, c.testPDSNamespaceID)
+	return c.MustDeployDeploymentSpecIntoNamespace(ctx, t, deployment, c.TestPDSNamespaceID)
 }
 
 func (c *ControlPlane) MustDeployDeploymentSpecIntoNamespace(ctx context.Context, t *testing.T, deployment *api.ShortDeploymentSpec, namespaceID string) string {
-	image := findImageVersionForRecord(deployment, c.imageVersionSpecs)
-	require.NotNil(t, image, "No image found for deployment %s %s %s.", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
-
-	c.setDeploymentDefaults(deployment)
-
-	deploymentID, err := c.PDS.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, namespaceID)
+	deploymentID, err := c.DeployDeploymentSpec(ctx, deployment, namespaceID)
 	require.NoError(t, err, "Error while creating deployment %s.", deployment.DataServiceName)
 	require.NotEmpty(t, deploymentID, "Deployment ID is empty.")
 
 	return deploymentID
+}
+
+func (c *ControlPlane) DeployDeploymentSpec(ctx context.Context, deployment *api.ShortDeploymentSpec, namespaceID string) (string, error) {
+	image := findImageVersionForRecord(deployment, c.imageVersionSpecs)
+	if image == nil {
+		return "", fmt.Errorf("no image found for deployment %s %s %s", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
+	}
+
+	c.setDeploymentDefaults(deployment)
+
+	return c.PDS.CreateDeployment(ctx, deployment, image, c.TestPDSTenantID, c.testPDSDeploymentTargetID, c.TestPDSProjectID, namespaceID)
 }
 
 func (c *ControlPlane) setDeploymentDefaults(deployment *api.ShortDeploymentSpec) {

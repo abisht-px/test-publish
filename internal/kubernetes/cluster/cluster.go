@@ -318,3 +318,7 @@ func (c *Cluster) UpdateStorageCluster(ctx context.Context, storageCluster *open
 func (c *Cluster) ListStorageNodes(ctx context.Context, namespace string) (*openstoragev1.StorageNodeList, error) {
 	return c.OpenStorageClient.CoreV1().StorageNodes(namespace).List(ctx, metav1.ListOptions{})
 }
+
+func (c *Cluster) GetStorageClass(ctx context.Context, name string) (*storagev1.StorageClass, error) {
+	return c.Clientset.StorageV1().StorageClasses().Get(ctx, name, metav1.GetOptions{})
+}

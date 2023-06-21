@@ -3,6 +3,8 @@ package controlplane
 import (
 	"context"
 
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
 )
@@ -38,4 +40,21 @@ func (c *ControlPlane) DeleteTestApplicationTemplates(ctx context.Context, t tes
 			api.NoErrorf(t, resp, err, "Deleting resource settings template (ID=%s, name=%s)", resourceTemplateInfo.ID, resourceTemplateInfo.Name)
 		}
 	}
+}
+
+func (c *ControlPlane) MustCreateStorageOptions(
+	ctx context.Context, t tests.T, template pds.ControllersCreateStorageOptionsTemplateRequest,
+) string {
+	storageTemplateResp, resp, err := c.PDS.StorageOptionsTemplatesApi.
+		ApiTenantsIdStorageOptionsTemplatesPost(ctx, c.TestPDSTenantID).
+		Body(template).Execute()
+	api.RequireNoError(t, resp, err)
+
+	return storageTemplateResp.GetId()
+}
+
+// MustDeleteStorageOptions deletes an ad-hoc created template.
+func (c *ControlPlane) MustDeleteStorageOptions(ctx context.Context, t tests.T, templateID string) {
+	resp, err := c.PDS.StorageOptionsTemplatesApi.ApiStorageOptionsTemplatesIdDelete(ctx, templateID).Execute()
+	api.NoErrorf(t, resp, err, "Deleting storage options template (%s)", templateID)
 }

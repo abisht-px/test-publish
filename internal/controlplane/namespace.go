@@ -15,7 +15,7 @@ import (
 func (c *ControlPlane) MustWaitForTestNamespace(ctx context.Context, t tests.T, name string) {
 	namespace := c.MustWaitForNamespaceStatus(ctx, t, name, "available")
 	require.NotNilf(t, namespace, "PDS test namespace %s is not available.", name)
-	c.testPDSNamespaceID = namespace.GetId()
+	c.TestPDSNamespaceID = namespace.GetId()
 }
 
 func (c *ControlPlane) MustWaitForNamespaceStatus(ctx context.Context, t tests.T, name, expectedStatus string) *pds.ModelsNamespace {

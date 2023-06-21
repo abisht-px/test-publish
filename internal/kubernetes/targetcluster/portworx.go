@@ -15,7 +15,10 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-const PortworxCSIDriverName = "pxd.portworx.com"
+const (
+	PortworxCSIDriverName    = "pxd.portworx.com"
+	PortworxInTreeDriverName = "kubernetes.io/portworx-volume"
+)
 
 func (tc *TargetCluster) GetPortworxCSIDriver(ctx context.Context) (*storagev1.CSIDriver, error) {
 	return tc.GetCSIDriver(ctx, PortworxCSIDriverName)
