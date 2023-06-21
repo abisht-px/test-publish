@@ -17,6 +17,10 @@ import (
 const (
 	pdsDeploymentHealthStateHealthy = "Healthy"
 	pdsDeploymentHealthAvailable    = "Available"
+	pdsDeploymentHealthUnavailable  = "Unavailable"
+
+	pdsDeploymentStateAvailable = "Available"
+	pdsDeploymentStateDeploying = "Deploying"
 )
 
 func (c *ControlPlane) MustDeployDeploymentSpec(ctx context.Context, t *testing.T, deployment *api.ShortDeploymentSpec) string {
@@ -84,6 +88,28 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 
 	_, resp, err = s.PDS.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()
 	api.RequireNoErrorf(t, resp, err, "update %s deployment", deploymentID)
+}
+
+func (c *ControlPlane) getDeploymentManifestHealthStatus(ctx context.Context, t tests.T, deploymentID string) (string, string) {
+	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Expand("deployment_manifest").Execute()
+	api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
+
+	manifest := deployment.GetDeploymentManifest()
+	return *manifest.Health, *manifest.Status
+}
+
+func (c *ControlPlane) MustWaitForDeploymentManifestInitialChange(ctx context.Context, t *testing.T, deploymentID string) {
+	wait.For(t, wait.StandardTimeout, wait.ShortRetryInterval, func(t tests.T) {
+		health, status := c.getDeploymentManifestHealthStatus(ctx, t, deploymentID)
+		require.NotEqual(t, pdsDeploymentHealthUnavailable, health, "Deployment %q has health %q.", deploymentID, health)
+		require.NotEqual(t, pdsDeploymentStateDeploying, status, "Deployment %q is in state %q.", deploymentID, status)
+	})
+}
+
+func (c *ControlPlane) MustDeploymentManifestStatusHealthAvailable(ctx context.Context, t *testing.T, deploymentID string) {
+	health, status := c.getDeploymentManifestHealthStatus(ctx, t, deploymentID)
+	require.Equal(t, pdsDeploymentHealthAvailable, health, "Deployment %q has health %q.", deploymentID, health)
+	require.Equal(t, pdsDeploymentStateAvailable, status, "Deployment %q is in state %q.", deploymentID, status)
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
