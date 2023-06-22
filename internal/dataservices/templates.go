@@ -29,9 +29,10 @@ type TemplateSpec struct {
 }
 
 var (
-	TemplateNameDefault = fmt.Sprintf("integration-test-default-%d", time.Now().Unix())
-	TemplateNameSmall   = fmt.Sprintf("integration-test-small-%d", time.Now().Unix())
-	TemplateNameMed     = fmt.Sprintf("integration-test-med-%d", time.Now().Unix())
+	TemplateNameDefault  = fmt.Sprintf("integration-test-default-%d", time.Now().Unix())
+	TemplateNameSmall    = fmt.Sprintf("integration-test-small-%d", time.Now().Unix())
+	TemplateNameMed      = fmt.Sprintf("integration-test-med-%d", time.Now().Unix())
+	TemplateNameEnormous = fmt.Sprintf("integration-test-enormous-%d", time.Now().Unix())
 
 	// When updating, please consider that the first element in each list is used by the setDeploymentDefaults function.
 	TemplateSpecs = map[string]TemplateSpec{
@@ -70,6 +71,14 @@ var (
 					CpuLimit:       pointer.String("1.35"),
 					MemoryRequest:  pointer.String("1800M"),
 					MemoryLimit:    pointer.String("2500M"),
+					StorageRequest: pointer.String("5G"),
+				},
+				TemplateNameEnormous: {
+					Name:           pointer.String(TemplateNameEnormous),
+					CpuRequest:     pointer.String("5000"),
+					CpuLimit:       pointer.String("10000"),
+					MemoryRequest:  pointer.String("500Gi"),
+					MemoryLimit:    pointer.String("500Gi"),
 					StorageRequest: pointer.String("5G"),
 				},
 			},

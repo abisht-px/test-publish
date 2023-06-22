@@ -3,6 +3,7 @@ package test
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -1048,6 +1049,34 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
+}
+
+func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
+	deployment := api.ShortDeploymentSpec{
+		DataServiceName:              dataservices.Cassandra,
+		NamePrefix:                   "impossible-resources-test",
+		ImageVersionTag:              "4.0.6",
+		NodeCount:                    3,
+		ResourceSettingsTemplateName: dataservices.TemplateNameEnormous,
+	}
+	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, s.T(), &deployment)
+	s.T().Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), deploymentID)
+		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
+	})
+
+	s.controlPlane.MustWaitForDeploymentEventCondition(s.ctx, s.T(),
+		deploymentID,
+		func(event pds.DeploymentsResourceEvent) bool {
+			if event.Reason == nil {
+				return false
+			}
+			reason := *event.Reason
+			message := *event.Message
+			insufficientResources := strings.Contains(message, "Insufficient cpu") || strings.Contains(message, "Insufficient memory")
+			return reason == "FailedScheduling" && insufficientResources
+		},
+		"failed pod scheduling")
 }
 
 func (s *PDSTestSuite) TestDataService_Metrics() {
