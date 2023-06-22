@@ -151,29 +151,55 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		s.T().Skip("Backup tests skipped.")
 	}
 	deployments := []api.ShortDeploymentSpec{
+		// PostgreSQL
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.18",
+			ImageVersionTag: "11.20",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.13",
+			ImageVersionTag: "12.15",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.9",
+			ImageVersionTag: "13.11",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "14.8",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "15.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.8",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
 			NodeCount:       3,
 		},
 		{
@@ -294,11 +320,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
 			t.Cleanup(func() {
 				if backup != nil {
-					// TODO(DS-5732): Once bug https://portworx.atlassian.net/browse/DS-5732 is fixed then call MustDeleteBackup
-					// 		with localOnly=false and remove the additional call of DeletePDSBackup.
-					s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId(), true)
-					err := s.targetCluster.DeletePDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
-					require.NoError(t, err)
+					deleteBackupWithWorkaround(s, t, backup, namespace)
 				}
 				if backupTarget != nil {
 					s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId())
@@ -339,8 +361,21 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			backupTarget = s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 			s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
 
-			backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
-			s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
+			// Create backup (with retry if needed).
+			for i := 1; i <= 3; i++ {
+				backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
+				needsRetry := s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
+				if needsRetry {
+					// Delete failed backup before retry.
+					backupToDelete := backup
+					backup = nil
+					deleteBackupWithWorkaround(s, t, backupToDelete, namespace)
+					// Wait a bit then repeat.
+					time.Sleep(15 * time.Second)
+				} else {
+					break
+				}
+			}
 
 			if !isRestoreTestReadyFor(deployment.DataServiceName) {
 				return
@@ -383,26 +418,26 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.16",
+				ImageVersionTag: "11.18",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"11.18"},
+			targetVersions: []string{"11.20"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.11",
+				ImageVersionTag: "12.13",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"12.13"},
+			targetVersions: []string{"12.15"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.7",
+				ImageVersionTag: "13.9",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"13.9"},
+			targetVersions: []string{"13.11"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -410,7 +445,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "14.2",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"14.6"},
+			targetVersions: []string{"14.8"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -418,7 +453,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "14.4",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"14.6"},
+			targetVersions: []string{"14.8"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -426,7 +461,15 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				ImageVersionTag: "14.5",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"14.6"},
+			targetVersions: []string{"14.8"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "14.6",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"14.8"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -628,7 +671,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.18",
+				ImageVersionTag: "11.20",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -636,7 +679,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.13",
+				ImageVersionTag: "12.15",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -644,7 +687,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.9",
+				ImageVersionTag: "13.11",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -652,7 +695,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.6",
+				ImageVersionTag: "14.8",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -805,7 +848,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.6",
+				ImageVersionTag: "14.8",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -954,7 +997,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "14.8",
 			NodeCount:       3,
 		},
 		{
@@ -1144,7 +1187,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "14.8",
 			NodeCount:       1,
 		},
 		{
@@ -1225,42 +1268,42 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		// PostgreSQL
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.18",
+			ImageVersionTag: "11.20",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.18",
+			ImageVersionTag: "11.20",
 			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.13",
+			ImageVersionTag: "12.15",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.13",
+			ImageVersionTag: "12.15",
 			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.9",
+			ImageVersionTag: "13.11",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.9",
+			ImageVersionTag: "13.11",
 			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "14.8",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
+			ImageVersionTag: "14.8",
 			NodeCount:       3,
 		},
 		// MongoDB
@@ -1340,4 +1383,12 @@ func getSupportedPSAPolicy(dataServiceName string) string {
 	default:
 		return psa.PSAPolicyRestricted
 	}
+}
+
+func deleteBackupWithWorkaround(s *PDSTestSuite, t *testing.T, backup *pds.ModelsBackup, namespace string) {
+	// TODO(DS-5732): Once bug https://portworx.atlassian.net/browse/DS-5732 is fixed then call MustDeleteBackup
+	// 		with localOnly=false and remove the additional call of DeletePDSBackup.
+	s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId(), true)
+	err := s.targetCluster.DeletePDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
+	require.NoError(t, err)
 }

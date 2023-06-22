@@ -3,6 +3,7 @@ package crosscluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t tests.T, deploymentID, backupName string) {
+func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t tests.T, deploymentID, backupName string) (needsRetry bool) {
 	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
@@ -42,11 +43,17 @@ func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t t
 		logs, err := c.targetCluster.GetJobLogs(ctx, namespace, backupJobName, c.startTime)
 		if err != nil {
 			require.Fail(t, fmt.Sprintf("Backup '%s' failed.", backupName))
+		} else if strings.Contains(logs, "HINT: is another pgBackRest process running?") {
+			// Backup failed on PostgreSQL as the automatic initial pgbackrest backup after deployment is still running.
+			// This is not a backup failure, let's retry the backup call a bit later.
+			needsRetry = true
+			return
 		} else {
 			require.Fail(t, fmt.Sprintf("Backup job '%s' failed. See job logs for more details:", backupJobName), logs)
 		}
 	}
 	require.True(t, isBackupSucceeded(pdsBackup))
+	return
 }
 
 func getBackupSnapshotID(backup *backupsv1.Backup) (string, error) {
