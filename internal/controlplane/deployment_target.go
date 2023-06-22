@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -15,6 +16,13 @@ import (
 
 func (c *ControlPlane) SetTestDeploymentTarget(targetID string) {
 	c.testPDSDeploymentTargetID = targetID
+}
+
+func (c *ControlPlane) MustGetDeploymentTarget(ctx context.Context, t tests.T) (targetID *pds.ModelsDeploymentTarget) {
+	deploymentTarget, resp, err := c.PDS.DeploymentTargetsApi.ApiDeploymentTargetsIdGet(ctx, c.testPDSDeploymentTargetID).Execute()
+	api.RequireNoErrorf(t, resp, err, "Getting deployment target %s.", c.testPDSDeploymentTargetID)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	return deploymentTarget
 }
 
 func (c *ControlPlane) MustWaitForDeploymentTarget(ctx context.Context, t tests.T, name string) (targetID string) {

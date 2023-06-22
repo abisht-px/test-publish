@@ -11,6 +11,15 @@ const (
 	PDSChartNamespace   = "pds-system"
 )
 
+var PDSOperators = map[string]struct {
+	Name       string
+	Deployment string
+}{
+	"backup":     {Name: "backup", Deployment: "pds-backup-controller-manager"},
+	"deployment": {Name: "deployment", Deployment: "pds-deployment-controller-manager"},
+	"target":     {Name: "target", Deployment: "pds-operator-target-controller-manager"},
+}
+
 type PDSChartConfig struct {
 	Version               string
 	TenantID              string

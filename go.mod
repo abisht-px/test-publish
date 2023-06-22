@@ -19,7 +19,7 @@ require (
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.0.0-20211217191541-41f1a8125e66
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.5.0
 	golang.org/x/tools v0.8.0
 	gopkg.in/yaml.v2 v2.4.0
