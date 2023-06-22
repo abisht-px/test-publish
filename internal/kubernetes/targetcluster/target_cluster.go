@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/hashicorp/go-multierror"
@@ -28,8 +27,6 @@ import (
 const (
 	pdsEnvironmentLabel = "pds/environment"
 )
-
-var pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 
 // TargetCluster wraps a PDS target cluster.
 type TargetCluster struct {

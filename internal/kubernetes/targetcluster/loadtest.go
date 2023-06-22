@@ -7,16 +7,11 @@ import (
 	"testing"
 	"time"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/wait"
-)
-
-const (
-	pdsAPITimeFormat = "2006-01-02T15:04:05.999999Z"
 )
 
 func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
@@ -39,7 +34,7 @@ func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *test
 	require.Greater(t, job.Status.Succeeded, int32(0), "Job %q did not succeed.", jobName)
 }
 
-func (tc *TargetCluster) MustWaitForLoadTestFailure(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
+func (tc *TargetCluster) MustWaitForLoadTestFailure(ctx context.Context, t *testing.T, namespace, jobName string) {
 	// 1. Wait for the job to finish.
 	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.StandardTimeout, wait.ShortRetryInterval)
 
@@ -50,14 +45,14 @@ func (tc *TargetCluster) MustWaitForLoadTestFailure(ctx context.Context, t *test
 	require.Greater(t, job.Status.Failed, int32(0), "Job %q did not fail.", jobName)
 }
 
-func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataService *pds.ModelsDataService, dsImageCreatedAt, deploymentName, namespace, mode, seed, user string, nodeCount *int32, extraEnv map[string]string) []corev1.EnvVar {
+func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataServiceType, deploymentName, namespace, mode, seed, user string, nodeCount int32, extraEnv map[string]string) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)
 	password, err := tc.getDBPassword(ctx, namespace, deploymentName)
 	require.NoErrorf(t, err, "Could not get password for database %s/%s.", namespace, deploymentName)
 	env := []corev1.EnvVar{
 		{
 			Name:  "KIND",
-			Value: *dataService.ShortName,
+			Value: dataservices.ToShortName(dataServiceType),
 		},
 		{
 			Name:  "HOST",
@@ -90,21 +85,13 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 		})
 	}
 
-	dataServiceType := dataService.GetName()
 	switch dataServiceType {
 	case dataservices.Redis:
 		var clusterMode string
-		if nodeCount != nil && *nodeCount > 1 {
+		if nodeCount > 1 {
 			clusterMode = "true"
 		} else {
 			clusterMode = "false"
-		}
-		if dsImageCreatedAt != "" {
-			dsCreatedAt, err := time.Parse(pdsAPITimeFormat, dsImageCreatedAt)
-			if err == nil && dsCreatedAt.Before(pdsUserInRedisIntroducedAt) {
-				// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
-				user = "default"
-			}
 		}
 		env = append(env,
 			corev1.EnvVar{

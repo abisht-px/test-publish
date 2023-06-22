@@ -146,6 +146,12 @@ func (c *Cluster) DeletePDSRestore(ctx context.Context, namespace, name string) 
 	return err
 }
 
+func (c *Cluster) DeletePDSBackup(ctx context.Context, namespace, name string) error {
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backups/%s", namespace, name)
+	err := c.Clientset.RESTClient().Delete().AbsPath(path).Do(ctx).Error()
+	return err
+}
+
 func (c *Cluster) GetPDSDeployment(ctx context.Context, namespace, database, name string) (runtime.Object, error) {
 	path := fmt.Sprintf("apis/deployments.pds.io/v1/namespaces/%s/%s/%s", namespace, database, name)
 	res, err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Get()

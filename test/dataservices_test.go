@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -281,13 +282,37 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 
 			t.Parallel()
 
+			var backupCredentials *pds.ModelsBackupCredentials
+			var backupTarget *pds.ModelsBackupTarget
+			var backup *pds.ModelsBackup
+			var restoreCreated = false
+
 			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 			restoreName := generateRandomName("restore")
 			namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
 			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+				if backup != nil {
+					// TODO(DS-5732): Once bug https://portworx.atlassian.net/browse/DS-5732 is fixed then call MustDeleteBackup
+					// 		with localOnly=false and remove the additional call of DeletePDSBackup.
+					s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId(), true)
+					err := s.targetCluster.DeletePDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
+					require.NoError(t, err)
+				}
+				if backupTarget != nil {
+					s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId())
+				}
+				if backupCredentials != nil {
+					s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId())
+				}
+
+				s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID)
 				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+
+				if restoreCreated {
+					err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
+					require.NoError(t, err)
+				}
 
 				// TODO(DS-5494): that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
 				//   	target operator reports deletion of data service CR to the control plane, it is based on the
@@ -302,39 +327,41 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 
-			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, "", deploymentID)
+			seed := deploymentID
+			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, seed)
 
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
 			s3Creds := backupTargetConfig.credentials.S3
-			backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
-			t.Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId()) })
+			backupCredentials = s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
 
-			backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+			backupTarget = s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
 			s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
-			t.Cleanup(func() { s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId()) })
 
-			backup := s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
+			backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
 			s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
-			t.Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId()) })
 
 			if !isRestoreTestReadyFor(deployment.DataServiceName) {
 				return
 			}
 
-			s.crossCluster.MustCreateRestore(s.ctx, t, deploymentID, backup.GetClusterResourceName(), restoreName)
-			s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, deploymentID, restoreName)
-			t.Cleanup(func() {
-				err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
-				require.NoError(t, err)
-			})
+			// Remove the original deployment to save resources.
+			s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+			s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+
+			s.crossCluster.MustCreateRestore(s.ctx, t, namespace, backup.GetClusterResourceName(), restoreName)
+			restoreCreated = true
+			waitTimeout := dataservices.GetLongTimeoutFor(deployment.NodeCount)
+			s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, namespace, restoreName, waitTimeout)
 
 			s.crossCluster.MustWaitForStatefulSetInPDSModeNormal(s.ctx, t, namespace, restoreName)
-			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, deploymentID, restoreName)
+			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, namespace, restoreName, deployment.NodeCount)
 
-			s.crossCluster.MustRunReadLoadTestJob(s.ctx, t, deploymentID, restoreName, deploymentID)
+			// Run Read load test.
+			s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestRead, seed, crosscluster.PDSUser, deployment.NodeCount, nil)
 
-			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, restoreName, crosscluster.PDSUser)
+			// Run CRUD load test.
+			s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, deployment.NodeCount, nil)
 		})
 	}
 }
@@ -595,7 +622,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 func (s *PDSTestSuite) TestDataService_ScaleUp() {
 	testCases := []struct {
 		spec    api.ShortDeploymentSpec
-		scaleTo int
+		scaleTo int32
 	}{
 		{
 			spec: api.ShortDeploymentSpec{
@@ -1251,11 +1278,11 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 			// Delete 'pds' user.
 			s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
 			// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
-			s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, "", crosscluster.PDSUser)
+			s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
 			// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
 			time.Sleep(30 * time.Second)
 			// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
-			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, "", crosscluster.PDSReplaceUser)
+			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser)
 		})
 	}
 }

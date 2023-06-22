@@ -56,7 +56,7 @@ func (s *PDSTestSuite) TestRestore_MissingPXCloudCredentials() {
 	// Take Adhoc backup
 	backup := s.controlPlane.MustCreateBackup(s.ctx, s.T(), deploymentID, backupTarget.GetId())
 	s.crossCluster.MustEnsureBackupSuccessful(s.ctx, s.T(), deploymentID, backup.GetClusterResourceName())
-	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, s.T(), backup.GetId()) })
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, s.T(), backup.GetId(), false) })
 
 	// When
 	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
@@ -66,7 +66,7 @@ func (s *PDSTestSuite) TestRestore_MissingPXCloudCredentials() {
 	s.Require().NotNil(pxCloudCredential)
 	err = s.targetCluster.DeletePXCloudCredential(s.ctx, pxCloudCredential.ID)
 	s.Require().NoError(err)
-	s.crossCluster.MustCreateRestore(s.ctx, s.T(), deploymentID, backup.GetClusterResourceName(), restoreName)
+	s.crossCluster.MustCreateRestore(s.ctx, s.T(), namespace, backup.GetClusterResourceName(), restoreName)
 	s.T().Cleanup(func() {
 		err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
 		s.Require().NoError(err)

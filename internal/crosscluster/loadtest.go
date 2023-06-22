@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -40,58 +41,58 @@ var loadTestImages = map[string]string{
 	dataservices.SqlServer:     DefaultLoadTestImage,
 }
 
+func (c *CrossClusterHelper) mustGetDeploymentInfo(ctx context.Context, t *testing.T, deploymentID string) (*pds.ModelsDeployment, *pds.ModelsNamespace, string) {
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+	namespace, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+	dataService, resp, err := c.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
+	api.RequireNoError(t, resp, err)
+	dataServiceType := dataService.GetName()
+	return deployment, namespace, dataServiceType
+}
+
 func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
-	c.mustRunGenericLoadTestJob(ctx, t, deploymentID, "", LoadTestCRUD, "", PDSUser, nil)
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", PDSUser, *deployment.NodeCount, nil)
 }
 
-func (c *CrossClusterHelper) MustRunReadLoadTestJob(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, seed string) {
-	c.mustRunGenericLoadTestJob(ctx, t, deploymentID, clusterResourceName, LoadTestRead, seed, PDSUser, nil)
+func (c *CrossClusterHelper) MustRunReadLoadTestJob(ctx context.Context, t *testing.T, deploymentID, seed string) {
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestRead, seed, PDSUser, *deployment.NodeCount, nil)
 }
 
-func (c *CrossClusterHelper) MustRunWriteLoadTestJob(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, seed string) {
-	c.mustRunGenericLoadTestJob(ctx, t, deploymentID, clusterResourceName, LoadTestWrite, seed, PDSUser, nil)
+func (c *CrossClusterHelper) MustRunWriteLoadTestJob(ctx context.Context, t *testing.T, deploymentID, seed string) {
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestWrite, seed, PDSUser, *deployment.NodeCount, nil)
 }
 
-func (c *CrossClusterHelper) MustRunCRUDLoadTestJob(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, user string) {
-	c.mustRunGenericLoadTestJob(ctx, t, deploymentID, clusterResourceName, LoadTestCRUD, "", user, nil)
+func (c *CrossClusterHelper) MustRunCRUDLoadTestJob(ctx context.Context, t *testing.T, deploymentID, user string) {
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
 }
 
-func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, user string) {
-	jobNamespace, jobName := c.mustCreateLoadTestJob(ctx, t, deploymentID, clusterResourceName, LoadTestCRUD, "", user, nil)
-	c.targetCluster.MustWaitForLoadTestFailure(ctx, t, jobNamespace, jobName, c.startTime)
+func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, t *testing.T, deploymentID, user string) {
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	jobNamespace, jobName := c.mustCreateLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
+	c.targetCluster.MustWaitForLoadTestFailure(ctx, t, jobNamespace, jobName)
 }
 
 func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user string) {
 	extraEnv := map[string]string{
 		"DELETE_USER": user,
 	}
-	c.mustRunGenericLoadTestJob(ctx, t, deploymentID, "", LoadTestDeleteUser, "", user, extraEnv)
+	deployment, namespace, dataServiceType := c.mustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestDeleteUser, "", user, *deployment.NodeCount, extraEnv)
 }
 
-func (c *CrossClusterHelper) mustRunGenericLoadTestJob(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, mode, seed, user string, extraEnv map[string]string) {
-	jobNamespace, jobName := c.mustCreateLoadTestJob(ctx, t, deploymentID, clusterResourceName, mode, seed, user, extraEnv)
+func (c *CrossClusterHelper) MustRunGenericLoadTestJob(ctx context.Context, t *testing.T, dataServiceType, namespace, deploymentName, mode, seed, user string, nodeCount int32, extraEnv map[string]string) {
+	jobNamespace, jobName := c.mustCreateLoadTestJob(ctx, t, dataServiceType, namespace, deploymentName, mode, seed, user, nodeCount, extraEnv)
 	c.targetCluster.MustWaitForLoadTestSuccess(ctx, t, jobNamespace, jobName, c.startTime)
 	c.targetCluster.JobLogsMustNotContain(ctx, t, jobNamespace, jobName, "ERROR|FATAL", c.startTime)
 }
 
-func (c *CrossClusterHelper) mustCreateLoadTestJob(ctx context.Context, t *testing.T, deploymentID, clusterResourceName, mode, seed, user string, extraEnv map[string]string) (string, string) {
-	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
-	api.RequireNoError(t, resp, err)
-	deploymentName := deployment.GetClusterResourceName()
-	if clusterResourceName != "" {
-		deploymentName = clusterResourceName
-	}
-
-	namespace, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
-	api.RequireNoError(t, resp, err)
-
-	dataService, resp, err := c.controlPlane.PDS.DataServicesApi.ApiDataServicesIdGet(ctx, deployment.GetDataServiceId()).Execute()
-	api.RequireNoError(t, resp, err)
-	dataServiceType := dataService.GetName()
-
-	dsImage, resp, err := c.controlPlane.PDS.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
-	api.RequireNoError(t, resp, err)
-	dsImageCreatedAt := dsImage.GetCreatedAt()
+func (c *CrossClusterHelper) mustCreateLoadTestJob(ctx context.Context, t *testing.T, dataServiceType, namespace, deploymentName, mode, seed, user string, nodeCount int32, extraEnv map[string]string) (string, string) {
 
 	jobName := fmt.Sprintf("%s-loadtest-%d", deploymentName, time.Now().Unix())
 	if mode != "" {
@@ -102,12 +103,12 @@ func (c *CrossClusterHelper) mustCreateLoadTestJob(ctx context.Context, t *testi
 	image, err := getLoadTestJobImage(dataServiceType)
 	require.NoError(t, err)
 
-	env := c.targetCluster.MustGetLoadTestJobEnv(ctx, t, dataService, dsImageCreatedAt, deploymentName, namespace.GetName(), mode, seed, user, deployment.NodeCount, extraEnv)
+	env := c.targetCluster.MustGetLoadTestJobEnv(ctx, t, dataServiceType, deploymentName, namespace, mode, seed, user, nodeCount, extraEnv)
 
-	job, err := c.targetCluster.CreateJob(ctx, namespace.GetName(), jobName, image, env, nil)
+	job, err := c.targetCluster.CreateJob(ctx, namespace, jobName, image, env, nil)
 	require.NoError(t, err)
 
-	return namespace.GetName(), job.GetName()
+	return namespace, job.GetName()
 }
 
 func getLoadTestJobImage(dataServiceType string) (string, error) {

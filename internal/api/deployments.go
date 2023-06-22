@@ -27,7 +27,7 @@ type ShortDeploymentSpec struct {
 	ServiceType                  string `yaml:"service_type"`
 	NamePrefix                   string `yaml:"name_prefix"`
 	CRDNamePlural                string `yaml:"crd_name_plurals"`
-	NodeCount                    int    `yaml:"node_count"`
+	NodeCount                    int32  `yaml:"node_count"`
 }
 
 func (d ShortDeploymentSpec) ImageVersionString() string {

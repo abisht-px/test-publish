@@ -280,7 +280,7 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 	pdsDeployment.SetImageId(image.ImageID)
 	pdsDeployment.SetName(deployment.NamePrefix)
 	pdsDeployment.SetNamespaceId(namespaceID)
-	pdsDeployment.SetNodeCount(int32(deployment.NodeCount))
+	pdsDeployment.SetNodeCount(deployment.NodeCount)
 	pdsDeployment.SetResourceSettingsTemplateId(resource.GetId())
 	if backupPolicy != nil {
 		pdsDeployment.ScheduledBackup.SetBackupPolicyId(backupPolicy.GetId())

@@ -413,3 +413,33 @@ func ToPluralName(dataServiceName string) string {
 	}
 	return ""
 }
+
+func ToShortName(dataServiceName string) string {
+	switch dataServiceName {
+	case Cassandra:
+		return "cas"
+	case Consul:
+		return "con"
+	case Couchbase:
+		return "cb"
+	case ElasticSearch:
+		return "es"
+	case Kafka:
+		return "kf"
+	case MongoDB:
+		return "mdb"
+	case MySQL:
+		return "my"
+	case Postgres:
+		return "pg"
+	case RabbitMQ:
+		return "rmq"
+	case Redis:
+		return "red"
+	case SqlServer:
+		return "sql"
+	case ZooKeeper:
+		return "zk"
+	}
+	return ""
+}

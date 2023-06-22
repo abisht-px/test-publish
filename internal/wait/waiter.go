@@ -13,6 +13,9 @@ const (
 	ShortRetryInterval = time.Second * 1
 	RetryInterval      = time.Second * 10
 
+	// VeryLongTimeout is generally appropriate for highly resource-intensive operations,
+	// which are expected to take a very long time to reconcile.
+	VeryLongTimeout = time.Minute * 20
 	// LongTimeout is generally appropriate for highly resource-intensive operations,
 	// which are expected to take a long time to reconcile.
 	LongTimeout = time.Minute * 10

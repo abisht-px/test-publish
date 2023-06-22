@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
@@ -74,8 +75,7 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 		req.ImageId = &image.ImageID
 	}
 	if spec.NodeCount != 0 {
-		nodeCount := int32(spec.NodeCount)
-		req.NodeCount = &nodeCount
+		req.NodeCount = &spec.NodeCount
 	}
 
 	deployment, resp, err := s.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
@@ -120,7 +120,10 @@ func (c *ControlPlane) MustDeploymentManifestStatusHealthAvailable(ctx context.C
 }
 
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	wait.For(t, dataservices.GetLongTimeoutFor(*deployment.NodeCount), wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
 		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
 
@@ -168,6 +171,13 @@ func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api
 func (c *ControlPlane) MustRemoveDeployment(ctx context.Context, t *testing.T, deploymentID string) {
 	resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdDelete(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
+}
+
+func (c *ControlPlane) MustRemoveDeploymentIfExists(ctx context.Context, t *testing.T, deploymentID string) {
+	_, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	if err == nil || resp == nil || resp.StatusCode != http.StatusNotFound {
+		c.MustRemoveDeployment(ctx, t, deploymentID)
+	}
 }
 
 func (c *ControlPlane) MustWaitForDeploymentRemoved(ctx context.Context, t *testing.T, deploymentID string) {

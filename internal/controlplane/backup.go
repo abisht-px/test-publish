@@ -22,7 +22,7 @@ func (c *ControlPlane) MustCreateBackup(ctx context.Context, t tests.T, deployme
 	return backup
 }
 
-func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID string) {
-	resp, err := c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).Execute()
+func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID string, localOnly bool) {
+	resp, err := c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).LocalOnly(localOnly).Execute()
 	api.RequireNoError(t, resp, err)
 }
