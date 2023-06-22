@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/cluster"
 	"github.com/portworx/pds-integration-test/internal/portworx"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -26,7 +27,6 @@ import (
 
 const (
 	pdsEnvironmentLabel = "pds/environment"
-	pdsSystemNamespace  = "pds-system"
 )
 
 var pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
@@ -35,11 +35,21 @@ var pdsUserInRedisIntroducedAt = time.Date(2022, 10, 10, 0, 0, 0, 0, time.UTC)
 type TargetCluster struct {
 	*cluster.Cluster
 	portworx.Portworx
+	Kubeconfig              string
+	PDSChartConfig          PDSChartConfig
+	CertManagerChartConfig  CertManagerChartConfig
+	PDSChartHelmProvider    *helminstaller.HelmArtifactProvider
+	CertManagerHelmProvider *helminstaller.HelmArtifactProvider
 }
 
 // NewTargetCluster creates a TargetCluster instance with the specified kubeconfig.
 // Fails if a kubernetes go-client cannot be configured based on the kubeconfig.
-func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, error) {
+func NewTargetCluster(
+	ctx context.Context,
+	kubeconfig string,
+	pdsChartConfig PDSChartConfig,
+	certManagerChartConfig CertManagerChartConfig,
+) (*TargetCluster, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return nil, err
@@ -80,9 +90,25 @@ func NewTargetCluster(ctx context.Context, kubeconfig string) (*TargetCluster, e
 	if err != nil {
 		return nil, err
 	}
+
+	pdsChartHelmProvider, err := helminstaller.NewHelmProviderPDS(PDSChartNamespace)
+	if err != nil {
+		return nil, err
+	}
+
+	certManagerHelmProvider, err := helminstaller.NewHelmProviderCertManager(CertManagerNamespace)
+	if err != nil {
+		return nil, err
+	}
+
 	return &TargetCluster{
-		Cluster:  cluster,
-		Portworx: px,
+		Cluster:                 cluster,
+		Portworx:                px,
+		Kubeconfig:              kubeconfig,
+		PDSChartConfig:          pdsChartConfig,
+		CertManagerChartConfig:  certManagerChartConfig,
+		PDSChartHelmProvider:    pdsChartHelmProvider,
+		CertManagerHelmProvider: certManagerHelmProvider,
 	}, nil
 }
 

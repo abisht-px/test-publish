@@ -27,7 +27,8 @@ type Client interface {
 	HasRepoWithNameAndURL(repoName, url string) bool
 	UpdateRepo(repoName string) error
 	GetChartVersions(repoName, chartName string) ([]string, error)
-	InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
+	InstallChart(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
+	UpgradeChart(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error
 	UninstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, releaseName string, logger action.DebugLog) error
 }
 
@@ -121,8 +122,13 @@ func (m *miniHelm) GetChartVersions(repoName, chartName string) ([]string, error
 	return nil, fmt.Errorf("chart %s not found", chartName)
 }
 
-func (m *miniHelm) InstallChartVersion(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
-	_, err := installPDSChartVersionWithContext(ctx, m.settings, restGetter, repoName, releaseName, chartName, chartVersion, chartVals, logger)
+func (m *miniHelm) InstallChart(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
+	_, err := installChart(ctx, m.settings, restGetter, repoName, releaseName, chartName, chartVersion, chartVals, logger)
+	return err
+}
+
+func (m *miniHelm) UpgradeChart(ctx context.Context, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVersion, chartVals string, logger action.DebugLog) error {
+	_, err := upgradeChart(ctx, m.settings, restGetter, repoName, releaseName, chartName, chartVersion, chartVals, logger)
 	return err
 }
 
@@ -132,7 +138,7 @@ func (m *miniHelm) UninstallChartVersion(ctx context.Context, restGetter generic
 	return err
 }
 
-func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
+func installChart(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
 	namespace := setGetterNamespace(settings, restGetter)
 
 	var actionConfig action.Configuration
@@ -191,6 +197,64 @@ func installPDSChartVersionWithContext(ctx context.Context, settings *cli.EnvSet
 
 	client.Namespace = settings.Namespace()
 	return client.RunWithContext(ctx, chartRequested, vals)
+}
+
+func upgradeChart(ctx context.Context, settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, repoName, releaseName, chartName, chartVer, chartVals string, logger action.DebugLog) (*release.Release, error) {
+	namespace := setGetterNamespace(settings, restGetter)
+
+	var actionConfig action.Configuration
+	if err := actionConfig.Init(restGetter, namespace, os.Getenv("HELM_DRIVER"), logger); err != nil {
+		return nil, err
+	}
+	client := action.NewUpgrade(&actionConfig)
+	client.Version = chartVer
+	if client.Version == "" {
+		client.Version = ">0.0.0-0"
+	}
+
+	cp, err := client.ChartPathOptions.LocateChart(fmt.Sprintf("%s/%s", repoName, chartName), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	providerGetters := getter.All(settings)
+	valueOpts := &values.Options{}
+	vals, err := valueOpts.MergeValues(providerGetters)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := strvals.ParseInto(chartVals, vals); err != nil {
+		return nil, err
+	}
+
+	chartRequested, err := loader.Load(cp)
+	if err != nil {
+		return nil, err
+	}
+
+	if req := chartRequested.Metadata.Dependencies; req != nil {
+		if err := action.CheckDependencies(chartRequested, req); err != nil {
+			if !client.DependencyUpdate {
+				return nil, err
+			}
+			man := &downloader.Manager{
+				Out:              os.Stdout,
+				ChartPath:        cp,
+				Keyring:          client.ChartPathOptions.Keyring,
+				SkipUpdate:       false,
+				Getters:          providerGetters,
+				RepositoryConfig: settings.RepositoryConfig,
+				RepositoryCache:  settings.RepositoryCache,
+			}
+			if err := man.Update(); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	client.Namespace = settings.Namespace()
+	return client.RunWithContext(ctx, releaseName, chartRequested, vals)
 }
 
 func uninstallPDSChartWithContext(settings *cli.EnvSettings, restGetter genericclioptions.RESTClientGetter, releaseName string, logger action.DebugLog) (*release.UninstallReleaseResponse, error) {

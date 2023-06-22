@@ -10,17 +10,13 @@ import (
 )
 
 const (
-	pdsRepoName    = "pds"
-	pdsChartName   = "pds-target"
-	pdsReleaseName = "pds"
-	pdsNamespace   = "pds-system"
-	pdsRepoURL     = "https://portworx.github.io/pds-charts"
+	pdsRepoName  = "pds"
+	pdsChartName = "pds-target"
+	pdsRepoURL   = "https://portworx.github.io/pds-charts"
 
-	certManagerRepoName    = "jetstack"
-	certManagerChartName   = "cert-manager"
-	certManagerReleaseName = "cert-manager"
-	certManagerNamespace   = "cert-manager"
-	certManagerRepoURL     = "https://charts.jetstack.io"
+	certManagerRepoName  = "jetstack"
+	certManagerChartName = "cert-manager"
+	certManagerRepoURL   = "https://charts.jetstack.io"
 )
 
 type HelmArtifactProvider struct {
@@ -40,12 +36,12 @@ type InstallableHelm struct {
 
 func nullWriter(format string, v ...interface{}) {}
 
-func NewHelmProviderPDS() (*HelmArtifactProvider, error) {
-	return newHelmProvider(pdsChartName, pdsRepoName, pdsRepoURL, pdsNamespace)
+func NewHelmProviderPDS(namespace string) (*HelmArtifactProvider, error) {
+	return newHelmProvider(pdsChartName, pdsRepoName, pdsRepoURL, namespace)
 }
 
-func NewHelmProviderCertManager() (*HelmArtifactProvider, error) {
-	return newHelmProvider(certManagerChartName, certManagerRepoName, certManagerRepoURL, certManagerNamespace)
+func NewHelmProviderCertManager(namespace string) (*HelmArtifactProvider, error) {
+	return newHelmProvider(certManagerChartName, certManagerRepoName, certManagerRepoURL, namespace)
 }
 
 func newHelmProvider(chartName, repoName, repoURL, namespace string) (*HelmArtifactProvider, error) {
@@ -80,7 +76,7 @@ func newHelmProvider(chartName, repoName, repoURL, namespace string) (*HelmArtif
 	}, nil
 }
 
-func (p *HelmArtifactProvider) Installer(kubeconfig string, chartConfig *ChartConfig) (*InstallableHelm, error) {
+func (p *HelmArtifactProvider) Installer(kubeconfig string, chartConfig ChartConfig) (*InstallableHelm, error) {
 	restClientGetter := genericclioptions.NewConfigFlags(true)
 	restClientGetter.KubeConfig = &kubeconfig
 
@@ -99,7 +95,11 @@ func (p *HelmArtifactProvider) Installer(kubeconfig string, chartConfig *ChartCo
 }
 
 func (i *InstallableHelm) Install(ctx context.Context) error {
-	return i.client.InstallChartVersion(ctx, i.restGetter, i.repoName, i.releaseName, i.chartName, i.chartVersion, i.chartValues, nullWriter)
+	return i.client.InstallChart(ctx, i.restGetter, i.repoName, i.releaseName, i.chartName, i.chartVersion, i.chartValues, nullWriter)
+}
+
+func (i *InstallableHelm) Upgrade(ctx context.Context) error {
+	return i.client.UpgradeChart(ctx, i.restGetter, i.repoName, i.releaseName, i.chartName, i.chartVersion, i.chartValues, nullWriter)
 }
 
 func (i *InstallableHelm) Version() string {

@@ -17,7 +17,6 @@ import (
 	"github.com/portworx/pds-integration-test/internal/auth"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
-	"github.com/portworx/pds-integration-test/internal/helminstaller"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
@@ -38,12 +37,10 @@ type PDSTestSuite struct {
 	ctx       context.Context
 	startTime time.Time
 
-	controlPlane           *controlplane.ControlPlane
-	targetCluster          *targetcluster.TargetCluster
-	crossCluster           *crosscluster.CrossClusterHelper
-	pdsAgentInstallable    *helminstaller.InstallableHelm
-	certManagerInstallable *helminstaller.InstallableHelm
-	pdsHelmChartVersion    string
+	controlPlane        *controlplane.ControlPlane
+	targetCluster       *targetcluster.TargetCluster
+	crossCluster        *crosscluster.CrossClusterHelper
+	pdsHelmChartVersion string
 
 	config environment
 }
@@ -65,14 +62,14 @@ func (s *PDSTestSuite) SetupSuite() {
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
 	s.config = env
-	s.mustHaveTargetCluster(env)
-	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHaveControlPlane(env)
 	s.mustHavePDSMetadata(env)
+	s.mustHaveTargetCluster(env)
+	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHavePrometheusClient(env)
-	if shouldInstallPDSHelmChart(s.pdsHelmChartVersion) {
-		s.mustInstallAgent(env)
-		s.mustInstallCertManager(env)
+	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {
+		s.mustInstallPDSChart()
+		s.mustInstallCertManager()
 	}
 	targetID := s.controlPlane.MustWaitForDeploymentTarget(s.ctx, s.T(), env.pdsDeploymentTargetName)
 	s.controlPlane.SetTestDeploymentTarget(targetID)
@@ -98,7 +95,7 @@ func (s *PDSTestSuite) mustHavePDSMetadata(env environment) {
 	api.RequireNoError(s.T(), resp, err)
 
 	// If user didn't specify the helm chart version, let's use the one configured in PDS API.
-	if env.pdsHelmChartVersion == "" {
+	if env.pdsHelmChartVersion == "" || env.pdsHelmChartVersion == "0" {
 		s.pdsHelmChartVersion = metadata.GetHelmChartVersion()
 	} else {
 		s.pdsHelmChartVersion = env.pdsHelmChartVersion
@@ -143,47 +140,38 @@ func (s *PDSTestSuite) mustHavePrometheusClient(env environment) {
 }
 
 func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
-	tc, err := targetcluster.NewTargetCluster(s.ctx, env.targetKubeconfig)
+	token := s.controlPlane.MustGetServiceAccountToken(s.ctx, s.T(), env.pdsServiceAccountName)
+	pdsChartConfig := targetcluster.PDSChartConfig{
+		Version:              s.pdsHelmChartVersion,
+		TenantID:             s.controlPlane.TestPDSTenantID,
+		Token:                token,
+		ControlPlaneAPI:      env.controlPlane.ControlPlaneAPI,
+		DeploymentTargetName: env.pdsDeploymentTargetName,
+	}
+	certManagerChartConfig := targetcluster.CertManagerChartConfig{
+		Version: certManagerChartVersion,
+	}
+	tc, err := targetcluster.NewTargetCluster(s.ctx, env.targetKubeconfig, pdsChartConfig, certManagerChartConfig)
 	s.Require().NoError(err, "Cannot create target cluster.")
 	s.targetCluster = tc
 }
 
-func (s *PDSTestSuite) mustInstallAgent(env environment) {
-	token := s.controlPlane.MustGetServiceAccountToken(s.ctx, s.T(), env.pdsServiceAccountName)
-
-	provider, err := helminstaller.NewHelmProviderPDS()
-	s.Require().NoError(err, "Cannot create agent installer provider.")
-
-	pdsChartConfig := helminstaller.NewPDSChartConfig(s.pdsHelmChartVersion, s.controlPlane.TestPDSTenantID, token, env.controlPlane.ControlPlaneAPI, env.pdsDeploymentTargetName)
-
-	installer, err := provider.Installer(env.targetKubeconfig, pdsChartConfig)
-	s.Require().NoError(err, "Cannot get agent installer for version constraints %s.", pdsChartConfig.VersionConstraints)
-
-	err = installer.Install(s.ctx)
-	s.Require().NoError(err, "Cannot install agent for version %s.", installer.Version())
-	s.pdsAgentInstallable = installer
+func (s *PDSTestSuite) mustInstallPDSChart() {
+	err := s.targetCluster.InstallPDSChart(s.ctx)
+	s.Require().NoError(err, "Failed to install PDS helm chart")
 }
 
-func (s *PDSTestSuite) mustInstallCertManager(env environment) {
-	provider, err := helminstaller.NewHelmProviderCertManager()
-	s.Require().NoError(err, "Cannot create cert manager installer provider.")
-
-	chartConfig := helminstaller.NewCertManagerChartConfig(certManagerChartVersion)
-
-	installer, err := provider.Installer(env.targetKubeconfig, chartConfig)
-	s.Require().NoError(err, "Cannot get cert manager installer for version constraints %s.", chartConfig.VersionConstraints)
-
-	err = installer.Install(s.ctx)
-	s.Require().NoError(err, "Cannot install cert manager helm chart in version %s.", installer.Version())
-	s.certManagerInstallable = installer
+func (s *PDSTestSuite) mustInstallCertManager() {
+	err := s.targetCluster.InstallCertManagerChart(s.ctx)
+	s.Require().NoError(err, "Failed to install CertManager helm chart")
 }
 
 func (s *PDSTestSuite) uninstallAgent(env environment) {
-	err := s.certManagerInstallable.Uninstall(s.ctx)
+	err := s.targetCluster.UninstallCertManagerChart(s.ctx)
 	s.NoError(err, "Cannot uninstall cert manager.")
 	err = s.targetCluster.DeleteCRDs(s.ctx)
 	s.NoError(err, "Cannot delete CRDs.")
-	err = s.pdsAgentInstallable.Uninstall(s.ctx)
+	err = s.targetCluster.UninstallPDSChart(s.ctx)
 	s.NoError(err, "Cannot uninstall agent.")
 	err = s.targetCluster.DeleteClusterRoles(s.ctx)
 	s.NoError(err, "Cannot delete cluster roles.")
