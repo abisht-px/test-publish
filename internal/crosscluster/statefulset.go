@@ -23,7 +23,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetReady(ctx context.Context, t 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, dataservices.GetLongTimeoutFor(*deployment.NodeCount), wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		require.Equalf(t, *deployment.NodeCount, set.Status.ReadyReplicas, "ReadyReplicas don't match desired NodeCount.")

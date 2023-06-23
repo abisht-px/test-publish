@@ -718,7 +718,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.ZooKeeper,
 				ImageVersionTag: "3.8.0",
-				NodeCount:       1,
+				NodeCount:       3,
 			},
 			targetVersions: []string{"3.8.1"},
 		},

@@ -25,7 +25,7 @@ const (
 	PDSUser        = "pds"
 	PDSReplaceUser = "pds_replace_user"
 
-	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.1.0"
+	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.1.1"
 )
 
 var loadTestImages = map[string]string{
@@ -56,7 +56,16 @@ func (c *CrossClusterHelper) MustGetDeploymentInfo(ctx context.Context, t *testi
 
 func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
 	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
-	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", PDSUser, *deployment.NodeCount, nil)
+	user := PDSUser
+	if dataServiceType == dataservices.Redis {
+		dsImage, resp, err := c.controlPlane.PDS.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
+		api.RequireNoError(t, resp, err)
+		if *dsImage.Tag < "7.0.5" {
+			// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
+			user = "default"
+		}
+	}
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
 }
 
 func (c *CrossClusterHelper) MustRunReadLoadTestJob(ctx context.Context, t *testing.T, deploymentID, seed string) {
