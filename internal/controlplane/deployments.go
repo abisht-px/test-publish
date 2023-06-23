@@ -155,24 +155,22 @@ func (c *ControlPlane) MustWaitForDeploymentAvailable(ctx context.Context, t *te
 func (c *ControlPlane) MustWaitForDeploymentEventCondition(
 	ctx context.Context, t *testing.T,
 	deploymentID string,
-	eventPredicate func(event pds.DeploymentsResourceEvent) bool,
+	eventPredicate func(event pds.ModelsDeploymentTargetDeploymentEvent) bool,
 	description string,
 ) {
 	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
 		eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 		api.RequireNoErrorf(t, resp, err, "Getting deployment %q events.", deploymentID)
 
-		hasEvent := hasMatchingEvent(eventsResponse.GetResourceEvents(), eventPredicate)
+		hasEvent := hasMatchingEvent(eventsResponse, eventPredicate)
 		require.Truef(t, hasEvent, "No event matches condition: %s.", description)
 	})
 }
 
-func hasMatchingEvent(events []pds.DeploymentsResourceEvents, predicate func(pds.DeploymentsResourceEvent) bool) bool {
-	for _, events := range events {
-		for _, resourceEvent := range events.Events {
-			if predicate(resourceEvent) {
-				return true
-			}
+func hasMatchingEvent(events []pds.ModelsDeploymentTargetDeploymentEvent, predicate func(event pds.ModelsDeploymentTargetDeploymentEvent) bool) bool {
+	for _, resourceEvent := range events {
+		if predicate(resourceEvent) {
+			return true
 		}
 	}
 	return false

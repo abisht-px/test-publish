@@ -115,6 +115,7 @@ Class | Method | HTTP request | Description
 *BackupJobsApi* | [**ApiBackupJobsIdGet**](docs/BackupJobsApi.md#apibackupjobsidget) | **Get** /api/backup-jobs/{id} | Get BackupJob
 *BackupJobsApi* | [**ApiBackupJobsIdPut**](docs/BackupJobsApi.md#apibackupjobsidput) | **Put** /api/backup-jobs/{id} | Upsert BackupJob
 *BackupJobsApi* | [**ApiBackupsIdJobsGet**](docs/BackupJobsApi.md#apibackupsidjobsget) | **Get** /api/backups/{id}/jobs | List Backup&#39;s Jobs
+*BackupJobsApi* | [**ApiProjectsIdBackupJobsGet**](docs/BackupJobsApi.md#apiprojectsidbackupjobsget) | **Get** /api/projects/{id}/backup-jobs | List Project&#39;s BackupJobs
 *BackupPoliciesApi* | [**ApiBackupPoliciesIdDelete**](docs/BackupPoliciesApi.md#apibackuppoliciesiddelete) | **Delete** /api/backup-policies/{id} | Delete BackupPolicies
 *BackupPoliciesApi* | [**ApiBackupPoliciesIdGet**](docs/BackupPoliciesApi.md#apibackuppoliciesidget) | **Get** /api/backup-policies/{id} | Get BackupPolicy
 *BackupPoliciesApi* | [**ApiBackupPoliciesIdPut**](docs/BackupPoliciesApi.md#apibackuppoliciesidput) | **Put** /api/backup-policies/{id} | Update BackupPolicy
@@ -142,6 +143,7 @@ Class | Method | HTTP request | Description
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdConfigGet**](docs/DeploymentTargetsApi.md#apideploymenttargetsidconfigget) | **Get** /api/deployment-targets/{id}/config | Get configuration values for a DeploymentTarget
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdCredentialsGet**](docs/DeploymentTargetsApi.md#apideploymenttargetsidcredentialsget) | **Get** /api/deployment-targets/{id}/credentials | Get join credentials of a DeploymentTarget
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdDelete**](docs/DeploymentTargetsApi.md#apideploymenttargetsiddelete) | **Delete** /api/deployment-targets/{id} | Delete DeploymentTarget
+*DeploymentTargetsApi* | [**ApiDeploymentTargetsIdDeploymentEventsPost**](docs/DeploymentTargetsApi.md#apideploymenttargetsiddeploymenteventspost) | **Post** /api/deployment-targets/{id}/deployment/events | Adds k8s generated events for a deployment
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdGet**](docs/DeploymentTargetsApi.md#apideploymenttargetsidget) | **Get** /api/deployment-targets/{id} | Get DeploymentTarget
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdHeartbeatPost**](docs/DeploymentTargetsApi.md#apideploymenttargetsidheartbeatpost) | **Post** /api/deployment-targets/{id}/heartbeat | Make DeploymentTarget heart beat request
 *DeploymentTargetsApi* | [**ApiDeploymentTargetsIdMetadataPost**](docs/DeploymentTargetsApi.md#apideploymenttargetsidmetadatapost) | **Post** /api/deployment-targets/{id}/metadata | Update DeploymentTarget metadata
@@ -186,7 +188,9 @@ Class | Method | HTTP request | Description
 *ResourceSettingsTemplatesApi* | [**ApiTenantsIdResourceSettingsTemplatesPost**](docs/ResourceSettingsTemplatesApi.md#apitenantsidresourcesettingstemplatespost) | **Post** /api/tenants/{id}/resource-settings-templates | Create ResourceSettingsTemplate
 *RestoresApi* | [**ApiBackupJobsIdRestorePost**](docs/RestoresApi.md#apibackupjobsidrestorepost) | **Post** /api/backup-jobs/{id}/restore | Start Restore
 *RestoresApi* | [**ApiRestoresIdGet**](docs/RestoresApi.md#apirestoresidget) | **Get** /api/restores/{id} | Get Restore
-*RestoresApi* | [**ApiRestoresIdUpdateStatusPost**](docs/RestoresApi.md#apirestoresidupdatestatuspost) | **Post** /api/restores/{id}/update-status | Update Restore Status
+*RestoresApi* | [**ApiRestoresIdRetryPost**](docs/RestoresApi.md#apirestoresidretrypost) | **Post** /api/restores/{id}/retry | Retry Restore
+*RestoresApi* | [**ApiRestoresIdUpdatePost**](docs/RestoresApi.md#apirestoresidupdatepost) | **Post** /api/restores/{id}/update | Update Restore
+*RestoresApi* | [**ApiRestoresRestorabilityMatrixGet**](docs/RestoresApi.md#apirestoresrestorabilitymatrixget) | **Get** /api/restores/restorability-matrix | Restorability Matrix
 *RolesApi* | [**ApiRolesGet**](docs/RolesApi.md#apirolesget) | **Get** /api/roles | List Roles
 *SampleTemplatesApi* | [**ApiDefaultTemplatesApplicationConfigurationGet**](docs/SampleTemplatesApi.md#apidefaulttemplatesapplicationconfigurationget) | **Get** /api/default-templates/application-configuration | List ApplicationConfigurationSamples
 *SampleTemplatesApi* | [**ApiDefaultTemplatesBackupPoliciesGet**](docs/SampleTemplatesApi.md#apidefaulttemplatesbackuppoliciesget) | **Get** /api/default-templates/backup-policies | List BackupPolicySamples
@@ -233,8 +237,6 @@ Class | Method | HTTP request | Description
  - [ControllersAcceptEULARequest](docs/ControllersAcceptEULARequest.md)
  - [ControllersApplicationConfigurationSamples](docs/ControllersApplicationConfigurationSamples.md)
  - [ControllersAuthorizationCodeRequest](docs/ControllersAuthorizationCodeRequest.md)
- - [ControllersBackupJobStatus](docs/ControllersBackupJobStatus.md)
- - [ControllersBackupJobsResponse](docs/ControllersBackupJobsResponse.md)
  - [ControllersBackupPolicySamples](docs/ControllersBackupPolicySamples.md)
  - [ControllersCompatibleVersionsResponse](docs/ControllersCompatibleVersionsResponse.md)
  - [ControllersCreateAccountRequest](docs/ControllersCreateAccountRequest.md)
@@ -252,6 +254,7 @@ Class | Method | HTTP request | Description
  - [ControllersDeploymentTargetHeartbeatRequest](docs/ControllersDeploymentTargetHeartbeatRequest.md)
  - [ControllersDeploymentTargetHeartbeatResponse](docs/ControllersDeploymentTargetHeartbeatResponse.md)
  - [ControllersDeploymentTargetMetadataRequest](docs/ControllersDeploymentTargetMetadataRequest.md)
+ - [ControllersListBackupJobsStatusResponse](docs/ControllersListBackupJobsStatusResponse.md)
  - [ControllersOIDCInfoResponse](docs/ControllersOIDCInfoResponse.md)
  - [ControllersOIDCTokenResponse](docs/ControllersOIDCTokenResponse.md)
  - [ControllersPaginatedAccountRoleBindings](docs/ControllersPaginatedAccountRoleBindings.md)
@@ -292,8 +295,6 @@ Class | Method | HTTP request | Description
  - [DeploymentsCredentials](docs/DeploymentsCredentials.md)
  - [DeploymentsPodInfo](docs/DeploymentsPodInfo.md)
  - [DeploymentsResourceConditions](docs/DeploymentsResourceConditions.md)
- - [DeploymentsResourceEvent](docs/DeploymentsResourceEvent.md)
- - [DeploymentsResourceEvents](docs/DeploymentsResourceEvents.md)
  - [ModelsAWSDetails](docs/ModelsAWSDetails.md)
  - [ModelsAccount](docs/ModelsAccount.md)
  - [ModelsAccountGlobalConfig](docs/ModelsAccountGlobalConfig.md)
@@ -306,6 +307,7 @@ Class | Method | HTTP request | Description
  - [ModelsBackup](docs/ModelsBackup.md)
  - [ModelsBackupCredentials](docs/ModelsBackupCredentials.md)
  - [ModelsBackupJob](docs/ModelsBackupJob.md)
+ - [ModelsBackupJobStatusResponse](docs/ModelsBackupJobStatusResponse.md)
  - [ModelsBackupPolicy](docs/ModelsBackupPolicy.md)
  - [ModelsBackupPolicySample](docs/ModelsBackupPolicySample.md)
  - [ModelsBackupSchedule](docs/ModelsBackupSchedule.md)
@@ -320,6 +322,7 @@ Class | Method | HTTP request | Description
  - [ModelsDeploymentStorageOptions](docs/ModelsDeploymentStorageOptions.md)
  - [ModelsDeploymentTarget](docs/ModelsDeploymentTarget.md)
  - [ModelsDeploymentTargetCapabilities](docs/ModelsDeploymentTargetCapabilities.md)
+ - [ModelsDeploymentTargetDeploymentEvent](docs/ModelsDeploymentTargetDeploymentEvent.md)
  - [ModelsDeploymentTargetMetadata](docs/ModelsDeploymentTargetMetadata.md)
  - [ModelsEULADetails](docs/ModelsEULADetails.md)
  - [ModelsErrorData](docs/ModelsErrorData.md)
@@ -337,6 +340,7 @@ Class | Method | HTTP request | Description
  - [ModelsPaginatedResultModelsApplicationConfigurationTemplate](docs/ModelsPaginatedResultModelsApplicationConfigurationTemplate.md)
  - [ModelsPaginatedResultModelsBackup](docs/ModelsPaginatedResultModelsBackup.md)
  - [ModelsPaginatedResultModelsBackupCredentials](docs/ModelsPaginatedResultModelsBackupCredentials.md)
+ - [ModelsPaginatedResultModelsBackupJob](docs/ModelsPaginatedResultModelsBackupJob.md)
  - [ModelsPaginatedResultModelsBackupPolicy](docs/ModelsPaginatedResultModelsBackupPolicy.md)
  - [ModelsPaginatedResultModelsBackupTarget](docs/ModelsPaginatedResultModelsBackupTarget.md)
  - [ModelsPaginatedResultModelsDataService](docs/ModelsPaginatedResultModelsDataService.md)
@@ -368,13 +372,16 @@ Class | Method | HTTP request | Description
  - [ModelsUserAPIKey](docs/ModelsUserAPIKey.md)
  - [ModelsVersion](docs/ModelsVersion.md)
  - [PolicyRole](docs/PolicyRole.md)
+ - [RequestsCreateDeploymentEventsRequest](docs/RequestsCreateDeploymentEventsRequest.md)
  - [RequestsCreateDeploymentTargetRequest](docs/RequestsCreateDeploymentTargetRequest.md)
  - [RequestsCreateProjectDeploymentRequest](docs/RequestsCreateProjectDeploymentRequest.md)
  - [RequestsCreateRestoreRequest](docs/RequestsCreateRestoreRequest.md)
  - [RequestsCreateUserAPIKeyRequest](docs/RequestsCreateUserAPIKeyRequest.md)
  - [RequestsDeleteRoleBindingRequest](docs/RequestsDeleteRoleBindingRequest.md)
+ - [RequestsDeploymentEvent](docs/RequestsDeploymentEvent.md)
  - [RequestsDeploymentScheduledBackup](docs/RequestsDeploymentScheduledBackup.md)
  - [RequestsInvitationAccountRequest](docs/RequestsInvitationAccountRequest.md)
+ - [RequestsK8sEvent](docs/RequestsK8sEvent.md)
  - [RequestsPatchAccountRoleInvitationRequest](docs/RequestsPatchAccountRoleInvitationRequest.md)
  - [RequestsPatchDeploymentTargetRequest](docs/RequestsPatchDeploymentTargetRequest.md)
  - [RequestsPatchDeploymentTargetsAgentMetadataRequest](docs/RequestsPatchDeploymentTargetsAgentMetadataRequest.md)
@@ -382,10 +389,10 @@ Class | Method | HTTP request | Description
  - [RequestsPutBackupJobRequest](docs/RequestsPutBackupJobRequest.md)
  - [RequestsPutLegacyBindingRequest](docs/RequestsPutLegacyBindingRequest.md)
  - [RequestsUpdateOperatorMetadataRequest](docs/RequestsUpdateOperatorMetadataRequest.md)
- - [RequestsUpdateRestoreStatusRequest](docs/RequestsUpdateRestoreStatusRequest.md)
+ - [RequestsUpdateRestoreRequest](docs/RequestsUpdateRestoreRequest.md)
  - [RequestsUpsertDeploymentManifestRequest](docs/RequestsUpsertDeploymentManifestRequest.md)
- - [ServiceDeploymentResourceEvents](docs/ServiceDeploymentResourceEvents.md)
  - [ServiceDeploymentStatus](docs/ServiceDeploymentStatus.md)
+ - [ServiceRestoreCompatibilityCondition](docs/ServiceRestoreCompatibilityCondition.md)
  - [V1TypedLocalObjectReference](docs/V1TypedLocalObjectReference.md)
 
 

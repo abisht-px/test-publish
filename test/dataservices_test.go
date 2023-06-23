@@ -1392,7 +1392,7 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 
 	s.controlPlane.MustWaitForDeploymentEventCondition(s.ctx, s.T(),
 		deploymentID,
-		func(event pds.DeploymentsResourceEvent) bool {
+		func(event pds.ModelsDeploymentTargetDeploymentEvent) bool {
 			if event.Reason == nil {
 				return false
 			}
