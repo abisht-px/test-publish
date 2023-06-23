@@ -26,18 +26,13 @@ var (
 func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 	deployments := []api.ShortDeploymentSpec{
 		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.6",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.0",
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.1.2",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       1,
 		},
 		{
@@ -47,12 +42,102 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
+			ImageVersionTag: "3.0.29",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.15.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.14.7",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.ElasticSearch,
+			ImageVersionTag: "8.8.0",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.4.1",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.3.2",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.2.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.1.2",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.8",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.RabbitMQ,
+			ImageVersionTag: "3.11.16",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.RabbitMQ,
+			ImageVersionTag: "3.10.22",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.5",
+			ImageVersionTag: "7.0.9",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.SqlServer,
+			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
 		},
 		{
@@ -64,51 +149,6 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 			DataServiceName: dataservices.ZooKeeper,
 			ImageVersionTag: "3.8.1",
 			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.4.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.22",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.5.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU20",
-			NodeCount:       1,
 		},
 	}
 
@@ -151,65 +191,24 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		s.T().Skip("Backup tests skipped.")
 	}
 	deployments := []api.ShortDeploymentSpec{
-		// PostgreSQL
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       3,
-		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
+			ImageVersionTag: "4.1.2",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
+			ImageVersionTag: "4.1.2",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.0.10",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.0.10",
 			NodeCount:       3,
 		},
 		{
@@ -224,73 +223,133 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
+			ImageVersionTag: "3.0.29",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
+			ImageVersionTag: "3.0.29",
 			NodeCount:       3,
 		},
 		{
 			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.0",
+			ImageVersionTag: "1.15.3",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.0",
+			ImageVersionTag: "1.15.3",
 			NodeCount:       3,
 		},
 		{
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.14.7",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.14.7",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.ElasticSearch,
+			ImageVersionTag: "8.8.0",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.ElasticSearch,
+			ImageVersionTag: "8.8.0",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.8",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.8",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       2,
+		},
+		{
 			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.5",
+			ImageVersionTag: "7.0.9",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.5",
+			ImageVersionTag: "7.0.9",
 			NodeCount:       6,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.5.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.5.2",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
@@ -409,11 +468,115 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 	}{
 		{
 			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.0.27",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.0.29"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.11.13",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.11.15"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.0.4",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"4.0.10"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.0.5",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"4.0.10"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.0.6",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"4.0.10"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Consul,
+				ImageVersionTag: "1.14.0",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"1.14.7"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.ElasticSearch,
+				ImageVersionTag: "8.5.2",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"8.8.0"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.1.1",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.1.2"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.2.0",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.2.3"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.2.1",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"3.2.3"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.MongoDB,
 				ImageVersionTag: "6.0.2",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"6.0.3"},
+			targetVersions: []string{"6.0.6"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MongoDB,
+				ImageVersionTag: "6.0.3",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"6.0.6"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MySQL,
+				ImageVersionTag: "8.0.31",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"8.0.33"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "11.16",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"11.20"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -426,10 +589,26 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "12.11",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"12.15"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
 				ImageVersionTag: "12.13",
 				NodeCount:       1,
 			},
 			targetVersions: []string{"12.15"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "13.7",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"13.11"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -473,110 +652,6 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.27",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.0.29"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.4",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.6"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.5",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.6"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.6",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.10"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"1.14.7"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.5.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"8.8.0"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.5"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.5"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.4",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.5"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.5",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.9"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.2.3"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.1",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.2.3"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.9.21",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.9.22"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.RabbitMQ,
 				ImageVersionTag: "3.10.6",
 				NodeCount:       1,
@@ -601,11 +676,35 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.30",
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.0",
 				NodeCount:       1,
 			},
-			targetVersions: []string{"8.0.31"},
+			targetVersions: []string{"7.0.9"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.2",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"7.0.9"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.4",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"7.0.9"},
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.5",
+				NodeCount:       1,
+			},
+			targetVersions: []string{"7.0.9"},
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -670,8 +769,112 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 	}{
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.20",
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.1.2",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.0.10",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.11.15",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "3.0.29",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Consul,
+				ImageVersionTag: "1.15.3",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Consul,
+				ImageVersionTag: "1.14.7",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Couchbase,
+				ImageVersionTag: "7.1.1",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.ElasticSearch,
+				ImageVersionTag: "8.8.0",
+				NodeCount:       1,
+			},
+			scaleTo: 3,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.4.1",
+				NodeCount:       3,
+			},
+			scaleTo: 5,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.3.2",
+				NodeCount:       3,
+			},
+			scaleTo: 5,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.2.3",
+				NodeCount:       3,
+			},
+			scaleTo: 5,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.1.2",
+				NodeCount:       3,
+			},
+			scaleTo: 5,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MongoDB,
+				ImageVersionTag: "6.0.6",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MySQL,
+				ImageVersionTag: "8.0.33",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -679,7 +882,15 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.15",
+				ImageVersionTag: "15.3",
+				NodeCount:       1,
+			},
+			scaleTo: 2,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "14.8",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
@@ -695,74 +906,26 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.8",
+				ImageVersionTag: "12.15",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.29",
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "11.20",
 				NodeCount:       1,
 			},
 			scaleTo: 2,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.11.15",
+				DataServiceName: dataservices.RabbitMQ,
+				ImageVersionTag: "3.11.16",
 				NodeCount:       1,
 			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.10",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.0",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.5",
-				NodeCount:       6,
-			},
-			scaleTo: 8,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.1.1",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.3",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.4.1",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
+			scaleTo: 3,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
@@ -770,39 +933,15 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				ImageVersionTag: "3.10.22",
 				NodeCount:       1,
 			},
-			scaleTo: 2,
+			scaleTo: 3,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.31",
-				NodeCount:       1,
+				DataServiceName: dataservices.Redis,
+				ImageVersionTag: "7.0.9",
+				NodeCount:       6,
 			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.3",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.5.2",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Couchbase,
-				ImageVersionTag: "7.1.1",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
+			scaleTo: 8,
 		},
 	}
 
@@ -847,8 +986,8 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 	}{
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.8",
+				DataServiceName: dataservices.Cassandra,
+				ImageVersionTag: "4.1.2",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -856,7 +995,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.29",
+				ImageVersionTag: "4.0.10",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -872,7 +1011,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.10",
+				ImageVersionTag: "3.0.29",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -880,47 +1019,15 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		{
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.0",
+				ImageVersionTag: "1.15.3",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.4.1",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.22",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.31",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.2",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.5.2",
+				DataServiceName: dataservices.Consul,
+				ImageVersionTag: "1.14.7",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -935,8 +1042,128 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.ElasticSearch,
+				ImageVersionTag: "8.8.0",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.4.1",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.3.2",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.2.3",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Kafka,
+				ImageVersionTag: "3.1.2",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MongoDB,
+				ImageVersionTag: "6.0.6",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.MySQL,
+				ImageVersionTag: "8.0.33",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "15.3",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "14.8",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "13.11",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "12.15",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.Postgres,
+				ImageVersionTag: "11.20",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.RabbitMQ,
+				ImageVersionTag: "3.11.16",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.RabbitMQ,
+				ImageVersionTag: "3.10.22",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.5",
+				ImageVersionTag: "7.0.9",
+				NodeCount:       1,
+			},
+			scaleToResourceTemplate: dataservices.TemplateNameMed,
+		},
+		{
+			spec: api.ShortDeploymentSpec{
+				DataServiceName: dataservices.SqlServer,
+				ImageVersionTag: "2019-CU20",
 				NodeCount:       1,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
@@ -951,9 +1178,9 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 		},
 		{
 			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.SqlServer,
-				ImageVersionTag: "2019-CU20",
-				NodeCount:       1,
+				DataServiceName: dataservices.ZooKeeper,
+				ImageVersionTag: "3.7.1",
+				NodeCount:       3,
 			},
 			scaleToResourceTemplate: dataservices.TemplateNameMed,
 		},
@@ -996,18 +1223,13 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 	deployments := []api.ShortDeploymentSpec{
 		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.0",
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "4.1.2",
 			NodeCount:       3,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
+			ImageVersionTag: "4.0.10",
 			NodeCount:       3,
 		},
 		{
@@ -1017,17 +1239,27 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
+			ImageVersionTag: "3.0.29",
 			NodeCount:       3,
 		},
 		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.5",
-			NodeCount:       6,
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.15.3",
+			NodeCount:       3,
 		},
 		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.1",
+			DataServiceName: dataservices.Consul,
+			ImageVersionTag: "1.14.7",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Couchbase,
+			ImageVersionTag: "7.1.1",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.ElasticSearch,
+			ImageVersionTag: "8.8.0",
 			NodeCount:       3,
 		},
 		{
@@ -1036,34 +1268,84 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			NodeCount:       3,
 		},
 		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.3.2",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.2.3",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.1.2",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "14.8",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       2,
+		},
+		{
+			DataServiceName: dataservices.RabbitMQ,
+			ImageVersionTag: "3.11.16",
+			NodeCount:       3,
+		},
+		{
 			DataServiceName: dataservices.RabbitMQ,
 			ImageVersionTag: "3.10.22",
 			NodeCount:       3,
 		},
 		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.5.2",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       3,
+			DataServiceName: dataservices.Redis,
+			ImageVersionTag: "7.0.9",
+			NodeCount:       6,
 		},
 		{
 			DataServiceName: dataservices.SqlServer,
 			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.ZooKeeper,
+			ImageVersionTag: "3.7.1",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.ZooKeeper,
+			ImageVersionTag: "3.8.1",
+			NodeCount:       3,
 		},
 	}
 
@@ -1098,7 +1380,7 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName:              dataservices.Cassandra,
 		NamePrefix:                   "impossible-resources-test",
-		ImageVersionTag:              "4.0.6",
+		ImageVersionTag:              "4.1.2",
 		NodeCount:                    3,
 		ResourceSettingsTemplateName: dataservices.TemplateNameEnormous,
 	}
@@ -1126,64 +1408,79 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 	deployments := []api.ShortDeploymentSpec{
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       3,
+			ImageVersionTag: "4.1.2",
+			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
 			ImageVersionTag: "4.0.10",
-			NodeCount:       3,
+			NodeCount:       1,
 		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
+			NodeCount:       1,
+		},
+		// TODO: https://portworx.atlassian.net/browse/DS-4878
+		//{
+		//	DataServiceName: dataservices.Consul,
+		//	ImageVersionTag: "1.15.3",
+		//	NodeCount:       1,
+		//},
+		//{
+		//	DataServiceName: dataservices.Consul,
+		//	ImageVersionTag: "1.14.7",
+		//	NodeCount:       1,
+		//},
 		{
 			DataServiceName: dataservices.Couchbase,
 			ImageVersionTag: "7.1.1",
-			NodeCount:       3,
-		},
-		// TODO: https://portworx.atlassian.net/browse/DS-4878
-		// {
-		// 	DataServiceName: dataservices.Consul,
-		// 	ImageVersionTag: "1.14.0",
-		// 	NodeCount:       3,
-		// },
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.4.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       3,
+			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.5.2",
-			NodeCount:       3,
+			ImageVersionTag: "8.8.0",
+			NodeCount:       1,
 		},
 		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.22",
-			NodeCount:       3,
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.4.1",
+			NodeCount:       1,
 		},
 		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.5",
-			NodeCount:       6,
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.3.2",
+			NodeCount:       1,
 		},
 		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.1",
-			NodeCount:       3,
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.2.3",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Kafka,
+			ImageVersionTag: "3.1.2",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "15.3",
+			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
@@ -1191,9 +1488,49 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 			NodeCount:       1,
 		},
 		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "13.11",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.RabbitMQ,
+			ImageVersionTag: "3.11.16",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.RabbitMQ,
+			ImageVersionTag: "3.10.22",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.Redis,
+			ImageVersionTag: "7.0.9",
+			NodeCount:       1,
+		},
+		{
 			DataServiceName: dataservices.SqlServer,
 			ImageVersionTag: "2019-CU20",
 			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.ZooKeeper,
+			ImageVersionTag: "3.7.1",
+			NodeCount:       3,
+		},
+		{
+			DataServiceName: dataservices.ZooKeeper,
+			ImageVersionTag: "3.8.1",
+			NodeCount:       3,
 		},
 	}
 
@@ -1223,26 +1560,10 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 
 func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 	deployments := []api.ShortDeploymentSpec{
-		// Cassandra
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.27",
+			ImageVersionTag: "4.1.2",
 			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.27",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.13",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.13",
-			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
@@ -1251,50 +1572,33 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		},
 		{
 			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       2,
+			ImageVersionTag: "3.11.15",
+			NodeCount:       1,
 		},
-		// Couchbase
 		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
+			DataServiceName: dataservices.Cassandra,
+			ImageVersionTag: "3.0.29",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Couchbase,
 			ImageVersionTag: "7.1.1",
-			NodeCount:       3,
+			NodeCount:       1,
 		},
-		// PostgreSQL
 		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
+			DataServiceName: dataservices.MongoDB,
+			ImageVersionTag: "6.0.6",
+			NodeCount:       1,
+		},
+		{
+			DataServiceName: dataservices.MySQL,
+			ImageVersionTag: "8.0.33",
 			NodeCount:       1,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
+			ImageVersionTag: "15.3",
 			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.Postgres,
@@ -1303,30 +1607,18 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		},
 		{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       3,
-		},
-		// MongoDB
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
+			ImageVersionTag: "13.11",
 			NodeCount:       1,
 		},
 		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.3",
-			NodeCount:       2,
-		},
-		// MySQL
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "12.15",
 			NodeCount:       1,
 		},
 		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.31",
-			NodeCount:       2,
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: "11.20",
+			NodeCount:       1,
 		},
 	}
 
