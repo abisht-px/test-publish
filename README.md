@@ -100,6 +100,8 @@ SECRET_ISSUER_CLIENT_SECRET='<environment/px-central/token-issuer secret in AWS 
 # Authentication credentials for PDS.
 SECRET_PDS_USERNAME='<environment/px-central/admin-credentials secret in AWS secret manager>'
 SECRET_PDS_PASSWORD='<environment/px-central/admin-credentials secret in AWS secret manager>'
+SECRET_PDS_AUTH_USER_USERNAME='<environment/px-central/test-credentials secret in AWS secret manager>'
+SECRET_PDS_AUTH_USER_PASSWORD='<environment/px-central/test-credentials secret in AWS secret manager>'
 
 # Disable Helm chart installation and specify deployment target name.
 PDS_HELM_CHART_VERSION=0
