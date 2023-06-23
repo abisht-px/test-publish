@@ -95,9 +95,11 @@ func (c *Cluster) ListDeployments(ctx context.Context, namespace string, labelSe
 }
 
 func (c *Cluster) DeletePodsBySelector(ctx context.Context, namespace string, labelSelector map[string]string) error {
-	return c.Clientset.CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
-		LabelSelector: labels.FormatLabels(labelSelector),
-	})
+	listOptions := metav1.ListOptions{}
+	if len(labelSelector) > 0 {
+		listOptions.LabelSelector = labels.FormatLabels(labelSelector)
+	}
+	return c.Clientset.CoreV1().Pods(namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, listOptions)
 }
 
 func (c *Cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*backupsv1.Backup, error) {
@@ -199,10 +201,9 @@ func (c *Cluster) GetDNSEndpoints(ctx context.Context, namespace, nameFilter str
 	return dnsNames, nil
 }
 
-func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string) (*batchv1.Job, error) {
+func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string, ttlSecondsAfterFinished *int32) (*batchv1.Job, error) {
 	jobs := c.Clientset.BatchV1().Jobs(namespace)
 	var backOffLimit int32 = 0
-	var ttlSecondsAfterFinished int32 = 30
 
 	jobSpec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -239,7 +240,7 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 				},
 			},
 			BackoffLimit:            &backOffLimit,
-			TTLSecondsAfterFinished: &ttlSecondsAfterFinished,
+			TTLSecondsAfterFinished: ttlSecondsAfterFinished,
 		},
 	}
 
@@ -248,6 +249,10 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 		return nil, fmt.Errorf("failed to create job %s: %v", jobName, err)
 	}
 	return job, nil
+}
+
+func (c *Cluster) DeleteJob(ctx context.Context, namespace, name string) error {
+	return c.Clientset.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func (c *Cluster) GetJobLogs(ctx context.Context, namespace, jobName string, since time.Time) (string, error) {

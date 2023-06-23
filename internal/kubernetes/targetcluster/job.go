@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
@@ -60,7 +61,7 @@ func (tc *TargetCluster) MustRunHostCheckJob(ctx context.Context, t tests.T, nam
 		"for D in $DNS_IPS; do echo \"Checking on DNS $D:\"; for H in $HOSTS; do IP=$(dig +short @$D $H 2>/dev/null | head -n1); if [ -z \"$IP\" ]; then echo \"  $H - MISSING IP\";  exit 1; else echo \"  $H $IP - OK\"; fi; done; done",
 	}
 
-	job, err := tc.CreateJob(ctx, namespace, jobName, image, env, cmd)
+	job, err := tc.CreateJob(ctx, namespace, jobName, image, env, cmd, pointer.Int32(30))
 	require.NoErrorf(t, err, "Creating job %s/%s on target cluster.", namespace, jobName)
 	return job.GetName()
 }
