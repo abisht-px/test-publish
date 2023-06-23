@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -211,4 +212,39 @@ func (c *ControlPlane) MustWaitForDeploymentRemoved(ctx context.Context, t *test
 		require.NotNilf(t, resp, "Received no response body while getting deployment %s.", deploymentID)
 		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Deployment %s is not removed.", deploymentID)
 	})
+}
+
+func (c *ControlPlane) MustHaveDeploymentEventsSorted(ctx context.Context, t *testing.T, deploymentID string) {
+	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	n := len(eventsResponse)
+	for i := 1; i < n; i++ {
+		x, err := time.Parse(time.RFC3339, *(eventsResponse[i-1].Timestamp))
+		assert.NoError(t, err, "Error while parsing time %v", *(eventsResponse[i-1].Timestamp))
+
+		y, err := time.Parse(time.RFC3339, *(eventsResponse[i].Timestamp))
+		assert.NoError(t, err, "Error while parsing time %v", *(eventsResponse[i].Timestamp))
+
+		assert.Truef(t, x.After(y) || x.Equal(y), "Events are not sorted based on timestamp")
+	}
+}
+
+func (c *ControlPlane) MustHaveNoDuplicateDeploymentEvents(ctx context.Context, t *testing.T, deploymentID string) {
+	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	m := make(map[string]bool)
+	for _, e := range eventsResponse {
+		if _, ok := m[*e.Name]; ok {
+			assert.Truef(t, !ok, "Duplicate event %s found", *e.Name)
+		} else {
+			m[*e.Name] = true
+		}
+	}
+}
+
+func (c *ControlPlane) MustGetErrorOnDeploymentEventsGet(ctx context.Context, t *testing.T, deploymentID string) {
+	_, _, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	assert.Errorf(t, err, "Expected an error response on getting deployment events for deployment %s.", deploymentID)
 }
