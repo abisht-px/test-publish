@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -24,12 +25,19 @@ import (
 
 const (
 	certManagerChartVersion = "v1.11.0"
+	pdsSystemNamespaceName  = "pds-system"
 )
 
 var (
-	namePrefix             = fmt.Sprintf("integration-test-%d", time.Now().Unix())
-	pdsNamespaceLabelKey   = "pds.portworx.com/available"
-	pdsNamespaceLabelValue = "true"
+	namePrefix               = fmt.Sprintf("integration-test-%d", time.Now().Unix())
+	pdsNamespaceLabelKey     = "pds.portworx.com/available"
+	pdsNamespaceLabelValue   = "true"
+	auditSecurityLabelKey    = "pod-security.kubernetes.io/audit"
+	auditSecurityLabeValue   = "restricted"
+	enforceSecurityLabelKey  = "pod-security.kubernetes.io/enforce"
+	enforceSecurityLabeValue = "restricted"
+	warnSecurityLabelKey     = "pod-security.kubernetes.io/warn"
+	warnSecurityLabeValue    = "restricted"
 )
 
 type PDSTestSuite struct {
@@ -68,7 +76,7 @@ func (s *PDSTestSuite) SetupSuite() {
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHavePrometheusClient(env)
 	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {
-		s.mustInstallPDSChart()
+		s.mustInstallPDSChart(pdsSystemNamespaceName)
 		s.mustInstallCertManager()
 	}
 	targetID := s.controlPlane.MustWaitForDeploymentTarget(s.ctx, s.T(), env.pdsDeploymentTargetName)
@@ -156,8 +164,32 @@ func (s *PDSTestSuite) mustHaveTargetCluster(env environment) {
 	s.targetCluster = tc
 }
 
-func (s *PDSTestSuite) mustInstallPDSChart() {
-	err := s.targetCluster.InstallPDSChart(s.ctx)
+func (s *PDSTestSuite) mustInstallPDSChart(namespaceName string) {
+	labels := map[string]string{
+		pdsNamespaceLabelKey:    pdsNamespaceLabelValue,
+		auditSecurityLabelKey:   auditSecurityLabeValue,
+		enforceSecurityLabelKey: enforceSecurityLabeValue,
+		warnSecurityLabelKey:    warnSecurityLabeValue,
+	}
+	namespace, err := s.targetCluster.GetNamespace(s.ctx, namespaceName)
+	if err == nil {
+		namespace.Labels = labels
+		_, err = s.targetCluster.UpdateNamespace(s.ctx, namespace)
+		s.Require().NoError(err, "Updating namespace %s", namespace.Name)
+
+	} else if k8serrors.IsNotFound(err) {
+		k8sns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   namespaceName,
+				Labels: labels,
+			},
+		}
+		_, err = s.targetCluster.CreateNamespace(s.ctx, k8sns)
+		s.Require().NoError(err, "Creating namespace %s", k8sns.Name)
+	} else {
+		s.Require().NoError(err)
+	}
+	err = s.targetCluster.InstallPDSChart(s.ctx)
 	s.Require().NoError(err, "Failed to install PDS helm chart")
 }
 
