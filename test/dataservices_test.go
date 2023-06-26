@@ -412,6 +412,10 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			seed := deploymentID
 			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, seed)
 
+			if deployment.DataServiceName == dataservices.Couchbase {
+				time.Sleep(200 * time.Second)
+			}
+
 			name := generateRandomName("backup-creds")
 			backupTargetConfig := s.config.backupTarget
 			s3Creds := backupTargetConfig.credentials.S3
@@ -451,6 +455,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 
 			s.crossCluster.MustWaitForStatefulSetInPDSModeNormal(s.ctx, t, namespace, restoreName)
 			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, namespace, restoreName, deployment.NodeCount)
+
+			// Temporary fix for MySQL - can remove after DS-4984 is completed.
+			if deployment.DataServiceName == dataservices.MySQL {
+				time.Sleep(200 * time.Second)
+			}
 
 			// Run Read load test.
 			s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestRead, seed, crosscluster.PDSUser, deployment.NodeCount, nil)
@@ -756,6 +765,11 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, targetVersionTag)
 				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				// Temporary fix for MySQL - can remove after DS-4984 is completed.
+				if tt.spec.DataServiceName == dataservices.MySQL {
+					time.Sleep(200 * time.Second)
+				}
 				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 			})
 		}
@@ -974,6 +988,11 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+			// Temporary fix for MySQL - can remove after DS-4984 is completed.
+			if tt.spec.DataServiceName == dataservices.MySQL {
+				time.Sleep(200 * time.Second)
+			}
 			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
@@ -1215,6 +1234,12 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+			// Temporary fix for MySQL - can remove after DS-4984 is completed.
+			if tt.spec.DataServiceName == dataservices.MySQL {
+				time.Sleep(200 * time.Second)
+			}
+
 			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
@@ -1371,6 +1396,12 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+			// Temporary fix for MySQL - can remove after DS-4984 is completed.
+			if deployment.DataServiceName == dataservices.MySQL {
+				time.Sleep(200 * time.Second)
+			}
+
 			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 		})
 	}
