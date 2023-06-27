@@ -412,6 +412,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 			seed := deploymentID
 			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, seed)
 
+			// This is a temporary change and once DS-5768 is done this sleep can be removed
 			if deployment.DataServiceName == dataservices.Couchbase {
 				time.Sleep(200 * time.Second)
 			}
