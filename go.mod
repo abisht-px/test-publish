@@ -12,7 +12,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.7
 	github.com/libopenstorage/operator v0.0.0-20230607211220-2738c68a93db
-	github.com/portworx/pds-api-go-client v0.0.0-20230622123748-5da5f85f99e9
+	github.com/portworx/pds-api-go-client v0.0.0-20230623045849-c6fe7f291d83
 	github.com/portworx/pds-operator-backups/api v0.0.0-20230505075235-64dc12ad925a
 	github.com/portworx/pds-operator-deployments/api v0.0.0-20230502072252-6da1280d53f4
 	github.com/prometheus/client_golang v1.15.1

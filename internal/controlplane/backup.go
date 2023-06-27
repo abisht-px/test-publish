@@ -4,6 +4,7 @@ import (
 	"context"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	"github.com/stretchr/testify/require"
 	"k8s.io/utils/pointer"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -25,4 +26,11 @@ func (c *ControlPlane) MustCreateBackup(ctx context.Context, t tests.T, deployme
 func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID string, localOnly bool) {
 	resp, err := c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).LocalOnly(localOnly).Execute()
 	api.RequireNoError(t, resp, err)
+}
+
+func (c *ControlPlane) MustGetBackupJob(ctx context.Context, t tests.T, backupJobID string) *pds.ModelsBackupJob {
+	backupJob, resp, err := c.PDS.BackupJobsApi.ApiBackupJobsIdGet(ctx, backupJobID).Execute()
+	api.RequireNoError(t, resp, err)
+	require.NotNil(t, backupJob)
+	return backupJob
 }

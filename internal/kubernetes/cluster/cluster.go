@@ -109,6 +109,19 @@ func (c *Cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	return result, err
 }
 
+func (c *Cluster) GetVolumeSnapshot(ctx context.Context, namespace, name string) (runtime.Object, error) {
+	path := fmt.Sprintf("apis/volumesnapshot.external-storage.k8s.io/v1/namespaces/%s/volumesnapshots/%s", namespace, name)
+	res, err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Get()
+	return res, err
+}
+
+func (c *Cluster) GetPDSBackupJob(ctx context.Context, namespace, name string) (*backupsv1.BackupJob, error) {
+	result := &backupsv1.BackupJob{}
+	path := fmt.Sprintf("apis/backups.pds.io/v1/namespaces/%s/backupjobs/%s", namespace, name)
+	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(result)
+	return result, err
+}
+
 func (c *Cluster) CreatePDSRestore(ctx context.Context, namespace, name, credentialName, snapID string) (*backupsv1.Restore, error) {
 	body := &backupsv1.Restore{
 		TypeMeta: metav1.TypeMeta{

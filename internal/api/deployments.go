@@ -28,6 +28,7 @@ type ShortDeploymentSpec struct {
 	NamePrefix                   string `yaml:"name_prefix"`
 	CRDNamePlural                string `yaml:"crd_name_plurals"`
 	NodeCount                    int32  `yaml:"node_count"`
+	BackupTargetName             string `yaml:"backup_target_name"`
 }
 
 func (d ShortDeploymentSpec) ImageVersionString() string {

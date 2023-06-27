@@ -268,6 +268,15 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 		backupPolicy = &backupPolicies.GetData()[0]
 	}
 
+	var backupTarget *pdsApi.ModelsBackupTarget
+	if deployment.BackupTargetName != "" {
+		backupTargets, resp, err := c.BackupTargetsApi.ApiTenantsIdBackupTargetsGet(ctx, tenantID).Name(deployment.BackupTargetName).Execute()
+		if err = ExtractErrorDetails(resp, err); err != nil {
+			return "", fmt.Errorf("getting backup target %s for tenant %s: %w", deployment.BackupTargetName, tenantID, err)
+		}
+		backupTarget = &backupTargets.GetData()[0]
+	}
+
 	dns, resp, err := c.TenantsApi.ApiTenantsIdDnsDetailsGet(ctx, tenantID).Execute()
 	if err = ExtractErrorDetails(resp, err); err != nil {
 		return "", fmt.Errorf("getting DNS details for tenant %s: %w", tenantID, err)
@@ -282,7 +291,9 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 	pdsDeployment.SetNamespaceId(namespaceID)
 	pdsDeployment.SetNodeCount(deployment.NodeCount)
 	pdsDeployment.SetResourceSettingsTemplateId(resource.GetId())
-	if backupPolicy != nil {
+	if backupPolicy != nil && backupTarget != nil {
+		pdsDeployment.ScheduledBackup = &pdsApi.RequestsDeploymentScheduledBackup{}
+		pdsDeployment.ScheduledBackup.SetBackupTargetId(backupTarget.GetId())
 		pdsDeployment.ScheduledBackup.SetBackupPolicyId(backupPolicy.GetId())
 	}
 	pdsDeployment.SetServiceType(deployment.ServiceType)
