@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"net/http"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 func (c *ControlPlane) MustCreateBackup(ctx context.Context, t tests.T, deploymentID, backupTargetID string) *pds.ModelsBackup {
@@ -33,4 +35,25 @@ func (c *ControlPlane) MustGetBackupJob(ctx context.Context, t tests.T, backupJo
 	api.RequireNoError(t, resp, err)
 	require.NotNil(t, backupJob)
 	return backupJob
+}
+
+func (c *ControlPlane) MustWaitForBackupRemoved(ctx context.Context, t tests.T, backupID string) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		_, resp, err := c.PDS.BackupsApi.ApiBackupsIdGet(ctx, backupID).Execute()
+		require.Errorf(t, err, "Expected an error response on getting backup %s.", backupID)
+		require.NotNilf(t, resp, "Received no response body while getting backup %s.", backupID)
+		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup %s is not removed.", backupID)
+	})
+}
+
+func (c *ControlPlane) MustWaitForScheduleBackup(ctx context.Context, t tests.T, deploymentID string) pds.ModelsBackup {
+	var err error
+	var resp *http.Response
+	backups := &pds.ModelsPaginatedResultModelsBackup{}
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+		backups, resp, err = c.PDS.BackupsApi.ApiDeploymentsIdBackupsGet(ctx, deploymentID).SortBy("created_at").Execute()
+		api.RequireNoErrorf(t, resp, err, "getting backup for deployment %s.", deploymentID)
+		require.NotEmpty(t, backups.GetData(), "Expected atleast one backup for deployment %s.", deploymentID)
+	})
+	return backups.GetData()[len(backups.GetData())-1]
 }

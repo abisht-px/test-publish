@@ -274,6 +274,9 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 		if err = ExtractErrorDetails(resp, err); err != nil {
 			return "", fmt.Errorf("getting backup target %s for tenant %s: %w", deployment.BackupTargetName, tenantID, err)
 		}
+		if len(backupTargets.GetData()) == 0 {
+			return "", fmt.Errorf("backup target %s not found under tenant %s", deployment.BackupTargetName, tenantID)
+		}
 		backupTarget = &backupTargets.GetData()[0]
 	}
 
@@ -293,8 +296,8 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 	pdsDeployment.SetResourceSettingsTemplateId(resource.GetId())
 	if backupPolicy != nil && backupTarget != nil {
 		pdsDeployment.ScheduledBackup = &pdsApi.RequestsDeploymentScheduledBackup{}
-		pdsDeployment.ScheduledBackup.SetBackupTargetId(backupTarget.GetId())
 		pdsDeployment.ScheduledBackup.SetBackupPolicyId(backupPolicy.GetId())
+		pdsDeployment.ScheduledBackup.SetBackupTargetId(backupTarget.GetId())
 	}
 	pdsDeployment.SetServiceType(deployment.ServiceType)
 	pdsDeployment.SetStorageOptionsTemplateId(storage.GetId())
