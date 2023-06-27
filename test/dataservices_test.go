@@ -1502,7 +1502,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 		{
 			DataServiceName: dataservices.MongoDB,
 			ImageVersionTag: "6.0.6",
-			NodeCount:       1,
+			NodeCount:       2,
 		},
 		{
 			DataServiceName: dataservices.MySQL,
