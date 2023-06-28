@@ -564,7 +564,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "4.1.2",
-				NodeCount:       1,
+				NodeCount:       2,
 			},
 			scaleTo: 3,
 		},
@@ -572,7 +572,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "4.0.10",
-				NodeCount:       1,
+				NodeCount:       2,
 			},
 			scaleTo: 3,
 		},
@@ -580,7 +580,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "3.11.15",
-				NodeCount:       1,
+				NodeCount:       2,
 			},
 			scaleTo: 3,
 		},
@@ -588,7 +588,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 			spec: api.ShortDeploymentSpec{
 				DataServiceName: dataservices.Cassandra,
 				ImageVersionTag: "3.0.29",
-				NodeCount:       1,
+				NodeCount:       2,
 			},
 			scaleTo: 3,
 		},
