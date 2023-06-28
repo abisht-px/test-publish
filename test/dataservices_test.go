@@ -10,6 +10,7 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/strings/slices"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
@@ -19,6 +20,7 @@ import (
 )
 
 var (
+	latestCompatibleOnly = flag.Bool("latest-compatible-only", true, "Test only update to the latest compatible version.")
 	skipBackups          = flag.Bool("skip-backups", false, "Skip tests related to backups.")
 	skipBackupsMultinode = flag.Bool("skip-backups-multinode", true, "Skip tests related to backups which are run on multi-node data services.")
 )
@@ -472,277 +474,53 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 }
 
 func (s *PDSTestSuite) TestDataService_UpdateImage() {
-	testCases := []struct {
-		spec           api.ShortDeploymentSpec
-		targetVersions []string
-	}{
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.27",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.0.29"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.11.13",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.11.15"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.4",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.10"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.5",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.10"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.6",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"4.0.10"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"1.14.7"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.5.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"8.8.0"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.1.1",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.1.2"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.2.3"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.1",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.2.3"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"6.0.6"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.3",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"6.0.6"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.31",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"8.0.33"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.16",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"11.20"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.18",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"11.20"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.11",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"12.15"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.13",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"12.15"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.7",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"13.11"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.9",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"13.11"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"14.8"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.4",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"14.8"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.5",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"14.8"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.6",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"14.8"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.6",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.10.22"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.7",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.10.22"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.9",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"3.10.22"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.0",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.9"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.2",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.9"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.4",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.9"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.5",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"7.0.9"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.SqlServer,
-				ImageVersionTag: "2019-CU18",
-				NodeCount:       1,
-			},
-			targetVersions: []string{"2019-CU20"},
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ZooKeeper,
-				ImageVersionTag: "3.8.0",
-				NodeCount:       3,
-			},
-			targetVersions: []string{"3.8.1"},
-		},
+
+	dataServices := []string{
+		dataservices.Cassandra,
+		dataservices.Couchbase,
+		dataservices.Kafka,
+		dataservices.MongoDB,
+		dataservices.MySQL,
+		dataservices.Postgres,
+		dataservices.RabbitMQ,
+		dataservices.Redis,
+		dataservices.SqlServer,
+		dataservices.ZooKeeper,
+		dataservices.ElasticSearch,
+		dataservices.Consul,
 	}
 
-	for _, testCase := range testCases {
-		for _, tvt := range testCase.targetVersions {
-			tt := testCase
-			targetVersionTag := tvt
-			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", tt.spec.DataServiceName, tt.spec.ImageVersionString(), targetVersionTag), func(t *testing.T) {
+	compatibleVersions := s.controlPlane.MustGetCompatibleVersions(s.ctx, s.T())
+
+	for _, cv := range compatibleVersions {
+		dataServiceName := *cv.DataServiceName
+		// Filter for selected data services only.
+		if !slices.Contains(dataServices, dataServiceName) {
+			continue
+		}
+
+		// TODO Use Nick's minNodeCount map for this, once available
+		nodeCount := int32(1)
+		if dataServiceName == dataservices.ZooKeeper {
+			nodeCount = 3
+		}
+
+		targets := cv.Compatible
+		if *latestCompatibleOnly {
+			targets = cv.LatestCompatible
+		}
+		for _, target := range targets {
+			spec := api.ShortDeploymentSpec{
+				DataServiceName: dataServiceName,
+				ImageVersionTag: *cv.VersionName,
+				NodeCount:       nodeCount,
+			}
+			targetVersionTag := *target.Name
+			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", spec.DataServiceName, spec.ImageVersionString(), targetVersionTag), func(t *testing.T) {
 				t.Parallel()
 
-				tt.spec.NamePrefix = fmt.Sprintf("update-%s-", tt.spec.ImageVersionString())
-				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
+				spec.NamePrefix = fmt.Sprintf("update-%s-", spec.ImageVersionString())
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &spec)
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
@@ -757,7 +535,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 
 				// Update.
-				newSpec := tt.spec
+				newSpec := spec
 				newSpec.ImageVersionTag = targetVersionTag
 				oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
 				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &newSpec)
@@ -768,7 +546,7 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
 				// Temporary fix for MySQL - can remove after DS-4984 is completed.
-				if tt.spec.DataServiceName == dataservices.MySQL {
+				if spec.DataServiceName == dataservices.MySQL {
 					time.Sleep(200 * time.Second)
 				}
 				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
