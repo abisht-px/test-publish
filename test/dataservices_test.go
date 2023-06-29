@@ -10,7 +10,6 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/strings/slices"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
@@ -23,168 +22,88 @@ var (
 	latestCompatibleOnly = flag.Bool("latest-compatible-only", true, "Test only update to the latest compatible version.")
 	skipBackups          = flag.Bool("skip-backups", false, "Skip tests related to backups.")
 	skipBackupsMultinode = flag.Bool("skip-backups-multinode", true, "Skip tests related to backups which are run on multi-node data services.")
+
+	// Modify this map to control which data services and versions are tested - all tests use this map.
+	activeVersions = map[string][]string{
+		dataservices.Cassandra:     {"4.1.2", "4.0.10", "3.11.15", "3.0.29"},
+		dataservices.Consul:        {"1.15.3", "1.14.7"},
+		dataservices.Couchbase:     {"7.1.1"},
+		dataservices.ElasticSearch: {"8.8.0"},
+		dataservices.Kafka:         {"3.4.1", "3.3.2", "3.2.3", "3.1.2"},
+		dataservices.MongoDB:       {"6.0.6"},
+		dataservices.MySQL:         {"8.0.33"},
+		dataservices.Postgres:      {"15.3", "14.8", "13.11", "12.15", "11.20"},
+		dataservices.RabbitMQ:      {"3.11.16", "3.10.22"},
+		dataservices.Redis:         {"7.0.9"},
+		dataservices.SqlServer:     {"2019-CU20"},
+		dataservices.ZooKeeper:     {"3.8.1", "3.7.1"},
+	}
+
+	// Common node counts per data service.
+	// Tests can decide whether to use the low count, the high count, or both.
+	// Assumption: counts are sorted in ascending order.
+	commonNodeCounts = map[string][]int32{
+		dataservices.Cassandra:     {1, 3},
+		dataservices.Consul:        {1, 3},
+		dataservices.Couchbase:     {1, 2},
+		dataservices.ElasticSearch: {1, 3},
+		dataservices.Kafka:         {1, 3},
+		dataservices.MongoDB:       {1, 2},
+		dataservices.MySQL:         {1, 2},
+		dataservices.Postgres:      {1, 2},
+		dataservices.RabbitMQ:      {1, 3},
+		dataservices.Redis:         {1, 6},
+		dataservices.SqlServer:     {1},
+		dataservices.ZooKeeper:     {3},
+	}
 )
 
 func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
-	deployments := []api.ShortDeploymentSpec{
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.7",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.8.0",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.4.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.3.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.11.16",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.22",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.9",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.7.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.1",
-			NodeCount:       3,
-		},
-	}
+	for dsName, versions := range activeVersions {
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
+			}
 
-	for _, d := range deployments {
-		deployment := d
-		s.T().Run(fmt.Sprintf("deploy-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
-			t.Parallel()
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
 
-			// Create namespace with PSA policy set
-			psaPolicy := getSupportedPSAPolicy(deployment.DataServiceName)
-			namespaceName := "it-" + psaPolicy + "-" + random.AlphaNumericString(4)
-			namespace := psa.NewNamespace(namespaceName, psaPolicy, true)
-			_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
-			t.Cleanup(func() {
-				_ = s.targetCluster.DeleteNamespace(s.ctx, namespaceName)
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
+			}
+
+			s.T().Run(fmt.Sprintf("deploy-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+				t.Parallel()
+
+				// Create namespace with PSA policy set
+				psaPolicy := getSupportedPSAPolicy(deployment.DataServiceName)
+				namespaceName := "it-" + psaPolicy + "-" + random.AlphaNumericString(4)
+				namespace := psa.NewNamespace(namespaceName, psaPolicy, true)
+				_, err := s.targetCluster.CreateNamespace(s.ctx, namespace)
+				t.Cleanup(func() {
+					_ = s.targetCluster.DeleteNamespace(s.ctx, namespaceName)
+				})
+				s.Require().NoError(err)
+				modelsNamespace := s.controlPlane.MustWaitForNamespaceStatus(s.ctx, t, namespaceName, "available")
+				namespaceID := modelsNamespace.GetId()
+
+				deployment.NamePrefix = fmt.Sprintf("deploy-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+				deploymentID := s.controlPlane.MustDeployDeploymentSpecIntoNamespace(s.ctx, t, &deployment, namespaceID)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 			})
-			s.Require().NoError(err)
-			modelsNamespace := s.controlPlane.MustWaitForNamespaceStatus(s.ctx, t, namespaceName, "available")
-			namespaceID := modelsNamespace.GetId()
-
-			deployment.NamePrefix = fmt.Sprintf("deploy-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.controlPlane.MustDeployDeploymentSpecIntoNamespace(s.ctx, t, &deployment, namespaceID)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-		})
+		}
 	}
 }
 
@@ -192,317 +111,155 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 	if *skipBackups {
 		s.T().Skip("Backup tests skipped.")
 	}
-	deployments := []api.ShortDeploymentSpec{
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.15.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.7",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.7",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.8.0",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.8.0",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.9",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.9",
-			NodeCount:       6,
-		},
-		{
-			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU20",
-			NodeCount:       1,
-		},
+
+	backupEnabledServices := []string{
+		dataservices.Cassandra,
+		dataservices.Consul,
+		dataservices.Couchbase,
+		dataservices.ElasticSearch,
+		dataservices.MongoDB,
+		dataservices.MySQL,
+		dataservices.Postgres,
+		dataservices.Redis,
+		dataservices.SqlServer,
 	}
 
-	for _, d := range deployments {
-		deployment := d
+	for _, dsName := range backupEnabledServices {
+		versions := activeVersions[dsName]
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
 
-		s.T().Run(fmt.Sprintf("backup-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
-			if *skipBackupsMultinode && deployment.NodeCount > 1 {
-				t.Skipf("Backup tests for the %d node %s data services is disabled.", deployment.NodeCount, deployment.DataServiceName)
+			// Test all node counts.
+			for _, nodeCount := range nodeCounts {
+				deployment := api.ShortDeploymentSpec{
+					DataServiceName: dsName,
+					ImageVersionTag: version,
+					NodeCount:       nodeCount,
+				}
+
+				s.T().Run(fmt.Sprintf("backup-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+					if *skipBackupsMultinode && deployment.NodeCount > 1 {
+						t.Skipf("Backup tests for the %d node %s data services is disabled.", deployment.NodeCount, deployment.DataServiceName)
+					}
+
+					t.Parallel()
+
+					var backupCredentials *pds.ModelsBackupCredentials
+					var backupTarget *pds.ModelsBackupTarget
+					var backup *pds.ModelsBackup
+					var restoreCreated = false
+
+					deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
+					deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+					restoreName := generateRandomName("restore")
+					namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
+					t.Cleanup(func() {
+						if backup != nil {
+							deleteBackupWithWorkaround(s, t, backup, namespace)
+						}
+						if backupTarget != nil {
+							s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId())
+						}
+						if backupCredentials != nil {
+							s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId())
+						}
+
+						s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID)
+						s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+
+						if restoreCreated {
+							err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
+							require.NoError(t, err)
+						}
+
+						// TODO(DS-5494): that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
+						//   	target operator reports deletion of data service CR to the control plane, it is based on the
+						//      pds/deployment-id label in the CR; so if we delete the restored data service CR first, deployment in CP
+						//      will be deleted as part of it and it breaks the overall cleanup process).
+						err := s.targetCluster.DeletePDSDeployment(s.ctx, namespace, dataservices.ToPluralName(deployment.DataServiceName), restoreName)
+						if !apierrors.IsNotFound(err) {
+							require.NoError(t, err)
+						}
+					})
+					s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+					s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+					s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+
+					seed := deploymentID
+					s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, seed)
+
+					// This is a temporary change and once DS-5768 is done this sleep can be removed
+					if deployment.DataServiceName == dataservices.Couchbase {
+						time.Sleep(200 * time.Second)
+					}
+
+					name := generateRandomName("backup-creds")
+					backupTargetConfig := s.config.backupTarget
+					s3Creds := backupTargetConfig.credentials.S3
+					backupCredentials = s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
+
+					backupTarget = s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+					s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
+
+					// Create backup (with retry if needed).
+					for i := 1; i <= 3; i++ {
+						backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
+						needsRetry := s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
+						if needsRetry {
+							// Delete failed backup before retry.
+							backupToDelete := backup
+							backup = nil
+							deleteBackupWithWorkaround(s, t, backupToDelete, namespace)
+							// Wait a bit then repeat.
+							time.Sleep(15 * time.Second)
+						} else {
+							break
+						}
+					}
+
+					// Remove the original deployment to save resources.
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+
+					s.crossCluster.MustCreateRestore(s.ctx, t, namespace, backup.GetClusterResourceName(), restoreName)
+					restoreCreated = true
+					waitTimeout := dataservices.GetLongTimeoutFor(deployment.NodeCount)
+					s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, namespace, restoreName, waitTimeout)
+
+					s.crossCluster.MustWaitForStatefulSetInPDSModeNormal(s.ctx, t, namespace, restoreName)
+					s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, namespace, restoreName, deployment.NodeCount)
+
+					// Temporary fix for MySQL - can remove after DS-4984 is completed.
+					if deployment.DataServiceName == dataservices.MySQL {
+						time.Sleep(200 * time.Second)
+					}
+
+					// Run Read load test.
+					s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestRead, seed, crosscluster.PDSUser, deployment.NodeCount, nil)
+
+					// Run CRUD load test.
+					s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, deployment.NodeCount, nil)
+				})
 			}
-
-			t.Parallel()
-
-			var backupCredentials *pds.ModelsBackupCredentials
-			var backupTarget *pds.ModelsBackupTarget
-			var backup *pds.ModelsBackup
-			var restoreCreated = false
-
-			deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
-			restoreName := generateRandomName("restore")
-			namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
-			t.Cleanup(func() {
-				if backup != nil {
-					deleteBackupWithWorkaround(s, t, backup, namespace)
-				}
-				if backupTarget != nil {
-					s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId())
-				}
-				if backupCredentials != nil {
-					s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId())
-				}
-
-				s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-
-				if restoreCreated {
-					err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
-					require.NoError(t, err)
-				}
-
-				// TODO(DS-5494): that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
-				//   	target operator reports deletion of data service CR to the control plane, it is based on the
-				//      pds/deployment-id label in the CR; so if we delete the restored data service CR first, deployment in CP
-				//      will be deleted as part of it and it breaks the overall cleanup process).
-				err := s.targetCluster.DeletePDSDeployment(s.ctx, namespace, dataservices.ToPluralName(deployment.DataServiceName), restoreName)
-				if !apierrors.IsNotFound(err) {
-					require.NoError(t, err)
-				}
-			})
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-
-			seed := deploymentID
-			s.crossCluster.MustRunWriteLoadTestJob(s.ctx, t, deploymentID, seed)
-
-			// This is a temporary change and once DS-5768 is done this sleep can be removed
-			if deployment.DataServiceName == dataservices.Couchbase {
-				time.Sleep(200 * time.Second)
-			}
-
-			name := generateRandomName("backup-creds")
-			backupTargetConfig := s.config.backupTarget
-			s3Creds := backupTargetConfig.credentials.S3
-			backupCredentials = s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
-
-			backupTarget = s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
-			s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
-
-			// Create backup (with retry if needed).
-			for i := 1; i <= 3; i++ {
-				backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
-				needsRetry := s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
-				if needsRetry {
-					// Delete failed backup before retry.
-					backupToDelete := backup
-					backup = nil
-					deleteBackupWithWorkaround(s, t, backupToDelete, namespace)
-					// Wait a bit then repeat.
-					time.Sleep(15 * time.Second)
-				} else {
-					break
-				}
-			}
-
-			if !isRestoreTestReadyFor(deployment.DataServiceName) {
-				return
-			}
-
-			// Remove the original deployment to save resources.
-			s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-			s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-
-			s.crossCluster.MustCreateRestore(s.ctx, t, namespace, backup.GetClusterResourceName(), restoreName)
-			restoreCreated = true
-			waitTimeout := dataservices.GetLongTimeoutFor(deployment.NodeCount)
-			s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, namespace, restoreName, waitTimeout)
-
-			s.crossCluster.MustWaitForStatefulSetInPDSModeNormal(s.ctx, t, namespace, restoreName)
-			s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, namespace, restoreName, deployment.NodeCount)
-
-			// Temporary fix for MySQL - can remove after DS-4984 is completed.
-			if deployment.DataServiceName == dataservices.MySQL {
-				time.Sleep(200 * time.Second)
-			}
-
-			// Run Read load test.
-			s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestRead, seed, crosscluster.PDSUser, deployment.NodeCount, nil)
-
-			// Run CRUD load test.
-			s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, deployment.NodeCount, nil)
-		})
+		}
 	}
 }
 
 func (s *PDSTestSuite) TestDataService_UpdateImage() {
 
-	dataServices := []string{
-		dataservices.Cassandra,
-		dataservices.Couchbase,
-		dataservices.Kafka,
-		dataservices.MongoDB,
-		dataservices.MySQL,
-		dataservices.Postgres,
-		dataservices.RabbitMQ,
-		dataservices.Redis,
-		dataservices.SqlServer,
-		dataservices.ZooKeeper,
-		dataservices.ElasticSearch,
-		dataservices.Consul,
-	}
-
 	compatibleVersions := s.controlPlane.MustGetCompatibleVersions(s.ctx, s.T())
-
 	for _, cv := range compatibleVersions {
 		dataServiceName := *cv.DataServiceName
+
 		// Filter for selected data services only.
-		if !slices.Contains(dataServices, dataServiceName) {
+		_, ok := activeVersions[dataServiceName]
+		if !ok {
 			continue
 		}
 
-		// TODO Use Nick's minNodeCount map for this, once available
-		nodeCount := int32(1)
-		if dataServiceName == dataservices.ZooKeeper {
-			nodeCount = 3
+		nodeCounts := commonNodeCounts[dataServiceName]
+		if len(nodeCounts) == 0 {
+			continue
 		}
 
 		targets := cv.Compatible
@@ -513,7 +270,9 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			spec := api.ShortDeploymentSpec{
 				DataServiceName: dataServiceName,
 				ImageVersionTag: *cv.VersionName,
-				NodeCount:       nodeCount,
+
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
 			}
 			targetVersionTag := *target.Name
 			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", spec.DataServiceName, spec.ImageVersionString(), targetVersionTag), func(t *testing.T) {
@@ -556,633 +315,266 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 }
 
 func (s *PDSTestSuite) TestDataService_ScaleUp() {
-	testCases := []struct {
-		spec    api.ShortDeploymentSpec
-		scaleTo int32
-	}{
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.1.2",
-				NodeCount:       2,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.10",
-				NodeCount:       2,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.11.15",
-				NodeCount:       2,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.29",
-				NodeCount:       2,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.15.3",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.7",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Couchbase,
-				ImageVersionTag: "7.1.1",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.8.0",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.4.1",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.3.2",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.3",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.1.2",
-				NodeCount:       3,
-			},
-			scaleTo: 5,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.6",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.33",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "15.3",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.8",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.11",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.15",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.20",
-				NodeCount:       1,
-			},
-			scaleTo: 2,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.11.16",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.22",
-				NodeCount:       1,
-			},
-			scaleTo: 3,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.9",
-				NodeCount:       6,
-			},
-			scaleTo: 8,
-		},
+
+	scaleNodes := map[string][]int32{
+		dataservices.Cassandra:     {2, 3},
+		dataservices.Consul:        {1, 3},
+		dataservices.Couchbase:     {1, 2},
+		dataservices.ElasticSearch: {1, 3},
+		dataservices.Kafka:         {3, 5},
+		dataservices.MongoDB:       {1, 2},
+		dataservices.MySQL:         {1, 2},
+		dataservices.Postgres:      {1, 2},
+		dataservices.RabbitMQ:      {1, 3},
+		dataservices.Redis:         {6, 8},
 	}
 
-	for _, testCase := range testCases {
-		tt := testCase
-		s.T().Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", tt.spec.DataServiceName, tt.spec.ImageVersionString(), tt.spec.NodeCount, tt.scaleTo), func(t *testing.T) {
-			t.Parallel()
-
-			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-
-			// Create.
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-
-			// Update.
-			updateSpec := tt.spec
-			updateSpec.NodeCount = tt.scaleTo
-			oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
-			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-			// Temporary fix for MySQL - can remove after DS-4984 is completed.
-			if tt.spec.DataServiceName == dataservices.MySQL {
-				time.Sleep(200 * time.Second)
+	for dsName, nodeCounts := range scaleNodes {
+		versions := activeVersions[dsName]
+		for _, version := range versions {
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+				NodeCount:       nodeCounts[0],
 			}
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-		})
+			scaleTo := nodeCounts[1]
+
+			s.T().Run(fmt.Sprintf("scale-%s-%s-nodes-%v-to-%v", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount, scaleTo), func(t *testing.T) {
+				t.Parallel()
+
+				deployment.NamePrefix = fmt.Sprintf("scale-%s-", deployment.ImageVersionString())
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+
+				// Create.
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+
+				// Update.
+				updateSpec := deployment
+				updateSpec.NodeCount = scaleTo
+				oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
+				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
+				s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				// Temporary fix for MySQL - can remove after DS-4984 is completed.
+				if deployment.DataServiceName == dataservices.MySQL {
+					time.Sleep(200 * time.Second)
+				}
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+			})
+		}
 	}
 }
 
 func (s *PDSTestSuite) TestDataService_ScaleResources() {
-	testCases := []struct {
-		spec                    api.ShortDeploymentSpec
-		scaleToResourceTemplate string
-	}{
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.1.2",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "4.0.10",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.11.15",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Cassandra,
-				ImageVersionTag: "3.0.29",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.15.3",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Consul,
-				ImageVersionTag: "1.14.7",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Couchbase,
-				ImageVersionTag: "7.1.1",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ElasticSearch,
-				ImageVersionTag: "8.8.0",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.4.1",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.3.2",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.2.3",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Kafka,
-				ImageVersionTag: "3.1.2",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MongoDB,
-				ImageVersionTag: "6.0.6",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.MySQL,
-				ImageVersionTag: "8.0.33",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "15.3",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "14.8",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "13.11",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "12.15",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Postgres,
-				ImageVersionTag: "11.20",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.11.16",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.RabbitMQ,
-				ImageVersionTag: "3.10.22",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.Redis,
-				ImageVersionTag: "7.0.9",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.SqlServer,
-				ImageVersionTag: "2019-CU20",
-				NodeCount:       1,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ZooKeeper,
-				ImageVersionTag: "3.8.1",
-				NodeCount:       3,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-		{
-			spec: api.ShortDeploymentSpec{
-				DataServiceName: dataservices.ZooKeeper,
-				ImageVersionTag: "3.7.1",
-				NodeCount:       3,
-			},
-			scaleToResourceTemplate: dataservices.TemplateNameMed,
-		},
-	}
-
-	for _, testCase := range testCases {
-		tt := testCase
-		s.T().Run(fmt.Sprintf("scale-%s-%s-resources", tt.spec.DataServiceName, tt.spec.ImageVersionString()), func(t *testing.T) {
-			t.Parallel()
-
-			tt.spec.NamePrefix = fmt.Sprintf("scale-%s-", tt.spec.ImageVersionString())
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &tt.spec)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-
-			// Create.
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-
-			// Update.
-			updateSpec := tt.spec
-			updateSpec.ResourceSettingsTemplateName = tt.scaleToResourceTemplate
-			oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
-			s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
-			s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-			// Temporary fix for MySQL - can remove after DS-4984 is completed.
-			if tt.spec.DataServiceName == dataservices.MySQL {
-				time.Sleep(200 * time.Second)
+	for dsName, versions := range activeVersions {
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
 			}
 
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-		})
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
+			}
+
+			s.T().Run(fmt.Sprintf("scale-%s-%s-resources", deployment.DataServiceName, deployment.ImageVersionString()), func(t *testing.T) {
+				t.Parallel()
+
+				deployment.NamePrefix = fmt.Sprintf("scale-%s-", deployment.ImageVersionString())
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+
+				// Create.
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+
+				// Update.
+				updateSpec := deployment
+				updateSpec.ResourceSettingsTemplateName = dataservices.TemplateNameMed
+				oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
+				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &updateSpec)
+				s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				// Temporary fix for MySQL - can remove after DS-4984 is completed.
+				if deployment.DataServiceName == dataservices.MySQL {
+					time.Sleep(200 * time.Second)
+				}
+
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+			})
+		}
 	}
 }
 
 func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
-	deployments := []api.ShortDeploymentSpec{
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.15.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Consul,
-			ImageVersionTag: "1.14.7",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.8.0",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.4.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.3.2",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.1.2",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.11.16",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.22",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.9",
-			NodeCount:       6,
-		},
-		{
-			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.7.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.1",
-			NodeCount:       3,
-		},
-	}
-
-	for _, d := range deployments {
-		deployment := d
-		s.T().Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
-			t.Parallel()
-
-			deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-			//Delete pods and load test
-			s.targetCluster.MustDeleteDeploymentPods(s.ctx, t, s.config.pdsNamespaceName, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-			// Temporary fix for MySQL - can remove after DS-4984 is completed.
-			if deployment.DataServiceName == dataservices.MySQL {
-				time.Sleep(200 * time.Second)
+	for dsName, versions := range activeVersions {
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
 			}
 
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-		})
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+
+				// Only test highest node count.
+				NodeCount: nodeCounts[len(nodeCounts)-1],
+			}
+
+			s.T().Run(fmt.Sprintf("recover-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+				t.Parallel()
+
+				deployment.NamePrefix = fmt.Sprintf("recover-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+				//Delete pods and load test
+				s.targetCluster.MustDeleteDeploymentPods(s.ctx, t, s.config.pdsNamespaceName, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				// Temporary fix for MySQL - can remove after DS-4984 is completed.
+				if deployment.DataServiceName == dataservices.MySQL {
+					time.Sleep(200 * time.Second)
+				}
+
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+			})
+		}
+	}
+}
+
+func (s *PDSTestSuite) TestDataService_Metrics() {
+	for dsName, versions := range activeVersions {
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
+			}
+
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
+			}
+
+			// MongoDB must be multi-node otherwise replication lag metrics will not be present.
+			if dsName == dataservices.MongoDB {
+				deployment.NodeCount = int32(2)
+			}
+
+			s.T().Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+				t.Parallel()
+
+				deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+
+				// Try to get DS metrics from prometheus.
+				s.controlPlane.MustWaitForMetricsReported(s.ctx, t, deploymentID)
+			})
+		}
+	}
+}
+
+func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
+
+	// TODO: remove this list once we have added "delete user" loadtest mode for all services.
+	deleteUserServices := []string{
+		dataservices.Cassandra,
+		dataservices.Couchbase,
+		dataservices.MongoDB,
+		dataservices.MySQL,
+		dataservices.Postgres,
+	}
+
+	for _, dsName := range deleteUserServices {
+		versions := activeVersions[dsName]
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
+			}
+			deployment := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
+			}
+
+			s.T().Run(fmt.Sprintf("userdel-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
+				t.Parallel()
+
+				deployment.NamePrefix = fmt.Sprintf("userdel-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
+				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
+				t.Cleanup(func() {
+					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+				})
+				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+				// Delete 'pds' user.
+				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
+				// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
+				s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
+				// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
+				time.Sleep(30 * time.Second)
+				// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
+				s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser)
+			})
+		}
 	}
 }
 
@@ -1212,269 +604,6 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 			return reason == "FailedScheduling" && insufficientResources
 		},
 		"failed pod scheduling")
-}
-
-func (s *PDSTestSuite) TestDataService_Metrics() {
-	deployments := []api.ShortDeploymentSpec{
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       1,
-		},
-		// TODO: https://portworx.atlassian.net/browse/DS-4878
-		//{
-		//	DataServiceName: dataservices.Consul,
-		//	ImageVersionTag: "1.15.3",
-		//	NodeCount:       1,
-		//},
-		//{
-		//	DataServiceName: dataservices.Consul,
-		//	ImageVersionTag: "1.14.7",
-		//	NodeCount:       1,
-		//},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ElasticSearch,
-			ImageVersionTag: "8.8.0",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.4.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.3.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.2.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Kafka,
-			ImageVersionTag: "3.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       2,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.11.16",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.RabbitMQ,
-			ImageVersionTag: "3.10.22",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Redis,
-			ImageVersionTag: "7.0.9",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.SqlServer,
-			ImageVersionTag: "2019-CU20",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.7.1",
-			NodeCount:       3,
-		},
-		{
-			DataServiceName: dataservices.ZooKeeper,
-			ImageVersionTag: "3.8.1",
-			NodeCount:       3,
-		},
-	}
-
-	for _, d := range deployments {
-		deployment := d
-		s.T().Run(fmt.Sprintf("metrics-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
-			t.Parallel()
-
-			deployment.NamePrefix = fmt.Sprintf("metrics-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-			s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-
-			// Try to get DS metrics from prometheus.
-			s.controlPlane.MustWaitForMetricsReported(s.ctx, t, deploymentID)
-		})
-	}
-}
-
-func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
-	deployments := []api.ShortDeploymentSpec{
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.1.2",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "4.0.10",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.11.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Cassandra,
-			ImageVersionTag: "3.0.29",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Couchbase,
-			ImageVersionTag: "7.1.1",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MongoDB,
-			ImageVersionTag: "6.0.6",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.MySQL,
-			ImageVersionTag: "8.0.33",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "15.3",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "14.8",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "13.11",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "12.15",
-			NodeCount:       1,
-		},
-		{
-			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: "11.20",
-			NodeCount:       1,
-		},
-	}
-
-	for _, d := range deployments {
-		deployment := d
-		s.T().Run(fmt.Sprintf("userdel-%s-%s-n%d", deployment.DataServiceName, deployment.ImageVersionString(), deployment.NodeCount), func(t *testing.T) {
-			t.Parallel()
-
-			deployment.NamePrefix = fmt.Sprintf("userdel-%s-n%d-", deployment.ImageVersionString(), deployment.NodeCount)
-			deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
-			t.Cleanup(func() {
-				s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-				s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-			})
-			s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-			s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-			// Delete 'pds' user.
-			s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
-			// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
-			s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
-			// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
-			time.Sleep(30 * time.Second)
-			// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
-			s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser)
-		})
-	}
-}
-
-func isRestoreTestReadyFor(dataServiceName string) bool {
-	switch dataServiceName {
-	case dataservices.Cassandra,
-		dataservices.Consul,
-		dataservices.ElasticSearch,
-		dataservices.MongoDB,
-		dataservices.Postgres,
-		dataservices.MySQL,
-		dataservices.Redis,
-		dataservices.Couchbase,
-		dataservices.SqlServer:
-		return true
-	}
-	return false
 }
 
 func getSupportedPSAPolicy(dataServiceName string) string {
