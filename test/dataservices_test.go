@@ -295,6 +295,11 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 func (s *PDSTestSuite) TestDataService_PDSSystemUsersV1Migration() {
 	dataServicesByName := s.controlPlane.MustGetDataServicesByName(s.ctx, s.T())
 	for dsName, versions := range activeVersions {
+		if dsName == dataservices.SqlServer {
+			// No need to test migration for SQL Server, as no deployments exist on Prod and Staging
+			// using older images without the PDS System Users V1 feature.
+			continue
+		}
 		dataService, ok := dataServicesByName[dsName]
 		if !ok {
 			assert.Fail(s.T(), "Data service with name '%s' not found", dsName)
