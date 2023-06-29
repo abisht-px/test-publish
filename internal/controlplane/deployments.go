@@ -39,7 +39,7 @@ func (c *ControlPlane) MustDeployDeploymentSpecIntoNamespace(ctx context.Context
 }
 
 func (c *ControlPlane) DeployDeploymentSpec(ctx context.Context, deployment *api.ShortDeploymentSpec, namespaceID string) (string, error) {
-	image := findImageVersionForRecord(deployment, c.imageVersionSpecs)
+	image := c.findImageVersionForRecord(deployment)
 	if image == nil {
 		return "", fmt.Errorf("no image found for deployment %s %s %s", deployment.DataServiceName, deployment.ImageVersionTag, deployment.ImageVersionBuild)
 	}
@@ -70,7 +70,7 @@ func (c *ControlPlane) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
-		image := findImageVersionForRecord(spec, s.imageVersionSpecs)
+		image := s.findImageVersionForRecord(spec)
 		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
 
 		req.ImageId = &image.ImageID
@@ -177,8 +177,8 @@ func hasMatchingEvent(events []pds.ModelsDeploymentTargetDeploymentEvent, predic
 	return false
 }
 
-func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api.PDSImageReferenceSpec) *api.PDSImageReferenceSpec {
-	for _, image := range images {
+func (c *ControlPlane) findImageVersionForRecord(deployment *api.ShortDeploymentSpec) *api.PDSImageReferenceSpec {
+	for _, image := range c.imageVersionSpecs {
 		found := image.DataServiceName == deployment.DataServiceName
 		if deployment.ImageVersionTag != "" {
 			found = found && image.ImageVersionTag == deployment.ImageVersionTag
@@ -191,6 +191,19 @@ func findImageVersionForRecord(deployment *api.ShortDeploymentSpec, images []api
 		}
 	}
 	return nil
+}
+
+// SetDefaultImageVersionBuild sets the latest build tag for the deployment (if not set yet or is forced to overwrite).
+func (c *ControlPlane) SetDefaultImageVersionBuild(deployment *api.ShortDeploymentSpec, overwrite bool) {
+	if deployment.ImageVersionBuild == "" || overwrite {
+		if overwrite {
+			deployment.ImageVersionBuild = ""
+		}
+		image := c.findImageVersionForRecord(deployment)
+		if image != nil {
+			deployment.ImageVersionBuild = image.ImageVersionBuild
+		}
+	}
 }
 
 func (c *ControlPlane) MustRemoveDeployment(ctx context.Context, t *testing.T, deploymentID string) {

@@ -182,7 +182,7 @@ func (c *PDSClient) GetAllImageVersions(ctx context.Context) ([]PDSImageReferenc
 		dataServicesByID[dataService.GetId()] = dataService
 	}
 
-	images, resp, err := c.ImagesApi.ApiImagesGet(ctx).Latest(true).SortBy("-created_at").Limit("1000").Execute()
+	images, resp, err := c.ImagesApi.ApiImagesGet(ctx).Latest(false).SortBy("-created_at").Limit("1000").Execute()
 	if err = ExtractErrorDetails(resp, err); err != nil {
 		return nil, fmt.Errorf("fetching all images: %w", err)
 	}

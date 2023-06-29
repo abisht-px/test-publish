@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
 	"github.com/portworx/pds-integration-test/internal/random"
 )
+
+const pdsSystemUsersCapabilityName = "pds_system_users"
 
 var (
 	latestCompatibleOnly = flag.Bool("latest-compatible-only", true, "Test only update to the latest compatible version.")
@@ -262,56 +265,127 @@ func (s *PDSTestSuite) TestDataService_UpdateImage() {
 			continue
 		}
 
+		fromSpec := api.ShortDeploymentSpec{
+			DataServiceName: dataServiceName,
+			ImageVersionTag: *cv.VersionName,
+			// Only test lowest node count.
+			NodeCount: nodeCounts[0],
+		}
+		s.controlPlane.SetDefaultImageVersionBuild(&fromSpec, false)
+
 		targets := cv.Compatible
 		if *latestCompatibleOnly {
 			targets = cv.LatestCompatible
 		}
 		for _, target := range targets {
-			spec := api.ShortDeploymentSpec{
-				DataServiceName: dataServiceName,
-				ImageVersionTag: *cv.VersionName,
+			fromSpec.NamePrefix = fmt.Sprintf("update-%s-", fromSpec.ImageVersionTag)
+			toSpec := fromSpec
+			toSpec.ImageVersionTag = *target.Name
+			s.controlPlane.SetDefaultImageVersionBuild(&toSpec, true)
 
-				// Only test lowest node count.
-				NodeCount: nodeCounts[0],
-			}
-			targetVersionTag := *target.Name
-			s.T().Run(fmt.Sprintf("update-%s-%s-to-%s", spec.DataServiceName, spec.ImageVersionString(), targetVersionTag), func(t *testing.T) {
+			testName := fmt.Sprintf("update-%s-%s-to-%s", dataServiceName, fromSpec.ImageVersionString(), toSpec.ImageVersionString())
+			s.T().Run(testName, func(t *testing.T) {
 				t.Parallel()
-
-				spec.NamePrefix = fmt.Sprintf("update-%s-", spec.ImageVersionString())
-				deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &spec)
-				t.Cleanup(func() {
-					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-				})
-
-				// Create.
-				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
-
-				// Update.
-				newSpec := spec
-				newSpec.ImageVersionTag = targetVersionTag
-				oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
-				s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &newSpec)
-				s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
-				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, targetVersionTag)
-				s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
-				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-
-				// Temporary fix for MySQL - can remove after DS-4984 is completed.
-				if spec.DataServiceName == dataservices.MySQL {
-					time.Sleep(200 * time.Second)
-				}
-				s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+				s.updateTestImpl(t, fromSpec, toSpec)
 			})
 		}
 	}
+}
+
+func (s *PDSTestSuite) TestDataService_PDSSystemUsersV1Migration() {
+	dataServicesByName := s.controlPlane.MustGetDataServicesByName(s.ctx, s.T())
+	for dsName, versions := range activeVersions {
+		dataService, ok := dataServicesByName[dsName]
+		if !ok {
+			assert.Fail(s.T(), "Data service with name '%s' not found", dsName)
+		}
+		dsImages := s.controlPlane.MustGetAllImagesForDataService(s.ctx, s.T(), dataService.GetId())
+	versionLoop:
+		for _, version := range versions {
+			nodeCounts := commonNodeCounts[dsName]
+			if len(nodeCounts) == 0 {
+				continue
+			}
+
+			toSpec := api.ShortDeploymentSpec{
+				DataServiceName: dsName,
+				ImageVersionTag: version,
+				// Only test lowest node count.
+				NodeCount: nodeCounts[0],
+			}
+			s.controlPlane.SetDefaultImageVersionBuild(&toSpec, false)
+
+			// Find the build to migrate from.
+			versionNamePrefix := getPatchVersionNamePrefix(dsName, toSpec.ImageVersionTag)
+			filteredImages := filterImagesByVersionNamePrefix(dsImages, versionNamePrefix)
+			var fromImage *pds.ModelsImage
+			toImageFound := false
+			for _, image := range filteredImages {
+				// First find image for toSpec.
+				if !toImageFound {
+					if *image.Tag == toSpec.ImageVersionTag && *image.Build == toSpec.ImageVersionBuild {
+						toImageFound = true
+						if !hasPDSSystemUsersCapability(image) {
+							s.T().Logf("Image %s %s does not have PDSSystemUsers capability defined.", dsName, toSpec.ImageVersionString())
+							continue versionLoop
+						}
+					}
+					continue
+				}
+				// Next find the latest image which does not have "pds_system_users" capability defined.
+				if !hasPDSSystemUsersCapability(image) {
+					fromImage = &image
+					break
+				}
+			}
+			if fromImage == nil {
+				s.T().Logf("No previous image found without PDSSystemUsers capability %s %s", dsName, toSpec.ImageVersionString())
+				continue
+			}
+
+			toSpec.NamePrefix = fmt.Sprintf("migrate-%s-", toSpec.ImageVersionTag)
+			fromSpec := toSpec
+			fromSpec.ImageVersionTag = *fromImage.Tag
+			fromSpec.ImageVersionBuild = *fromImage.Build
+
+			testName := fmt.Sprintf("migrate-%s-%s-to-%s", dsName, fromSpec.ImageVersionString(), toSpec.ImageVersionString())
+			s.T().Run(testName, func(t *testing.T) {
+				t.Parallel()
+				s.updateTestImpl(t, fromSpec, toSpec)
+			})
+		}
+	}
+}
+
+func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDeploymentSpec) {
+	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &fromSpec)
+	t.Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+	})
+
+	// Create.
+	s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+	s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+
+	// Update.
+	oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
+	s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &toSpec)
+	s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
+	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, toSpec.ImageVersionString())
+	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
+	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
+
+	// Temporary fix for MySQL - can remove after DS-4984 is completed.
+	if fromSpec.DataServiceName == dataservices.MySQL {
+		time.Sleep(200 * time.Second)
+	}
+	s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
 }
 
 func (s *PDSTestSuite) TestDataService_ScaleUp() {
@@ -622,4 +696,35 @@ func deleteBackupWithWorkaround(s *PDSTestSuite, t *testing.T, backup *pds.Model
 	s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId(), true)
 	err := s.targetCluster.DeletePDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
 	require.NoError(t, err)
+}
+
+// getPatchVersionNamePrefix returns the prefix of the version name that does not change on patch update.
+func getPatchVersionNamePrefix(dataServiceName, versionName string) string {
+	switch dataServiceName {
+	case dataservices.SqlServer:
+		return "2019-CU"
+	case dataservices.ElasticSearch:
+		// Elasticsearch's version lines are like 8.x.y
+		firstDot := strings.Index(versionName, ".")
+		return versionName[0 : firstDot+1]
+	default:
+		// For other data services the last number is used for patch updates.
+		lastDot := strings.LastIndex(versionName, ".")
+		return versionName[0 : lastDot+1]
+	}
+}
+
+func filterImagesByVersionNamePrefix(images []pds.ModelsImage, versionNamePrefix string) []pds.ModelsImage {
+	var filteredImages []pds.ModelsImage
+	for _, image := range images {
+		if strings.HasPrefix(*image.Tag, versionNamePrefix) {
+			filteredImages = append(filteredImages, image)
+		}
+	}
+	return filteredImages
+}
+
+func hasPDSSystemUsersCapability(image pds.ModelsImage) bool {
+	v := image.Capabilities[pdsSystemUsersCapabilityName]
+	return v != nil && v != ""
 }
