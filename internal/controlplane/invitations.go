@@ -11,6 +11,12 @@ import (
 	"github.com/portworx/pds-integration-test/internal/tests"
 )
 
+func (c *ControlPlane) MustCreateInvitation(ctx context.Context, t tests.T, email, role string) {
+	response, err := c.CreateInvitation(ctx, t, email, role)
+	api.RequireNoError(t, response, err)
+	require.Equal(t, http.StatusOK, response.StatusCode)
+}
+
 func (c *ControlPlane) CreateInvitation(ctx context.Context, t tests.T, email, role string) (*http.Response, error) {
 	requestBody := pds.RequestsInvitationAccountRequest{
 		Email:    email,

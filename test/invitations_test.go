@@ -4,15 +4,13 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-
-	"github.com/portworx/pds-integration-test/internal/api"
 )
 
 const (
 	testInvitationEmail = "test_invitation_integration_test@email.com"
 )
 
-func (s *PDSTestSuite) TestInvitations_CrudFail() {
+func (s *PDSTestSuite) TestInvitations_CreateFail() {
 	// invalid email.
 	response, err := s.controlPlane.CreateInvitation(s.ctx, s.T(), "invalid-email-id", "account-reader")
 	s.Require().Error(err)
@@ -25,8 +23,20 @@ func (s *PDSTestSuite) TestInvitations_CrudFail() {
 	s.Require().NotNil(response)
 	s.Require().Equal(http.StatusUnprocessableEntity, response.StatusCode)
 
+	s.controlPlane.MustCreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
+
+	response, err = s.controlPlane.CreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
+	s.Require().Error(err)
+	s.Require().Equal(http.StatusConflict, response.StatusCode)
+
+	fetchedInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), testInvitationEmail)
+	s.Require().NotNil(fetchedInvitation)
+	s.controlPlane.MustDeleteInvitation(s.ctx, s.T(), *fetchedInvitation.Id)
+}
+
+func (s *PDSTestSuite) TestInvitations_DeleteFail() {
 	// deleting invitation with id does not exists.
-	response, err = s.controlPlane.DeleteInvitation(s.ctx, uuid.New().String())
+	response, err := s.controlPlane.DeleteInvitation(s.ctx, uuid.New().String())
 	s.Require().Error(err)
 	s.Require().Equal(http.StatusNotFound, response.StatusCode)
 
@@ -38,9 +48,7 @@ func (s *PDSTestSuite) TestInvitations_CrudFail() {
 
 func (s *PDSTestSuite) TestInvitations_CrudOK() {
 	// create invitation.
-	response, err := s.controlPlane.CreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
-	api.RequireNoError(s.T(), response, err)
-	s.Require().Equal(http.StatusOK, response.StatusCode)
+	s.controlPlane.MustCreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
 
 	// Get invitation.
 	createdInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), testInvitationEmail)
