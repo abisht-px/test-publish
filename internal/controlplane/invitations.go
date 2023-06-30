@@ -28,30 +28,29 @@ func (c *ControlPlane) MustListAccountInvitations(ctx context.Context, t tests.T
 	return invitations
 }
 
-func (c *ControlPlane) GetAccountInvitation(ctx context.Context, t tests.T, invitationID string) *pds.ModelsAccountRoleInvitation {
+func (c *ControlPlane) GetAccountInvitation(ctx context.Context, t tests.T, email string) *pds.ModelsAccountRoleInvitation {
 	invitations := c.MustListAccountInvitations(ctx, t)
 	require.NotEmpty(t, invitations.GetData())
 	for _, invitation := range invitations.GetData() {
-		if *invitation.Id == invitationID {
+		if *invitation.Email == email {
 			return &invitation
 		}
 	}
 	return nil
 }
 
-func (c *ControlPlane) MustPatchAccountInvitation(ctx context.Context, t tests.T, role, invitationID string) *http.Response {
+func (c *ControlPlane) MustPatchAccountInvitation(ctx context.Context, t tests.T, role, invitationID string) {
 	req := c.PDS.AccountsRoleInvitationsApi.ApiAccountRoleInvitationsIdPatch(ctx, invitationID)
 	patchReqBody := pds.RequestsPatchAccountRoleInvitationRequest{RoleName: &role}
 	req = req.Body(patchReqBody)
 	resp, err := c.PDS.AccountsRoleInvitationsApi.ApiAccountRoleInvitationsIdPatchExecute(req)
 	api.RequireNoError(t, resp, err)
-	return resp
 }
 
-func (c *ControlPlane) MustDeleteInvitation(ctx context.Context, t tests.T, id string) *http.Response {
+func (c *ControlPlane) MustDeleteInvitation(ctx context.Context, t tests.T, id string) {
 	resp, err := c.DeleteInvitation(ctx, id)
+	require.NotNil(t, resp)
 	api.RequireNoError(t, resp, err)
-	return resp
 }
 
 func (c *ControlPlane) DeleteInvitation(ctx context.Context, id string) (*http.Response, error) {

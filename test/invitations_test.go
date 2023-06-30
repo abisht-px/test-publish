@@ -5,8 +5,6 @@ import (
 
 	"github.com/google/uuid"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
-
 	"github.com/portworx/pds-integration-test/internal/api"
 )
 
@@ -14,7 +12,7 @@ const (
 	testInvitationEmail = "test_invitation_integration_test@email.com"
 )
 
-func (s *PDSTestSuite) TestInvitations_CreateInvitation_Fail() {
+func (s *PDSTestSuite) TestInvitations_CrudFail() {
 	// invalid email.
 	response, err := s.controlPlane.CreateInvitation(s.ctx, s.T(), "invalid-email-id", "account-reader")
 	s.Require().Error(err)
@@ -38,38 +36,27 @@ func (s *PDSTestSuite) TestInvitations_CreateInvitation_Fail() {
 	s.Require().Equal(http.StatusBadRequest, response.StatusCode)
 }
 
-func (s *PDSTestSuite) TestInvitations_CreateInvitation_CRUD_OK() {
+func (s *PDSTestSuite) TestInvitations_CrudOK() {
 	// create invitation.
 	response, err := s.controlPlane.CreateInvitation(s.ctx, s.T(), testInvitationEmail, "account-reader")
 	api.RequireNoError(s.T(), response, err)
 	s.Require().Equal(http.StatusOK, response.StatusCode)
 
-	// List invitations.
-	result := s.controlPlane.MustListAccountInvitations(s.ctx, s.T())
-	found := false
-	var createdInvitation pds.ModelsAccountRoleInvitation
-	for _, invitation := range result.Data {
-		if *invitation.Email == testInvitationEmail {
-			found = true
-			createdInvitation = invitation
-			break
-		}
-	}
-	s.Require().True(found)
+	// Get invitation.
+	createdInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), testInvitationEmail)
+	s.Require().NotNil(createdInvitation)
 
 	// checking patch invitation.
-	response = s.controlPlane.MustPatchAccountInvitation(s.ctx, s.T(), "account-admin", *createdInvitation.Id)
-	s.Require().Equal(http.StatusNoContent, response.StatusCode)
+	s.controlPlane.MustPatchAccountInvitation(s.ctx, s.T(), "account-admin", *createdInvitation.Id)
 
-	fetchedInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
+	fetchedInvitation := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Email)
 	// verifying patch.
 	s.Require().Equal("account-admin", fetchedInvitation.GetRoleName())
 
 	// deleting invitation.
-	response = s.controlPlane.MustDeleteInvitation(s.ctx, s.T(), *createdInvitation.Id)
-	s.Require().Equal(http.StatusNoContent, response.StatusCode)
+	s.controlPlane.MustDeleteInvitation(s.ctx, s.T(), *createdInvitation.Id)
 
 	// verifying deletion.
-	deletedInvitations := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Id)
+	deletedInvitations := s.controlPlane.GetAccountInvitation(s.ctx, s.T(), *createdInvitation.Email)
 	s.Require().Nil(deletedInvitations)
 }
