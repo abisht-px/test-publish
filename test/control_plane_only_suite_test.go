@@ -43,3 +43,8 @@ func (s *ControlPlaneTestSuite) SetupSuite() {
 		config.ProjectName,
 		namePrefix)
 }
+
+func (s *ControlPlaneTestSuite) TearDownSuite() {
+	s.ControlPlane.DeleteTestApplicationTemplates(s.ctx, s.T())
+	s.ControlPlane.DeleteTestStorageOptions(s.ctx, s.T())
+}
