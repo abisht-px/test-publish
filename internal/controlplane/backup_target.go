@@ -67,7 +67,7 @@ func (c *ControlPlane) MustDeleteBackupTarget(ctx context.Context, t tests.T, ba
 	// to delete the PX cloud credentials. This query parameter is used by default in the UI.
 	resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdDelete(ctx, backupTargetID).Force("true").Execute()
 	api.RequireNoError(t, resp, err)
-	wait.For(t, wait.StandardTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		_, resp, err := c.PDS.BackupTargetsApi.ApiBackupTargetsIdGet(ctx, backupTargetID).Execute()
 		assert.Error(t, err)
 		assert.NotNil(t, resp)

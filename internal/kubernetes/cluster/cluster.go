@@ -13,6 +13,7 @@ import (
 	openstoragev1 "github.com/libopenstorage/operator/pkg/apis/core/v1"
 	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,8 @@ import (
 	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
+	"github.com/portworx/pds-integration-test/internal/tests"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 const (
@@ -266,6 +269,22 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 
 func (c *Cluster) DeleteJob(ctx context.Context, namespace, name string) error {
 	return c.Clientset.BatchV1().Jobs(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+}
+
+func (c *Cluster) GetDeployment(ctx context.Context, namespace, name string) (*appsv1.Deployment, error) {
+	return c.Clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+func (c *Cluster) MustDeleteBackupCustomResource(ctx context.Context, t tests.T, namespace string, customResourceName string) {
+
+	err := c.DeletePDSBackup(ctx, namespace, customResourceName)
+	require.NoError(t, err)
+
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+		_, err := c.GetPDSBackup(ctx, namespace, customResourceName)
+		expectedError := fmt.Sprintf("backups.backups.pds.io %q not found", customResourceName)
+		require.EqualError(t, err, expectedError, "backup CR is not deleted.")
+	})
 }
 
 func (c *Cluster) GetJobLogs(ctx context.Context, namespace, jobName string, since time.Time) (string, error) {
