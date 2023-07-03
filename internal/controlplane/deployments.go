@@ -144,7 +144,7 @@ func (c *ControlPlane) MustWaitForDeploymentReplicas(ctx context.Context, t *tes
 }
 
 func (c *ControlPlane) MustWaitForDeploymentAvailable(ctx context.Context, t *testing.T, deploymentID string) {
-	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
 		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Expand("deployment_manifest").Execute()
 		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
 

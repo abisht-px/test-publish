@@ -224,7 +224,6 @@ func (s *PDSTestSuite) TestDeploymentReporting_DeletetionFromCP() {
 			namespaceModel, resp, err := s.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(s.ctx, *pdsDeployment.NamespaceId).Execute()
 			api.RequireNoError(t, resp, err)
 			namespace := namespaceModel.GetName()
-
 			customResourceName := *pdsDeployment.ClusterResourceName
 
 			// when
