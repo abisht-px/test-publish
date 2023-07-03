@@ -2,7 +2,7 @@ package controlplane
 
 import (
 	"context"
-	"testing"
+	"net/http"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
@@ -12,15 +12,21 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-func (c *ControlPlane) MustCreateRestore(ctx context.Context, t *testing.T, backupJobID string, name string, nsID, deploymentTargetID *string) *pds.ModelsRestore {
-	requestBody := pds.RequestsCreateRestoreRequest{
-		DeploymentTargetId: deploymentTargetID,
-		Name:               &name,
-		NamespaceId:        nsID,
-	}
-	restore, resp, err := c.PDS.RestoresApi.ApiBackupJobsIdRestorePost(ctx, backupJobID).Body(requestBody).Execute()
+func (c *ControlPlane) MustCreateRestore(ctx context.Context, t tests.T, backupJobID, name, nsID, deploymentTargetID string) *pds.ModelsRestore {
+	restore, resp, err := c.CreateRestore(ctx, backupJobID, name, nsID, deploymentTargetID)
 	api.RequireNoError(t, resp, err)
+	require.NotNil(t, restore)
 	return restore
+}
+
+func (c *ControlPlane) CreateRestore(ctx context.Context, backupJobID, name, namespaceID, deploymentTargetID string) (*pds.ModelsRestore, *http.Response, error) {
+	requestBody := pds.RequestsCreateRestoreRequest{
+		Name:               &name,
+		NamespaceId:        &namespaceID,
+		DeploymentTargetId: &deploymentTargetID,
+	}
+
+	return c.PDS.RestoresApi.ApiBackupJobsIdRestorePost(ctx, backupJobID).Body(requestBody).Execute()
 }
 
 func (c *ControlPlane) MustWaitForRestoreSuccessful(ctx context.Context, t tests.T, restoreID string) {

@@ -15,7 +15,7 @@ func (c *CrossClusterHelper) MustCreateRestore(ctx context.Context, t tests.T, n
 	pdsBackup, err := c.targetCluster.GetPDSBackup(ctx, namespace, backupName)
 	require.NoError(t, err)
 
-	snapshotID, err := getBackupSnapshotID(pdsBackup)
+	snapshotID, err := GetBackupSnapshotID(pdsBackup)
 	require.NoError(t, err)
 
 	restore, err := c.targetCluster.CreatePDSRestore(ctx, namespace, restoreName, pdsBackup.Spec.CloudCredentialName, snapshotID)

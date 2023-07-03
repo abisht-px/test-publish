@@ -56,7 +56,7 @@ func (c *CrossClusterHelper) MustEnsureBackupSuccessful(ctx context.Context, t t
 	return
 }
 
-func getBackupSnapshotID(backup *backupsv1.Backup) (string, error) {
+func GetBackupSnapshotID(backup *backupsv1.Backup) (string, error) {
 	if !isBackupSucceeded(backup) {
 		return "", fmt.Errorf("no succeded backups")
 	}

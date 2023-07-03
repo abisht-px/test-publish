@@ -2,8 +2,11 @@ package controlplane
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/stretchr/testify/require"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -24,4 +27,34 @@ func (c *ControlPlane) MustWaitForBackupJobRemoved(ctx context.Context, t tests.
 func (c *ControlPlane) MustDeleteBackupJobByName(ctx context.Context, t tests.T, backupID string, backupJobName string) {
 	resp, err := c.PDS.BackupsApi.ApiBackupsIdJobsNameDelete(ctx, backupID, backupJobName).Execute()
 	api.RequireNoError(t, resp, err)
+}
+
+type ProjectsIdBackupJobsGetRequestOptions func(*pds.ApiApiProjectsIdBackupJobsGetRequest)
+
+func WithListBackupJobsInProjectBackupID(backupID string) ProjectsIdBackupJobsGetRequestOptions {
+	return func(r *pds.ApiApiProjectsIdBackupJobsGetRequest) {
+		r.BackupId(backupID)
+	}
+}
+
+func (c *ControlPlane) ListBackupJobsInProject(ctx context.Context, projectID string, opts ...ProjectsIdBackupJobsGetRequestOptions) ([]pds.ModelsBackupJob, *http.Response, error) {
+	req := c.PDS.BackupJobsApi.ApiProjectsIdBackupJobsGet(ctx, projectID)
+
+	for _, o := range opts {
+		o(&req)
+	}
+
+	backupJobList, resp, err := req.Execute()
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return backupJobList.GetData(), resp, err
+}
+
+func (c *ControlPlane) MustListBackupJobsInProject(ctx context.Context, t tests.T, projectID string, opts ...ProjectsIdBackupJobsGetRequestOptions) []pds.ModelsBackupJob {
+	backupJobs, resp, err := c.ListBackupJobsInProject(ctx, projectID, opts...)
+	api.RequireNoError(t, resp, err)
+	require.NotEmpty(t, backupJobs)
+	return backupJobs
 }
