@@ -55,6 +55,10 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 			Value: dataservices.ToShortName(dataServiceType),
 		},
 		{
+			Name:  "NAMESPACE",
+			Value: namespace,
+		},
+		{
 			Name:  "HOST",
 			Value: host,
 		},

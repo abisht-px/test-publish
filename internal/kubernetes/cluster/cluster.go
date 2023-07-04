@@ -13,10 +13,12 @@ import (
 	openstoragev1 "github.com/libopenstorage/operator/pkg/apis/core/v1"
 	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -27,8 +29,6 @@ import (
 	"k8s.io/utils/pointer"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/external-dns/endpoint"
-
-	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -217,9 +217,185 @@ func (c *Cluster) GetDNSEndpoints(ctx context.Context, namespace, nameFilter str
 	return dnsNames, nil
 }
 
+func (c *Cluster) CreateRoleBinding(ctx context.Context, roleBindingName string, roleName string, serviceAccountName string, namespace string) error {
+	_, err := c.Clientset.RbacV1().RoleBindings(namespace).Get(context.TODO(), roleBindingName, metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			// RoleBinding does not exist, create it
+			newBinding := &rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      roleBindingName,
+					Namespace: namespace,
+				},
+				RoleRef: rbacv1.RoleRef{
+					Kind: "Role",
+					Name: roleName,
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind:      "ServiceAccount",
+						Name:      serviceAccountName,
+						Namespace: namespace,
+					},
+				},
+			}
+			_, err := c.Clientset.RbacV1().RoleBindings(namespace).Create(context.TODO(), newBinding, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to create RoleBinding %s: %v", roleBindingName, err)
+			}
+			return nil
+		} else {
+			// Handle other errors
+			return fmt.Errorf("failed to get RoleBinding %s: %v", roleBindingName, err)
+		}
+	}
+
+	// RoleBinding already exists
+	return nil
+}
+
+func (c *Cluster) CreateOrUpdateRole(ctx context.Context, roleName string, namespace string, rules []rbacv1.PolicyRule) error {
+	existingRole, err := c.Clientset.RbacV1().Roles(namespace).Get(context.TODO(), roleName, metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			// Role does not exist, create it
+			newRole := &rbacv1.Role{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      roleName,
+					Namespace: namespace,
+				},
+				Rules: rules,
+			}
+			_, err := c.Clientset.RbacV1().Roles(namespace).Create(context.TODO(), newRole, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to create Role %s: %v", roleName, err)
+			}
+			return nil
+		}
+		return fmt.Errorf("failed to get Role %s: %v", roleName, err)
+	}
+
+	// Role already exists, update it
+	existingRole.Rules = rules
+	_, err = c.Clientset.RbacV1().Roles(namespace).Update(context.TODO(), existingRole, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update Role %s: %v", roleName, err)
+	}
+
+	return nil
+}
+
+func (c *Cluster) CreateServiceAccount(ctx context.Context, serviceAccountName string, namespace string) error {
+	_, err := c.Clientset.CoreV1().ServiceAccounts(namespace).Get(context.TODO(), serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			// ServiceAccount does not exist, create it
+			newAccount := &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      serviceAccountName,
+					Namespace: namespace,
+				},
+			}
+			_, err := c.Clientset.CoreV1().ServiceAccounts(namespace).Create(context.TODO(), newAccount, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to create ServiceAccount %s: %v", serviceAccountName, err)
+			}
+			return nil
+		} else {
+			return fmt.Errorf("failed to get ServiceAccount %s: %v", serviceAccountName, err)
+		}
+	}
+	return nil
+}
+
+func (c *Cluster) CreateLoadTestServiceAccount(ctx context.Context, namespace string) (string, error) {
+
+	roleName := "pds-loadgen"
+	serviceAccountName := "pds-loadgen"
+
+	rules := []rbacv1.PolicyRule{
+		{
+			APIGroups:     []string{"policy"},
+			ResourceNames: []string{"pds-restricted"},
+			Resources:     []string{"podsecuritypolicies"},
+			Verbs:         []string{"use"},
+		},
+		{
+			APIGroups: []string{""},
+			Resources: []string{"secrets"},
+			Verbs:     []string{"get"},
+		},
+		{
+			APIGroups: []string{""},
+			Resources: []string{"pods", "services"},
+			Verbs:     []string{"get", "list"},
+		},
+		{
+			APIGroups: []string{""},
+			Resources: []string{"pods/exec"},
+			Verbs:     []string{"create"},
+		},
+	}
+
+	err := c.CreateOrUpdateRole(ctx, roleName, namespace, rules)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = c.CreateServiceAccount(ctx, serviceAccountName, namespace)
+
+	if err != nil {
+		return "", err
+	}
+
+	err = c.CreateRoleBinding(ctx, fmt.Sprintf("%s-role-binding", serviceAccountName), roleName, serviceAccountName, namespace)
+
+	if err != nil {
+		return "", err
+	}
+
+	return serviceAccountName, nil
+}
+
 func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string, ttlSecondsAfterFinished *int32) (*batchv1.Job, error) {
 	jobs := c.Clientset.BatchV1().Jobs(namespace)
 	var backOffLimit int32 = 0
+
+	spec := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:    "main",
+				Image:   image,
+				Env:     env,
+				Command: command,
+				SecurityContext: &corev1.SecurityContext{
+					AllowPrivilegeEscalation: pointer.Bool(false),
+					Capabilities: &corev1.Capabilities{
+						Drop: []corev1.Capability{
+							"ALL",
+						},
+					},
+				},
+			},
+		},
+		RestartPolicy: corev1.RestartPolicyNever,
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsNonRoot: pointer.Bool(true),
+			RunAsUser:    pointer.Int64(1000),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+		},
+	}
+
+	if strings.Contains(jobName, "-loadtest-") {
+		serviceAccountName, err := c.CreateLoadTestServiceAccount(ctx, namespace)
+		if err != nil {
+			return nil, err
+		}
+		spec.ServiceAccountName = serviceAccountName
+	}
 
 	jobSpec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -228,32 +404,7 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:    "main",
-							Image:   image,
-							Env:     env,
-							Command: command,
-							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: pointer.Bool(false),
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{
-										"ALL",
-									},
-								},
-							},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: pointer.Bool(true),
-						RunAsUser:    pointer.Int64(1000),
-						SeccompProfile: &corev1.SeccompProfile{
-							Type: corev1.SeccompProfileTypeRuntimeDefault,
-						},
-					},
-				},
+				Spec: spec,
 			},
 			BackoffLimit:            &backOffLimit,
 			TTLSecondsAfterFinished: ttlSecondsAfterFinished,
