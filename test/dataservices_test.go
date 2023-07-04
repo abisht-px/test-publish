@@ -612,6 +612,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		dataservices.MongoDB,
 		dataservices.MySQL,
 		dataservices.Postgres,
+		dataservices.RabbitMQ,
 		dataservices.ElasticSearch,
 	}
 
