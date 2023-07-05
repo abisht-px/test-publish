@@ -261,3 +261,37 @@ func (c *ControlPlane) MustGetErrorOnDeploymentEventsGet(ctx context.Context, t 
 	_, _, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	assert.Errorf(t, err, "Expected an error response on getting deployment events for deployment %s.", deploymentID)
 }
+
+func (s *ControlPlane) FailUpdateDeployment(ctx context.Context, t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
+	req := pds.ControllersUpdateDeploymentRequest{}
+	nodeCount := int32(10)
+	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
+		image := s.findImageVersionForRecord(spec)
+		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
+
+		req.ImageId = &image.ImageID
+	}
+	if spec.NodeCount != 0 {
+		req.NodeCount = &spec.NodeCount
+	} else {
+		req.NodeCount = &nodeCount
+	}
+
+	deployment, resp, err := s.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	if spec.ResourceSettingsTemplateName != "" {
+		resourceTemplate, err := s.PDS.GetResourceSettingsTemplateByName(ctx, s.TestPDSTenantID, spec.ResourceSettingsTemplateName, *deployment.DataServiceId)
+		require.NoError(t, err)
+		req.ResourceSettingsTemplateId = resourceTemplate.Id
+	}
+
+	if spec.AppConfigTemplateName != "" {
+		appConfigTemplate, err := s.PDS.GetAppConfigTemplateByName(ctx, s.TestPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
+		require.NoError(t, err)
+		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
+	}
+
+	_, resp, err = s.PDS.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()
+	api.RequireErrorWithStatus(t, resp, err, http.StatusBadRequest)
+}

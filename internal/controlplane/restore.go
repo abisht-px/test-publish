@@ -37,3 +37,12 @@ func (c *ControlPlane) MustWaitForRestoreSuccessful(ctx context.Context, t tests
 		require.Equal(t, "Successful", state, "Restore %q is in state %q.", restoreID, state)
 	})
 }
+
+func (c *ControlPlane) MustWaitForRestoreFailed(ctx context.Context, t tests.T, restoreID string) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+		restore, resp, err := c.PDS.RestoresApi.ApiRestoresIdGet(ctx, restoreID).Execute()
+		api.RequireNoError(t, resp, err)
+		state := restore.GetStatus()
+		require.Equal(t, "Failed", state, "Restore %q is in state %q.", restoreID, state)
+	})
+}
