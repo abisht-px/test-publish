@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/random"
@@ -253,17 +254,76 @@ func (s *PDSTestSuite) TestBackupJobDeletion_FromCP_WithBackupSchedule() {
 	})
 
 	// When
-	pdsBackup, err := s.targetCluster.GetPDSBackup(s.ctx, namespace, backup.GetClusterResourceName())
-	require.NoError(s.T(), err)
-	backupJobName := pdsBackup.Status.BackupJobs[0].Name
-	s.controlPlane.MustDeleteBackupJobByName(s.ctx, s.T(), backup.GetId(), backupJobName)
+	backupJobs := s.controlPlane.MustListBackupJobsInProject(s.ctx, s.T(), s.controlPlane.TestPDSProjectID, controlplane.WithListBackupJobsInProjectBackupID(backup.GetId()))
+	s.controlPlane.MustDeleteBackupJobByName(s.ctx, s.T(), backup.GetId(), *backupJobs[0].Name)
 
 	// Then
 	// Check Backup cr deleted
-	s.controlPlane.MustWaitForBackupJobRemoved(s.ctx, s.T(), backup.GetId(), backupJobName)
+	s.controlPlane.MustWaitForBackupJobRemoved(s.ctx, s.T(), backupJobs[0].GetId())
 	// Check BackupJob cr deleted
-	_, err = s.targetCluster.GetPDSBackupJob(s.ctx, namespace, backupJobName)
-	expectedError := fmt.Sprintf("backupjobs.backups.pds.io %q not found", backupJobName)
+	_, err = s.targetCluster.GetPDSBackupJob(s.ctx, namespace, *backupJobs[0].Name)
+	expectedError := fmt.Sprintf("backupjobs.backups.pds.io %q not found", *backupJobs[0].Name)
+	require.EqualError(s.T(), err, expectedError)
+	// Check VolumeSnapshot cr deleted
+	volumeSnapshotName := fmt.Sprintf("%s-adhoc", backup.GetClusterResourceName())
+	_, err = s.targetCluster.GetVolumeSnapshot(s.ctx, namespace, volumeSnapshotName)
+	expectedError = fmt.Sprintf("volumesnapshots.volumesnapshot.external-storage.k8s.io %q not found", volumeSnapshotName)
+	require.EqualError(s.T(), err, expectedError)
+}
+
+func (s *PDSTestSuite) TestBackupJobDeletion_FromTC() {
+	if *skipBackups {
+		s.T().Skip("Backup tests skipped.")
+	}
+	// Given
+	deployment := api.ShortDeploymentSpec{
+		DataServiceName: dataservices.Cassandra,
+		ImageVersionTag: "4.1.2",
+		NodeCount:       1,
+	}
+
+	// Deploy DS
+	deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
+	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, s.T(), &deployment)
+	s.T().Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), deploymentID)
+		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
+	})
+	s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, s.T(), deploymentID)
+	s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), deploymentID)
+	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), deploymentID)
+	pdsDeployment, resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	api.RequireNoError(s.T(), resp, err)
+	namespaceModel, resp, err := s.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(s.ctx, *pdsDeployment.NamespaceId).Execute()
+	api.RequireNoError(s.T(), resp, err)
+	namespace := namespaceModel.GetName()
+	// Setup backup creds
+	name := generateRandomName("backup-creds")
+	backupTargetConfig := s.config.backupTarget
+	s3Creds := backupTargetConfig.credentials.S3
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), s3Creds, name)
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), backupCredentials.GetId()) })
+	// Setup backup target
+	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, s.T(), backupTarget.GetId())
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId()) })
+	// Take Adhoc backup
+	backup := s.controlPlane.MustCreateBackup(s.ctx, s.T(), deploymentID, backupTarget.GetId())
+	s.crossCluster.MustEnsureBackupSuccessful(s.ctx, s.T(), deploymentID, backup.GetClusterResourceName())
+	s.T().Cleanup(func() {
+		s.controlPlane.MustDeleteBackup(s.ctx, s.T(), backup.GetId(), true)
+	})
+	backupJobs := s.controlPlane.MustListBackupJobsInProject(s.ctx, s.T(), s.controlPlane.TestPDSProjectID, controlplane.WithListBackupJobsInProjectBackupID(backup.GetId()))
+
+	// When
+	s.targetCluster.MustDeleteBackupCustomResource(s.ctx, s.T(), namespace, backup.GetClusterResourceName())
+
+	// Then
+	// Check BackupJob in CP deleted
+	s.controlPlane.MustWaitForBackupJobRemoved(s.ctx, s.T(), *backupJobs[0].Id)
+	// Check BackupJob cr deleted
+	_, err = s.targetCluster.GetPDSBackupJob(s.ctx, namespace, *backupJobs[0].Name)
+	expectedError := fmt.Sprintf("backupjobs.backups.pds.io %q not found", *backupJobs[0].Name)
 	require.EqualError(s.T(), err, expectedError)
 	// Check VolumeSnapshot cr deleted
 	volumeSnapshotName := fmt.Sprintf("%s-adhoc", backup.GetClusterResourceName())
