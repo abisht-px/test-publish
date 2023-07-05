@@ -69,6 +69,9 @@ func (c *ControlPlane) setDeploymentDefaults(deployment *api.ShortDeploymentSpec
 
 func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, deploymentID string, spec *api.ShortDeploymentSpec) {
 	req := pds.ControllersUpdateDeploymentRequest{}
+	if (spec.BackupTargetName == "" && spec.BackupPolicyname != "") || (spec.BackupTargetName != "" && spec.BackupPolicyname == "") {
+		require.FailNow(t, "backup target name and backup policy name both must be explicitly specified, and leaving either of them undefined is not allowed")
+	}
 	if spec.ImageVersionTag != "" || spec.ImageVersionBuild != "" {
 		image := s.findImageVersionForRecord(spec)
 		require.NotNil(t, image, "Update deployment: no image found for %s version.", spec.ImageVersionTag)
@@ -92,6 +95,17 @@ func (s *ControlPlane) MustUpdateDeployment(ctx context.Context, t *testing.T, d
 		appConfigTemplate, err := s.PDS.GetAppConfigTemplateByName(ctx, s.TestPDSTenantID, spec.AppConfigTemplateName, *deployment.DataServiceId)
 		require.NoError(t, err)
 		req.ApplicationConfigurationTemplateId = appConfigTemplate.Id
+	}
+
+	if spec.BackupPolicyname != "" && spec.BackupTargetName != "" {
+		backupPolicy, err := s.PDS.GetBackupPolicyByName(ctx, s.TestPDSTenantID, spec.BackupPolicyname)
+		require.NoError(t, err)
+		backupTarget, err := s.PDS.GetBackupTargetByName(ctx, s.TestPDSTenantID, spec.BackupTargetName)
+		require.NoError(t, err)
+		req.ScheduledBackup = &pds.ControllersUpdateDeploymentScheduledBackup{
+			BackupPolicyId: backupPolicy.Id,
+			BackupTargetId: backupTarget.Id,
+		}
 	}
 
 	_, resp, err = s.PDS.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()

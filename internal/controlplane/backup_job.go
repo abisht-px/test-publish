@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/stretchr/testify/require"
-
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -29,11 +29,16 @@ func (c *ControlPlane) MustDeleteBackupJobByName(ctx context.Context, t tests.T,
 	api.RequireNoError(t, resp, err)
 }
 
-type ProjectsIdBackupJobsGetRequestOptions func(*pds.ApiApiProjectsIdBackupJobsGetRequest)
+func (c *ControlPlane) MustDeleteBackupJobByID(ctx context.Context, t tests.T, backupJobID string) {
+	resp, err := c.PDS.BackupJobsApi.ApiBackupJobsIdDelete(ctx, backupJobID).Execute()
+	api.RequireNoError(t, resp, err)
+}
+
+type ProjectsIdBackupJobsGetRequestOptions func(pds.ApiApiProjectsIdBackupJobsGetRequest) pds.ApiApiProjectsIdBackupJobsGetRequest
 
 func WithListBackupJobsInProjectBackupID(backupID string) ProjectsIdBackupJobsGetRequestOptions {
-	return func(r *pds.ApiApiProjectsIdBackupJobsGetRequest) {
-		r.BackupId(backupID)
+	return func(r pds.ApiApiProjectsIdBackupJobsGetRequest) pds.ApiApiProjectsIdBackupJobsGetRequest {
+		return r.BackupId(backupID)
 	}
 }
 
@@ -41,7 +46,7 @@ func (c *ControlPlane) ListBackupJobsInProject(ctx context.Context, projectID st
 	req := c.PDS.BackupJobsApi.ApiProjectsIdBackupJobsGet(ctx, projectID)
 
 	for _, o := range opts {
-		o(&req)
+		req = o(req)
 	}
 
 	backupJobList, resp, err := req.Execute()
@@ -57,4 +62,17 @@ func (c *ControlPlane) MustListBackupJobsInProject(ctx context.Context, t tests.
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, backupJobs)
 	return backupJobs
+}
+
+func (c *ControlPlane) MustEnsureNBackupJobsSuccessFromSchedule(ctx context.Context, t tests.T, projectID, backupID string, expectedBackups int) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		backupJobs := c.MustListBackupJobsInProject(ctx, t, projectID, WithListBackupJobsInProjectBackupID(backupID))
+		successfulBackupJobs := 0
+		for _, backupJob := range backupJobs {
+			if backupJob.HasCompletionStatus() && *backupJob.CompletionStatus == string(backupsv1.BackupJobSucceeded) {
+				successfulBackupJobs++
+			}
+		}
+		require.GreaterOrEqual(t, expectedBackups, successfulBackupJobs, "Expected at least %v successful backup jobs", expectedBackups)
+	})
 }

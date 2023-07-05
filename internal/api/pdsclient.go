@@ -309,3 +309,31 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 
 	return res.GetId(), nil
 }
+
+func (c *PDSClient) GetBackupPolicyByName(ctx context.Context, tenantID, policyName string) (*pdsApi.ModelsBackupPolicy, error) {
+	backupPolicies, resp, err := c.BackupPoliciesApi.ApiTenantsIdBackupPoliciesGet(ctx, tenantID).Name(policyName).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("error getting backup policy %s : %w", policyName, err)
+	}
+	if len(backupPolicies.GetData()) == 0 {
+		return nil, fmt.Errorf("backup policy %s not found", policyName)
+	}
+	if len(backupPolicies.GetData()) != 1 {
+		return nil, fmt.Errorf("more than one backup policy %s found", policyName)
+	}
+	return &backupPolicies.GetData()[0], nil
+}
+
+func (c *PDSClient) GetBackupTargetByName(ctx context.Context, tenantID, backupTargetName string) (*pdsApi.ModelsBackupTarget, error) {
+	backupTargets, resp, err := c.BackupTargetsApi.ApiTenantsIdBackupTargetsGet(ctx, tenantID).Name(backupTargetName).Execute()
+	if err = ExtractErrorDetails(resp, err); err != nil {
+		return nil, fmt.Errorf("error getting backup target %s : %w", backupTargetName, err)
+	}
+	if len(backupTargets.GetData()) == 0 {
+		return nil, fmt.Errorf("backup target %s not found", backupTargetName)
+	}
+	if len(backupTargets.GetData()) != 1 {
+		return nil, fmt.Errorf("more than one backup target %s found", backupTargetName)
+	}
+	return &backupTargets.GetData()[0], nil
+}

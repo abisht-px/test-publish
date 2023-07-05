@@ -30,6 +30,13 @@ func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID
 	api.RequireNoError(t, resp, err)
 }
 
+func (c *ControlPlane) MustListBackupsByDeploymentID(ctx context.Context, t tests.T, deploymentID string) []pds.ModelsBackup {
+	backups, resp, err := c.PDS.BackupsApi.ApiDeploymentsIdBackupsGet(ctx, deploymentID).SortBy("created_at").Execute()
+	api.RequireNoError(t, resp, err)
+	require.NotEmpty(t, backups.GetData())
+	return backups.GetData()
+}
+
 func (c *ControlPlane) MustGetBackupJob(ctx context.Context, t tests.T, backupJobID string) *pds.ModelsBackupJob {
 	backupJob, resp, err := c.PDS.BackupJobsApi.ApiBackupJobsIdGet(ctx, backupJobID).Execute()
 	api.RequireNoError(t, resp, err)

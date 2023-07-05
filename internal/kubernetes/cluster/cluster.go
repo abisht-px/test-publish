@@ -516,3 +516,20 @@ func (c *Cluster) ListStorageNodes(ctx context.Context, namespace string) (*open
 func (c *Cluster) GetStorageClass(ctx context.Context, name string) (*storagev1.StorageClass, error) {
 	return c.Clientset.StorageV1().StorageClasses().Get(ctx, name, metav1.GetOptions{})
 }
+
+func (c *Cluster) GetCronJob(ctx context.Context, namespace, name string) (*batchv1.CronJob, error) {
+	return c.Clientset.BatchV1().CronJobs(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+func (c *Cluster) MustWaitForPDSBackupWithUpdatedSchedule(ctx context.Context, t tests.T, namespace, name, schedule string) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		backupJob, err := c.GetPDSBackup(ctx, namespace, name)
+		require.NoError(t, err)
+		require.Equal(t, schedule, backupJob.Spec.Schedule, "backup schedule not updated in backup cr.")
+	})
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		cronjob, err := c.GetCronJob(ctx, namespace, name)
+		require.NoError(t, err)
+		require.Equal(t, schedule, cronjob.Spec.Schedule, "backup schedule not updated in cron job.")
+	})
+}
