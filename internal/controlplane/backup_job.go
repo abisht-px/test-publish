@@ -13,12 +13,14 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-func (c *ControlPlane) MustWaitForBackupJobRemoved(ctx context.Context, t tests.T, backupJobID string) {
+func (c *ControlPlane) MustWaitForBackupJobsRemoved(ctx context.Context, t tests.T, backupID string, backupJobName string) {
 	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
-		backupJob, resp, err := c.PDS.BackupJobsApi.ApiBackupJobsIdGet(ctx, backupJobID).Execute()
-		require.EqualErrorf(t, err, "404 Not Found", "Expected an error response on getting backupjob %s.", backupJobID)
-		require.Equalf(t, http.StatusNotFound, resp.StatusCode, "Backup job %s is not removed.", backupJobID)
-		require.Nil(t, backupJob)
+		backupJobs, resp, err := c.PDS.BackupJobsApi.ApiBackupsIdJobsGet(ctx, backupID).Execute()
+		require.NoError(t, err, "Expected no error response on getting backup jobs for backup %s.", backupID)
+		require.NotNilf(t, resp, "Received no response body while getting backup jobs for backup %s.", backupID)
+		for _, job := range backupJobs.Data {
+			require.Equalf(t, backupJobName, *job.Name, "Backup job %s for backup %s is not removed.", backupJobName, backupID)
+		}
 	})
 }
 

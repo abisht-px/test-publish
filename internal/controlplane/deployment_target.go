@@ -50,3 +50,11 @@ func (s *ControlPlane) DeleteTestDeploymentTarget(ctx context.Context, t tests.T
 	api.NoErrorf(t, resp, err, "Deleting deployment target %s.", s.testPDSDeploymentTargetID)
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode, "Unexpected response code from deleting deployment target.")
 }
+
+func (s *ControlPlane) DisconnectTestDeploymentTarget(ctx context.Context, t tests.T) {
+	// Expect the target to be evaluated as unhealthy within 5 minutes (grace period from last received heartbeat).
+	wait.For(t, 5*time.Minute, wait.RetryInterval, func(t tests.T) {
+		err := s.PDS.CheckDeploymentTargetHealth(ctx, s.testPDSDeploymentTargetID)
+		assert.Errorf(t, err, "Deployment target %q is still healthy.", s.testPDSDeploymentTargetID)
+	})
+}
