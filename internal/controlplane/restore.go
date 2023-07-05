@@ -47,8 +47,13 @@ func (c *ControlPlane) MustWaitForRestoreFailed(ctx context.Context, t tests.T, 
 	})
 }
 
-func (c *ControlPlane) RetryRestore(ctx context.Context, t tests.T, restoreID string) *pds.ModelsRestore {
-	restore, resp, err := c.PDS.RestoresApi.ApiRestoresIdRetryPost(ctx, restoreID).Execute()
+func (c *ControlPlane) RetryRestore(ctx context.Context, t tests.T, restoreID string, name, namespaceID, deploymentTargetID string) *pds.ModelsRestore {
+	requestBody := pds.RequestsCreateRestoreRequest{
+		Name:               &name,
+		NamespaceId:        &namespaceID,
+		DeploymentTargetId: &deploymentTargetID,
+	}
+	restore, resp, err := c.PDS.RestoresApi.ApiRestoresIdRetryPost(ctx, restoreID).Body(requestBody).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotNil(t, restore)
 	return restore
