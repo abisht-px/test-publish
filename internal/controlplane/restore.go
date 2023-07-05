@@ -46,3 +46,10 @@ func (c *ControlPlane) MustWaitForRestoreFailed(ctx context.Context, t tests.T, 
 		require.Equal(t, "Failed", state, "Restore %q is in state %q.", restoreID, state)
 	})
 }
+
+func (c *ControlPlane) RetryRestore(ctx context.Context, t tests.T, restoreID string) *pds.ModelsRestore {
+	restore, resp, err := c.PDS.RestoresApi.ApiRestoresIdRetryPost(ctx, restoreID).Execute()
+	api.RequireNoError(t, resp, err)
+	require.NotNil(t, restore)
+	return restore
+}

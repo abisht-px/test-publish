@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/portworx/pds-integration-test/internal/controlplane"
+
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -18,6 +20,19 @@ type PXCloudCredential struct {
 		Endpoint  string `json:"endpoint"`
 		Region    string `json:"region"`
 	} `json:"aws_credential"`
+}
+
+type AWSCredentialsRequest struct {
+	AccessKey string `json:"access_key,omitempty"`
+	Endpoint  string `json:"endpoint,omitempty"`
+	Region    string `json:"region,omitempty"`
+	SecretKey string `json:"secret_key,omitempty"`
+}
+
+type CreateCredentialsRequest struct {
+	AwsCredential *AWSCredentialsRequest `json:"aws_credential,omitempty"`
+	Bucket        string                 `json:"bucket,omitempty"`
+	Name          string                 `json:"name"`
 }
 
 // GetPXCloudCredential gets single Portworx cloud credential.
@@ -99,4 +114,28 @@ func (p *Portworx) FindCloudCredentialByName(ctx context.Context, name string) (
 		}
 	}
 	return nil, fmt.Errorf("cloud credential '%s' not found", name)
+}
+
+func (p *Portworx) CreatePXCloudCredentialsForS3(ctx context.Context, name, bucket string, s3 controlplane.S3Credentials) error {
+	requestBody := CreateCredentialsRequest{
+		Name:   name,
+		Bucket: bucket,
+		AwsCredential: &AWSCredentialsRequest{
+			AccessKey: s3.AccessKey,
+			SecretKey: s3.SecretKey,
+			Region:    "us-west-2",
+			Endpoint:  s3.Endpoint,
+		},
+	}
+
+	rawBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.buildPXAPIRequest(p.restClient.Post(), "v1/credentials").Body(rawBody).Do(ctx).Raw()
+	if err != nil {
+		return err
+	}
+	return nil
 }
