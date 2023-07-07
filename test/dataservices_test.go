@@ -616,6 +616,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		dataservices.Redis,
 		dataservices.ElasticSearch,
 		dataservices.SqlServer,
+		dataservices.ZooKeeper,
 	}
 
 	for _, dsName := range deleteUserServices {
