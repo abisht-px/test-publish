@@ -327,7 +327,12 @@ func (c *Cluster) CreateLoadTestServiceAccount(ctx context.Context, namespace st
 		},
 		{
 			APIGroups: []string{""},
-			Resources: []string{"pods", "services"},
+			Resources: []string{"pods"},
+			Verbs:     []string{"get", "list", "delete"},
+		},
+		{
+			APIGroups: []string{""},
+			Resources: []string{"services"},
 			Verbs:     []string{"get", "list"},
 		},
 		{

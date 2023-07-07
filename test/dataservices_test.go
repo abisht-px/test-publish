@@ -353,7 +353,7 @@ func (s *PDSTestSuite) TestDataService_PDSSystemUsersV1Migration() {
 			fromSpec.ImageVersionTag = *fromImage.Tag
 			fromSpec.ImageVersionBuild = *fromImage.Build
 
-			testName := fmt.Sprintf("migrate-%s-%s-to-%s", dsName, fromSpec.ImageVersionString(), toSpec.ImageVersionString())
+			testName := fmt.Sprintf("migrate-%s-%s-to-%s-n%d", dsName, fromSpec.ImageVersionString(), toSpec.ImageVersionString(), toSpec.NodeCount)
 			s.T().Run(testName, func(t *testing.T) {
 				t.Parallel()
 				s.updateTestImpl(t, fromSpec, toSpec)
@@ -613,6 +613,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		dataservices.MySQL,
 		dataservices.Postgres,
 		dataservices.RabbitMQ,
+		dataservices.Redis,
 		dataservices.ElasticSearch,
 		dataservices.SqlServer,
 	}
@@ -649,6 +650,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 
 				// Delete 'pds' user.
 				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
+				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 				// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
 				s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
 				// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
