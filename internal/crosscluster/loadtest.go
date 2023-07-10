@@ -25,7 +25,7 @@ const (
 	PDSUser        = "pds"
 	PDSReplaceUser = "pds_replace_user"
 
-	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.1.6"
+	DefaultLoadTestImage = "portworx/pds-loadtests:sample-load-0.1.7"
 )
 
 var loadTestImages = map[string]string{
@@ -95,12 +95,12 @@ func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, 
 	c.targetCluster.MustWaitForLoadTestFailure(ctx, t, job.Namespace, job.Name)
 }
 
-func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user, replaceToken string) {
+func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user, replacePassword string) {
 	extraEnv := map[string]string{
 		"DELETE_USER": user,
 	}
-	if replaceToken != "" {
-		extraEnv["REPLACE_TOKEN"] = replaceToken
+	if replacePassword != "" {
+		extraEnv["REPLACE_PASSWORD"] = replacePassword
 	}
 	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
 	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestDeleteUser, "", user, *deployment.NodeCount, extraEnv)

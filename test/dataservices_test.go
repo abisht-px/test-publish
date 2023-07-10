@@ -611,6 +611,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 		dataservices.Cassandra,
 		dataservices.Consul,
 		dataservices.Couchbase,
+		dataservices.Kafka,
 		dataservices.MongoDB,
 		dataservices.MySQL,
 		dataservices.Postgres,
@@ -652,18 +653,19 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
 				// Delete 'pds' user.
-				var replaceToken string
-				if deployment.DataServiceName == dataservices.Consul {
-					replaceToken = uuid.NewString()
+				var replacePassword string
+				switch deployment.DataServiceName {
+				case dataservices.Consul, dataservices.Kafka:
+					replacePassword = uuid.NewString()
 				}
-				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser, replaceToken)
+				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser, replacePassword)
 				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 				// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
 				s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
 				// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
 				time.Sleep(30 * time.Second)
 				// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
-				s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser, replaceToken)
+				s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser, replacePassword)
 			})
 		}
 	}
