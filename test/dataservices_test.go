@@ -605,25 +605,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 }
 
 func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
-
-	// TODO: remove this list once we have added "delete user" loadtest mode for all services.
-	deleteUserServices := []string{
-		dataservices.Cassandra,
-		dataservices.Consul,
-		dataservices.Couchbase,
-		dataservices.Kafka,
-		dataservices.MongoDB,
-		dataservices.MySQL,
-		dataservices.Postgres,
-		dataservices.RabbitMQ,
-		dataservices.Redis,
-		dataservices.ElasticSearch,
-		dataservices.SqlServer,
-		dataservices.ZooKeeper,
-	}
-
-	for _, dsName := range deleteUserServices {
-		versions := activeVersions[dsName]
+	for dsName, versions := range activeVersions {
 		for _, version := range versions {
 			nodeCounts := commonNodeCounts[dsName]
 			if len(nodeCounts) == 0 {
