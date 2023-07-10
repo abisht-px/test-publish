@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -608,6 +609,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 	// TODO: remove this list once we have added "delete user" loadtest mode for all services.
 	deleteUserServices := []string{
 		dataservices.Cassandra,
+		dataservices.Consul,
 		dataservices.Couchbase,
 		dataservices.MongoDB,
 		dataservices.MySQL,
@@ -650,14 +652,18 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 				s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
 				// Delete 'pds' user.
-				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser)
+				var replaceToken string
+				if deployment.DataServiceName == dataservices.Consul {
+					replaceToken = uuid.NewString()
+				}
+				s.crossCluster.MustRunDeleteUserJob(s.ctx, t, deploymentID, crosscluster.PDSUser, replaceToken)
 				s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 				// Run CRUD tests with 'pds' to check that the data service fails (user does not exist).
 				s.crossCluster.MustRunCRUDLoadTestJobAndFail(s.ctx, t, deploymentID, crosscluster.PDSUser)
 				// Wait 30s before the check whether the pod was not killed due to readiness/liveness failure.
 				time.Sleep(30 * time.Second)
 				// Run CRUD tests with 'pds_replace_user' to check that the data service still works.
-				s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser)
+				s.crossCluster.MustRunCRUDLoadTestJob(s.ctx, t, deploymentID, crosscluster.PDSReplaceUser, replaceToken)
 			})
 		}
 	}

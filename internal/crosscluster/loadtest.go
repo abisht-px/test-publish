@@ -78,9 +78,15 @@ func (c *CrossClusterHelper) MustRunWriteLoadTestJob(ctx context.Context, t *tes
 	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestWrite, seed, PDSUser, *deployment.NodeCount, nil)
 }
 
-func (c *CrossClusterHelper) MustRunCRUDLoadTestJob(ctx context.Context, t *testing.T, deploymentID, user string) {
+func (c *CrossClusterHelper) MustRunCRUDLoadTestJob(ctx context.Context, t *testing.T, deploymentID, user, replaceToken string) {
 	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
-	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
+	var extraEnv map[string]string
+	if replaceToken != "" {
+		extraEnv = map[string]string{
+			"PASSWORD": replaceToken,
+		}
+	}
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, extraEnv)
 }
 
 func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, t *testing.T, deploymentID, user string) {
@@ -89,9 +95,12 @@ func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, 
 	c.targetCluster.MustWaitForLoadTestFailure(ctx, t, job.Namespace, job.Name)
 }
 
-func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user string) {
+func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user, replaceToken string) {
 	extraEnv := map[string]string{
 		"DELETE_USER": user,
+	}
+	if replaceToken != "" {
+		extraEnv["REPLACE_TOKEN"] = replaceToken
 	}
 	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
 	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestDeleteUser, "", user, *deployment.NodeCount, extraEnv)

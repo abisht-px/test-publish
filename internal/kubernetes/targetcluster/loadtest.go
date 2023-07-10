@@ -114,16 +114,28 @@ func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T
 		Value: user,
 	})
 
-	// Set extra env.
+	// Set extra env or override existing ones.
 	if len(extraEnv) > 0 {
-		for name, value := range extraEnv {
-			env = append(env,
-				corev1.EnvVar{
-					Name:  name,
-					Value: value,
-				})
-		}
+		env = mergeEnvs(env, extraEnv)
 	}
 
 	return env
+}
+
+func mergeEnvs(envs []corev1.EnvVar, extra map[string]string) []corev1.EnvVar {
+	mergedEnv := make(map[string]corev1.EnvVar)
+	for _, value := range envs {
+		mergedEnv[value.Name] = value
+	}
+	for name, value := range extra {
+		mergedEnv[name] = corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		}
+	}
+	var out []corev1.EnvVar
+	for _, v := range mergedEnv {
+		out = append(out, v)
+	}
+	return out
 }
