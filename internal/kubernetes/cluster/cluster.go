@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	volumesnapshotv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
 	openstoragev1 "github.com/libopenstorage/operator/pkg/apis/core/v1"
 	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
@@ -112,10 +113,11 @@ func (c *Cluster) GetPDSBackup(ctx context.Context, namespace, name string) (*ba
 	return result, err
 }
 
-func (c *Cluster) GetVolumeSnapshot(ctx context.Context, namespace, name string) (runtime.Object, error) {
+func (c *Cluster) GetVolumeSnapshot(ctx context.Context, namespace, name string) (*volumesnapshotv1.VolumeSnapshot, error) {
+	snapshot := &volumesnapshotv1.VolumeSnapshot{}
 	path := fmt.Sprintf("apis/volumesnapshot.external-storage.k8s.io/v1/namespaces/%s/volumesnapshots/%s", namespace, name)
-	res, err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Get()
-	return res, err
+	err := c.Clientset.RESTClient().Get().AbsPath(path).Do(ctx).Into(snapshot)
+	return snapshot, err
 }
 
 func (c *Cluster) GetPDSBackupJob(ctx context.Context, namespace, name string) (*backupsv1.BackupJob, error) {

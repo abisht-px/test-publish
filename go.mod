@@ -4,12 +4,14 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver v1.5.0
+	github.com/aws/aws-sdk-go v1.44.179
 	github.com/cert-manager/cert-manager v1.12.0
 	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/golangci/golangci-lint v1.51.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/joho/godotenv v1.5.1
+	github.com/kubernetes-incubator/external-storage v5.5.0+incompatible
 	github.com/lib/pq v1.10.7
 	github.com/libopenstorage/operator v0.0.0-20230607211220-2738c68a93db
 	github.com/portworx/pds-api-go-client v0.0.0-20230705092015-d234aaca11d0
@@ -144,6 +146,7 @@ require (
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
