@@ -309,3 +309,16 @@ func (s *ControlPlane) FailUpdateDeployment(ctx context.Context, t *testing.T, d
 	_, resp, err = s.PDS.DeploymentsApi.ApiDeploymentsIdPut(ctx, deploymentID).Body(req).Execute()
 	api.RequireErrorWithStatus(t, resp, err, http.StatusBadRequest)
 }
+
+func (c *ControlPlane) MustHaveDeploymentEventsForCorrectDeployment(ctx context.Context, t *testing.T, deploymentID string) {
+	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	n := len(eventsResponse)
+	for i := 1; i < n; i++ {
+		assert.Contains(t, *eventsResponse[i].ResourceName, *deployment.ClusterResourceName, "Resource name does not contain deployment name. expected %s in resource name, got %s", deployment.ClusterResourceName, *eventsResponse[i].ResourceName)
+	}
+}

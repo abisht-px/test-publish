@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
@@ -101,4 +102,36 @@ func (s *PDSTestSuite) TestEventReporting_Failed_Deployment_No_Duplicate_Events(
 	// Wait for 10 minutes and check for duplicate events
 	time.Sleep(10 * time.Minute)
 	s.controlPlane.MustHaveNoDuplicateDeploymentEvents(context.Background(), s.T(), deploymentID)
+}
+
+func (s *PDSTestSuite) TestEventReporting_MultipleDeployments() {
+	var wg sync.WaitGroup
+	var deploymentIDS []string
+
+	deployDS := func() {
+		defer wg.Done()
+		// Create a new deployment.
+		deployment := api.ShortDeploymentSpec{
+			DataServiceName: dataservices.Postgres,
+			ImageVersionTag: PostgreSQLImageTag,
+			NodeCount:       1,
+			NamePrefix:      dataservices.Postgres,
+		}
+		deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, s.T(), &deployment)
+		s.T().Cleanup(func() {
+			s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), deploymentID)
+			s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
+		})
+		s.controlPlane.MustWaitForDeploymentAvailable(s.ctx, s.T(), deploymentID)
+		deploymentIDS = append(deploymentIDS, deploymentID)
+	}
+
+	wg.Add(2)
+	go deployDS()
+	go deployDS()
+	wg.Wait()
+
+	for _, deploymentID := range deploymentIDS {
+		s.controlPlane.MustHaveDeploymentEventsForCorrectDeployment(context.Background(), s.T(), deploymentID)
+	}
 }
