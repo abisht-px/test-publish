@@ -31,7 +31,7 @@ var (
 	activeVersions = map[string][]string{
 		dataservices.Cassandra:     {"4.1.2", "4.0.10", "3.11.15", "3.0.29"},
 		dataservices.Consul:        {"1.15.3", "1.14.7"},
-		dataservices.Couchbase:     {"7.1.1"},
+		dataservices.Couchbase:     {"7.1.1", "7.2.0"},
 		dataservices.ElasticSearch: {"8.8.0"},
 		dataservices.Kafka:         {"3.4.1", "3.3.2", "3.2.3", "3.1.2"},
 		dataservices.MongoDB:       {"6.0.6"},
