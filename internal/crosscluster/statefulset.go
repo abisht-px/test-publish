@@ -83,7 +83,7 @@ func (c *CrossClusterHelper) MustWaitForStatefulSetChanged(ctx context.Context, 
 	api.RequireNoError(t, resp, err)
 
 	namespace := namespaceModel.GetName()
-	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		set, err := c.targetCluster.GetStatefulSet(ctx, namespace, deployment.GetClusterResourceName())
 		require.NoErrorf(t, err, "Getting statefulSet for deployment %s.", deployment.GetClusterResourceName())
 		updateRevision := set.Status.UpdateRevision
