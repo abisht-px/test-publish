@@ -135,3 +135,23 @@ func (s *PDSTestSuite) TestEventReporting_MultipleDeployments() {
 		s.controlPlane.MustHaveDeploymentEventsForCorrectDeployment(context.Background(), s.T(), deploymentID)
 	}
 }
+
+func (s *PDSTestSuite) TestEventReporting_CompareEventsCrossCluster() {
+	deployment := api.ShortDeploymentSpec{
+		DataServiceName: dataservices.Postgres,
+		ImageVersionTag: PostgreSQLImageTag,
+		NodeCount:       1,
+		NamePrefix:      dataservices.Postgres,
+	}
+
+	deploymentID := s.controlPlane.MustDeployDeploymentSpec(context.Background(), s.T(), &deployment)
+	s.T().Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(context.Background(), s.T(), deploymentID)
+		s.controlPlane.MustWaitForDeploymentRemoved(context.Background(), s.T(), deploymentID)
+	})
+	s.controlPlane.MustWaitForDeploymentAvailable(context.Background(), s.T(), deploymentID)
+
+	time.Sleep(5 * time.Minute)
+
+	s.crossCluster.MustHaveDeploymentsMatching(context.Background(), s.T(), deploymentID)
+}
