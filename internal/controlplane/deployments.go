@@ -134,6 +134,12 @@ func (c *ControlPlane) MustDeploymentManifestStatusHealthAvailable(ctx context.C
 	require.Equal(t, pdsDeploymentStateAvailable, status, "Deployment %q is in state %q.", deploymentID, status)
 }
 
+func (c *ControlPlane) MustDeploymentManifestStatusHealthUnavailable(ctx context.Context, t *testing.T, deploymentID string) {
+	health, status := c.getDeploymentManifestHealthStatus(ctx, t, deploymentID)
+	require.Equal(t, pdsDeploymentHealthUnavailable, health, "Deployment %q has health %q.", deploymentID, health)
+	require.Equal(t, pdsDeploymentStateDeploying, status, "Deployment %q is in state %q.", deploymentID, status)
+}
+
 func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *testing.T, deploymentID string) {
 	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)

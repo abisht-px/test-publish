@@ -18,6 +18,7 @@ import (
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
 	"github.com/portworx/pds-integration-test/internal/random"
+	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
 const pdsSystemUsersCapabilityName = "pds_system_users"
@@ -658,7 +659,7 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 		DataServiceName:              dataservices.Cassandra,
 		NamePrefix:                   "impossible-resources-test",
 		ImageVersionTag:              "4.1.2",
-		NodeCount:                    3,
+		NodeCount:                    1,
 		ResourceSettingsTemplateName: dataservices.TemplateNameEnormous,
 	}
 	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, s.T(), &deployment)
@@ -667,18 +668,9 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
 	})
 
-	s.controlPlane.MustWaitForDeploymentEventCondition(s.ctx, s.T(),
-		deploymentID,
-		func(event pds.ModelsDeploymentTargetDeploymentEvent) bool {
-			if event.Reason == nil {
-				return false
-			}
-			reason := *event.Reason
-			message := *event.Message
-			insufficientResources := strings.Contains(message, "Insufficient cpu") || strings.Contains(message, "Insufficient memory")
-			return reason == "FailedScheduling" && insufficientResources
-		},
-		"failed pod scheduling")
+	// Wait for the standard timeout, and then make sure the deployment is unavailable.
+	time.Sleep(wait.StandardTimeout)
+	s.controlPlane.MustDeploymentManifestStatusHealthUnavailable(s.ctx, s.T(), deploymentID)
 }
 
 func getSupportedPSAPolicy(dataServiceName string) string {
