@@ -364,6 +364,18 @@ func (s *PDSTestSuite) TestDataService_PDSSystemUsersV1Migration() {
 	}
 }
 
+func (s *PDSTestSuite) mustGetStatefulSetImageTag(dataServiceName string, imageVerstionString string) string {
+	if dataServiceName != dataservices.SqlServer {
+		return imageVerstionString
+	}
+
+	// Our SQLServer image version string is in the form of 2019-CU20-abc123,
+	// but need to drop the last bit since the upstream MS image won't have this.
+	substr := strings.Split(imageVerstionString, "-")
+	s.Require().Equal(3, len(substr))
+	return fmt.Sprintf("%s-%s", substr[0], substr[1])
+}
+
 func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDeploymentSpec) {
 	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &fromSpec)
 	t.Cleanup(func() {
@@ -384,7 +396,8 @@ func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDe
 	s.controlPlane.MustUpdateDeployment(s.ctx, t, deploymentID, &toSpec)
 	s.crossCluster.MustWaitForStatefulSetChanged(s.ctx, t, deploymentID, oldUpdateRevision)
 	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
-	s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, toSpec.ImageVersionString())
+	targetTag := s.mustGetStatefulSetImageTag(toSpec.DataServiceName, toSpec.ImageVersionString())
+	s.crossCluster.MustWaitForStatefulSetImage(s.ctx, t, deploymentID, targetTag)
 	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
