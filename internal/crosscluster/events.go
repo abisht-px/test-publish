@@ -11,7 +11,7 @@ import (
 )
 
 func (c *CrossClusterHelper) MustHaveDeploymentsMatching(ctx context.Context, t tests.T, deploymentID string) {
-	eventsResponse, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	eventsResponse, resp, err := c.controlPlane.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	m := make(map[string]bool)

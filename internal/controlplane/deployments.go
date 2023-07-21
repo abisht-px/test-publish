@@ -180,7 +180,7 @@ func (c *ControlPlane) MustWaitForDeploymentEventCondition(
 	description string,
 ) {
 	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
-		eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+		eventsResponse, resp, err := c.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 		api.RequireNoErrorf(t, resp, err, "Getting deployment %q events.", deploymentID)
 
 		hasEvent := hasMatchingEvent(eventsResponse, eventPredicate)
@@ -248,7 +248,7 @@ func (c *ControlPlane) MustWaitForDeploymentRemoved(ctx context.Context, t *test
 }
 
 func (c *ControlPlane) MustHaveDeploymentEventsSorted(ctx context.Context, t *testing.T, deploymentID string) {
-	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	eventsResponse, resp, err := c.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	n := len(eventsResponse)
@@ -264,7 +264,7 @@ func (c *ControlPlane) MustHaveDeploymentEventsSorted(ctx context.Context, t *te
 }
 
 func (c *ControlPlane) MustHaveNoDuplicateDeploymentEvents(ctx context.Context, t *testing.T, deploymentID string) {
-	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	eventsResponse, resp, err := c.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	m := make(map[string]bool)
@@ -278,7 +278,7 @@ func (c *ControlPlane) MustHaveNoDuplicateDeploymentEvents(ctx context.Context, 
 }
 
 func (c *ControlPlane) MustGetErrorOnDeploymentEventsGet(ctx context.Context, t *testing.T, deploymentID string) {
-	_, _, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	_, _, err := c.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	assert.Errorf(t, err, "Expected an error response on getting deployment events for deployment %s.", deploymentID)
 }
 
@@ -320,7 +320,7 @@ func (c *ControlPlane) MustHaveDeploymentEventsForCorrectDeployment(ctx context.
 	deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
-	eventsResponse, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
+	eventsResponse, resp, err := c.PDS.EventsApi.ApiDeploymentsIdEventsGet(ctx, deploymentID).Execute()
 	api.RequireNoError(t, resp, err)
 
 	n := len(eventsResponse)

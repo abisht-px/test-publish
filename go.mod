@@ -14,7 +14,7 @@ require (
 	github.com/kubernetes-incubator/external-storage v5.5.0+incompatible
 	github.com/lib/pq v1.10.7
 	github.com/libopenstorage/operator v0.0.0-20230607211220-2738c68a93db
-	github.com/portworx/pds-api-go-client v0.0.0-20230705092015-d234aaca11d0
+	github.com/portworx/pds-api-go-client v0.0.0-20230707180846-5e9c6e1eb319
 	github.com/portworx/pds-operator-backups/api v0.0.0-20230505075235-64dc12ad925a
 	github.com/portworx/pds-operator-deployments/api v0.0.0-20230502072252-6da1280d53f4
 	github.com/prometheus/client_golang v1.15.1
