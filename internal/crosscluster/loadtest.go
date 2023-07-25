@@ -54,8 +54,8 @@ func (c *CrossClusterHelper) MustGetDeploymentInfo(ctx context.Context, t *testi
 	return deployment, namespace, dataServiceType
 }
 
-func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
-	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
+func (c *CrossClusterHelper) MustGetLoadTestUser(ctx context.Context, t *testing.T, deploymentID string) string {
+	deployment, _, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
 	user := PDSUser
 	if dataServiceType == dataservices.Redis {
 		dsImage, resp, err := c.controlPlane.PDS.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
@@ -64,7 +64,25 @@ func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.
 			// Older images before this change: https://github.com/portworx/pds-images-redis/pull/61 had "default" user.
 			user = "default"
 		}
+	} else if dataServiceType == dataservices.ElasticSearch {
+		dsImage, resp, err := c.controlPlane.PDS.ImagesApi.ApiImagesIdGet(ctx, deployment.GetImageId()).Execute()
+		api.RequireNoError(t, resp, err)
+		if *dsImage.Tag < "8.8.0" || (*dsImage.Build == "b9e0ebe" || *dsImage.Build == "2b2f60c") {
+			// DS-5933: Older images before changes (https://github.com/portworx/pds-images-elasticsearch/pull/72 and https://github.com/portworx/pds-images-elasticsearch/pull/73) should use "elastic" user.
+			user = "elastic"
+		}
 	}
+	return user
+}
+
+func (c *CrossClusterHelper) MustRunLoadTestJobWithUser(ctx context.Context, t *testing.T, deploymentID, user string) {
+	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
+	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
+}
+
+func (c *CrossClusterHelper) MustRunLoadTestJob(ctx context.Context, t *testing.T, deploymentID string) {
+	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
+	user := c.MustGetLoadTestUser(ctx, t, deploymentID)
 	c.MustRunGenericLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil)
 }
 

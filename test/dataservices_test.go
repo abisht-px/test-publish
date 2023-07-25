@@ -384,7 +384,8 @@ func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDe
 	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
-	s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+	loadTestUser := s.crossCluster.MustGetLoadTestUser(s.ctx, t, deploymentID)
+	s.crossCluster.MustRunLoadTestJobWithUser(s.ctx, t, deploymentID, loadTestUser)
 
 	// Update.
 	oldUpdateRevision := s.crossCluster.MustGetStatefulSetUpdateRevision(s.ctx, t, deploymentID)
@@ -396,7 +397,7 @@ func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDe
 	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, t, deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, t, deploymentID)
 
-	s.crossCluster.MustRunLoadTestJob(s.ctx, t, deploymentID)
+	s.crossCluster.MustRunLoadTestJobWithUser(s.ctx, t, deploymentID, loadTestUser)
 }
 
 func (s *PDSTestSuite) TestDataService_ScaleUp() {
