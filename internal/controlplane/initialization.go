@@ -47,12 +47,12 @@ func (c *ControlPlane) mustHavePDStestAccount(ctx context.Context, t tests.T, na
 		}
 	}
 	require.NotEmpty(t, testPDSAccountID, "PDS account %s not found.", name)
-	c.testPDSAccountID = testPDSAccountID
+	c.TestPDSAccountID = testPDSAccountID
 }
 
 func (c *ControlPlane) mustHavePDStestTenant(ctx context.Context, t tests.T, name string) {
 	// TODO: Use tenant name query filters
-	tenants, resp, err := c.PDS.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.testPDSAccountID).Execute()
+	tenants, resp, err := c.PDS.TenantsApi.ApiAccountsIdTenantsGet(ctx, c.TestPDSAccountID).Execute()
 	api.RequireNoError(t, resp, err)
 	require.NotEmpty(t, tenants, "PDS API must return at least one tenant.")
 

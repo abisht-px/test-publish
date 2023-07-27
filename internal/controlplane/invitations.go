@@ -22,11 +22,11 @@ func (c *ControlPlane) CreateInvitation(ctx context.Context, t tests.T, email, r
 		Email:    email,
 		RoleName: role,
 	}
-	return c.PDS.AccountRoleBindingsApi.ApiAccountsIdInvitationsPost(ctx, c.testPDSAccountID).Body(requestBody).Execute()
+	return c.PDS.AccountRoleBindingsApi.ApiAccountsIdInvitationsPost(ctx, c.TestPDSAccountID).Body(requestBody).Execute()
 }
 
 func (c *ControlPlane) MustListAccountInvitations(ctx context.Context, t tests.T) *pds.ModelsPaginatedResultModelsAccountRoleInvitation {
-	req := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGet(ctx, c.testPDSAccountID)
+	req := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGet(ctx, c.TestPDSAccountID)
 	invitations, resp, err := c.PDS.AccountsApi.ApiAccountsIdAccountRoleInvitationsGetExecute(req)
 	require.NotNil(t, invitations)
 	api.RequireNoError(t, resp, err)

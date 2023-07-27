@@ -10,7 +10,7 @@ type ControlPlane struct {
 	PDS        *api.PDSClient
 	Prometheus prometheusv1.API
 
-	testPDSAccountID           string
+	TestPDSAccountID           string
 	TestPDSTenantID            string
 	TestPDSProjectID           string
 	TestPDSNamespaceID         string

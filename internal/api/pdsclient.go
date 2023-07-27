@@ -301,6 +301,7 @@ func (c *PDSClient) CreateDeployment(ctx context.Context, deployment *ShortDeplo
 	}
 	pdsDeployment.SetServiceType(deployment.ServiceType)
 	pdsDeployment.SetStorageOptionsTemplateId(storage.GetId())
+	pdsDeployment.SetTlsEnabled(deployment.TLSEnabled)
 
 	res, httpRes, err := c.DeploymentsApi.ApiProjectsIdDeploymentsPost(ctx, projectID).Body(*pdsDeployment).Execute()
 	if err = ExtractErrorDetails(httpRes, err); err != nil {

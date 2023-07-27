@@ -29,6 +29,7 @@ type ShortDeploymentSpec struct {
 	CRDNamePlural                string `yaml:"crd_name_plurals"`
 	NodeCount                    int32  `yaml:"node_count"`
 	BackupTargetName             string `yaml:"backup_target_name"`
+	TLSEnabled                   bool   `yaml:"tls_enabled"`
 }
 
 func (d ShortDeploymentSpec) ImageVersionString() string {

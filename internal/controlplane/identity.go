@@ -16,7 +16,7 @@ var actorType string = "user"
 func (c *ControlPlane) mustSetRoleBinding(ctx context.Context, t tests.T, userID string, userRole string) {
 
 	accountBinding, response, err := c.PDS.AccountRoleBindingsApi.
-		ApiAccountsIdRoleBindingsPut(ctx, c.testPDSAccountID).
+		ApiAccountsIdRoleBindingsPut(ctx, c.TestPDSAccountID).
 		Body(pds.RequestsPutLegacyBindingRequest{ActorId: &userID, ActorType: &actorType, RoleName: &userRole}).
 		Execute()
 
@@ -28,7 +28,7 @@ func (c *ControlPlane) mustSetRoleBinding(ctx context.Context, t tests.T, userID
 func (c *ControlPlane) MustEnsureUserAccountRole(ctx context.Context, t tests.T, userID string, userRole string) {
 
 	accRoleBindings, response, err := c.PDS.AccountRoleBindingsApi.
-		ApiAccountsIdRoleBindingsGet(ctx, c.testPDSAccountID).
+		ApiAccountsIdRoleBindingsGet(ctx, c.TestPDSAccountID).
 		ActorId(userID).
 		Execute()
 
@@ -45,7 +45,7 @@ func (c *ControlPlane) MustEnsureUserAccountRole(ctx context.Context, t tests.T,
 
 func (c *ControlPlane) MustDeleteUserAccountRole(ctx context.Context, t tests.T, userID string) {
 	response, err := c.PDS.AccountRoleBindingsApi.
-		ApiAccountsIdRoleBindingsDelete(ctx, c.testPDSAccountID).
+		ApiAccountsIdRoleBindingsDelete(ctx, c.TestPDSAccountID).
 		Body(pds.RequestsDeleteRoleBindingRequest{ActorId: &userID, ActorType: &actorType}).
 		Execute()
 	if response != nil && response.StatusCode == http.StatusNotFound {
