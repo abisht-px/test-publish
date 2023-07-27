@@ -5,45 +5,12 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/portworx/pds-integration-test/internal/dataservices"
-	"github.com/portworx/pds-integration-test/internal/wait"
 )
-
-func (tc *TargetCluster) MustWaitForLoadTestSuccess(ctx context.Context, t *testing.T, namespace, jobName string, startTime time.Time) {
-	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.StandardTimeout, wait.ShortRetryInterval)
-
-	// 2. Check the result.
-	job, err := tc.GetJob(ctx, namespace, jobName)
-	require.NoError(t, err)
-
-	if job.Status.Failed > 0 {
-		// Job failed.
-		logs, err := tc.GetJobLogs(ctx, namespace, jobName, startTime)
-		if err != nil {
-			require.Fail(t, fmt.Sprintf("Job '%s' failed.", jobName))
-		} else {
-			require.Fail(t, fmt.Sprintf("Job '%s' failed. See job logs for more details:", jobName), logs)
-		}
-	}
-	require.Greater(t, job.Status.Succeeded, int32(0), "Job %q did not succeed.", jobName)
-}
-
-func (tc *TargetCluster) MustWaitForLoadTestFailure(ctx context.Context, t *testing.T, namespace, jobName string) {
-	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.StandardTimeout, wait.ShortRetryInterval)
-
-	// 2. Check the result.
-	job, err := tc.GetJob(ctx, namespace, jobName)
-	require.NoError(t, err)
-
-	require.Greater(t, job.Status.Failed, int32(0), "Job %q did not fail.", jobName)
-}
 
 func (tc *TargetCluster) MustGetLoadTestJobEnv(ctx context.Context, t *testing.T, dataServiceType, deploymentName, namespace, mode, seed, user string, nodeCount int32, extraEnv map[string]string) []corev1.EnvVar {
 	host := fmt.Sprintf("%s-%s", deploymentName, namespace)

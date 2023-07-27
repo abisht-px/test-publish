@@ -8,6 +8,8 @@ import (
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/wait"
+
+	"k8s.io/utils/pointer"
 )
 
 func (s *PDSTestSuite) TestTargetCluster_DeletePDSChartPods() {
@@ -34,7 +36,8 @@ func (s *PDSTestSuite) TestTargetCluster_DeletePDSChartPods() {
 
 	// Start the loadtest.
 	deployment, namespace, dataServiceType := s.crossCluster.MustGetDeploymentInfo(s.ctx, s.T(), deploymentID)
-	job := s.crossCluster.MustCreateLoadTestJob(s.ctx, s.T(), dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, *deployment.NodeCount, nil, nil)
+	backOffLimit := pointer.Int32(0)
+	job := s.crossCluster.MustCreateLoadTestJob(s.ctx, s.T(), dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, *deployment.NodeCount, nil, nil, backOffLimit)
 	s.T().Cleanup(func() {
 		err := s.targetCluster.DeleteJob(s.ctx, job.Namespace, job.Name)
 		s.Require().NoError(err)
@@ -53,6 +56,6 @@ func (s *PDSTestSuite) TestTargetCluster_DeletePDSChartPods() {
 	}, wait.ShortTimeout, wait.ShortRetryInterval)
 
 	// Check the deployment loadtest succeeded.
-	s.targetCluster.MustWaitForLoadTestSuccess(s.ctx, s.T(), job.Namespace, job.Name, s.startTime)
+	s.targetCluster.MustWaitForJobSuccess(s.ctx, s.T(), job.Namespace, job.Name)
 	s.targetCluster.JobLogsMustNotContain(s.ctx, s.T(), job.Namespace, job.Name, "ERROR|FATAL", s.startTime)
 }

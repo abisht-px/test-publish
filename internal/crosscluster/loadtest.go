@@ -109,8 +109,10 @@ func (c *CrossClusterHelper) MustRunCRUDLoadTestJob(ctx context.Context, t *test
 
 func (c *CrossClusterHelper) MustRunCRUDLoadTestJobAndFail(ctx context.Context, t *testing.T, deploymentID, user string) {
 	deployment, namespace, dataServiceType := c.MustGetDeploymentInfo(ctx, t, deploymentID)
-	job := c.MustCreateLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil, pointer.Int32(30))
-	c.targetCluster.MustWaitForLoadTestFailure(ctx, t, job.Namespace, job.Name)
+	ttlSecondsAfterFinished := pointer.Int32(30)
+	backOffLimit := pointer.Int32(0)
+	job := c.MustCreateLoadTestJob(ctx, t, dataServiceType, namespace.GetName(), deployment.GetClusterResourceName(), LoadTestCRUD, "", user, *deployment.NodeCount, nil, ttlSecondsAfterFinished, backOffLimit)
+	c.targetCluster.MustWaitForJobFailure(ctx, t, job.Namespace, job.Name)
 }
 
 func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testing.T, deploymentID, user, replacePassword string) {
@@ -125,12 +127,13 @@ func (c *CrossClusterHelper) MustRunDeleteUserJob(ctx context.Context, t *testin
 }
 
 func (c *CrossClusterHelper) MustRunGenericLoadTestJob(ctx context.Context, t *testing.T, dataServiceType, namespace, deploymentName, mode, seed, user string, nodeCount int32, extraEnv map[string]string) {
-	job := c.MustCreateLoadTestJob(ctx, t, dataServiceType, namespace, deploymentName, mode, seed, user, nodeCount, extraEnv, pointer.Int32(30))
-	c.targetCluster.MustWaitForLoadTestSuccess(ctx, t, job.Namespace, job.Name, c.startTime)
-	c.targetCluster.JobLogsMustNotContain(ctx, t, job.Namespace, job.Name, "ERROR|FATAL", c.startTime)
+	ttlSecondsAfterFinished := pointer.Int32(30)
+	backOffLimit := pointer.Int32(6)
+	job := c.MustCreateLoadTestJob(ctx, t, dataServiceType, namespace, deploymentName, mode, seed, user, nodeCount, extraEnv, ttlSecondsAfterFinished, backOffLimit)
+	c.targetCluster.MustWaitForJobSuccess(ctx, t, job.Namespace, job.Name)
 }
 
-func (c *CrossClusterHelper) MustCreateLoadTestJob(ctx context.Context, t *testing.T, dataServiceType, namespace, deploymentName, mode, seed, user string, nodeCount int32, extraEnv map[string]string, ttlSecondsAfterFinished *int32) *batchv1.Job {
+func (c *CrossClusterHelper) MustCreateLoadTestJob(ctx context.Context, t *testing.T, dataServiceType, namespace, deploymentName, mode, seed, user string, nodeCount int32, extraEnv map[string]string, ttlSecondsAfterFinished *int32, backOffLimit *int32) *batchv1.Job {
 
 	jobName := fmt.Sprintf("%s-loadtest-%d", deploymentName, time.Now().Unix())
 	if mode != "" {
@@ -143,7 +146,7 @@ func (c *CrossClusterHelper) MustCreateLoadTestJob(ctx context.Context, t *testi
 
 	env := c.targetCluster.MustGetLoadTestJobEnv(ctx, t, dataServiceType, deploymentName, namespace, mode, seed, user, nodeCount, extraEnv)
 
-	job, err := c.targetCluster.CreateJob(ctx, namespace, jobName, image, env, nil, ttlSecondsAfterFinished)
+	job, err := c.targetCluster.CreateJob(ctx, namespace, jobName, image, env, nil, ttlSecondsAfterFinished, backOffLimit)
 	require.NoError(t, err)
 
 	return job

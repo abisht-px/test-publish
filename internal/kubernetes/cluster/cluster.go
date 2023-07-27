@@ -365,10 +365,8 @@ func (c *Cluster) CreateLoadTestServiceAccount(ctx context.Context, namespace st
 	return serviceAccountName, nil
 }
 
-func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string, ttlSecondsAfterFinished *int32) (*batchv1.Job, error) {
+func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image string, env []corev1.EnvVar, command []string, ttlSecondsAfterFinished *int32, backOffLimit *int32) (*batchv1.Job, error) {
 	jobs := c.Clientset.BatchV1().Jobs(namespace)
-	var backOffLimit int32 = 0
-
 	spec := corev1.PodSpec{
 		Containers: []corev1.Container{
 			{
@@ -413,7 +411,7 @@ func (c *Cluster) CreateJob(ctx context.Context, namespace, jobName, image strin
 			Template: corev1.PodTemplateSpec{
 				Spec: spec,
 			},
-			BackoffLimit:            &backOffLimit,
+			BackoffLimit:            backOffLimit,
 			TTLSecondsAfterFinished: ttlSecondsAfterFinished,
 		},
 	}

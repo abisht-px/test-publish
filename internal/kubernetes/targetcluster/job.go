@@ -17,22 +17,21 @@ import (
 )
 
 func (tc *TargetCluster) MustWaitForJobSuccess(ctx context.Context, t tests.T, namespace, jobName string) {
-	// 1. Wait for the job to finish.
-	tc.MustWaitForJobToFinish(ctx, t, namespace, jobName, wait.ShortTimeout, wait.ShortRetryInterval)
-
-	// 2. Check the result.
-	job, err := tc.GetJob(ctx, namespace, jobName)
-	require.NoErrorf(t, err, "Getting job %s/%s from target cluster.", namespace, jobName)
-	require.Greaterf(t, job.Status.Succeeded, int32(0), "Job %s/%s did not succeed.", namespace, jobName)
-}
-
-func (tc *TargetCluster) MustWaitForJobToFinish(ctx context.Context, t tests.T, namespace string, jobName string, timeout time.Duration, tick time.Duration) {
-	wait.For(t, timeout, tick, func(t tests.T) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
 		job, err := tc.GetJob(ctx, namespace, jobName)
 		require.NoErrorf(t, err, "Getting %s/%s job from target cluster.", namespace, jobName)
-		require.Truef(t,
-			job.Status.Succeeded > 0 || job.Status.Failed > 0,
-			"Job did not finish (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
+		require.Truef(t, job.Status.Succeeded > 0,
+			"Job did not succeed (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
+		)
+	})
+}
+
+func (tc *TargetCluster) MustWaitForJobFailure(ctx context.Context, t tests.T, namespace, jobName string) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		job, err := tc.GetJob(ctx, namespace, jobName)
+		require.NoErrorf(t, err, "Getting %s/%s job from target cluster.", namespace, jobName)
+		require.Truef(t, job.Status.Failed > 0,
+			"Job did not fail (Succeeded: %d, Failed: %d)", job.Status.Succeeded, job.Status.Failed,
 		)
 	})
 }
@@ -61,7 +60,9 @@ func (tc *TargetCluster) MustRunHostCheckJob(ctx context.Context, t tests.T, nam
 		"for D in $DNS_IPS; do echo \"Checking on DNS $D:\"; for H in $HOSTS; do IP=$(dig +short @$D $H 2>/dev/null | head -n1); if [ -z \"$IP\" ]; then echo \"  $H - MISSING IP\";  exit 1; else echo \"  $H $IP - OK\"; fi; done; done",
 	}
 
-	job, err := tc.CreateJob(ctx, namespace, jobName, image, env, cmd, pointer.Int32(30))
+	ttlSecondsAfterFinished := pointer.Int32(30)
+	backOffLimit := pointer.Int32(0)
+	job, err := tc.CreateJob(ctx, namespace, jobName, image, env, cmd, ttlSecondsAfterFinished, backOffLimit)
 	require.NoErrorf(t, err, "Creating job %s/%s on target cluster.", namespace, jobName)
 	return job.GetName()
 }
