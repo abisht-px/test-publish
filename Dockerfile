@@ -21,10 +21,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o pds-test ./test
 FROM alpine:3.17.3
 
 ENV PDS_JUNIT_REPORT_FILEPATH=report.xml
+ENV PDS_TEST_ARGS=""
 
 WORKDIR /
 COPY --from=builder /workspace/pds-test .
 COPY --from=builder /workspace/go-junit-report .
 
-ENTRYPOINT ["/bin/sh", "-c", "/pds-test -test.v | /go-junit-report -iocopy -set-exit-code -out $PDS_JUNIT_REPORT_FILEPATH"]
+ENTRYPOINT ["/bin/sh", "-c", "/pds-test -test.v ${PDS_TEST_ARGS} | /go-junit-report -iocopy -set-exit-code -out $PDS_JUNIT_REPORT_FILEPATH"]
 
