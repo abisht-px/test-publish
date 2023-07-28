@@ -32,7 +32,7 @@ func (c *ControlPlane) MustWaitForDeploymentTarget(ctx context.Context, t tests.
 		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", name)
 	})
 
-	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+	wait.For(t, wait.VeryLongTimeout, wait.RetryInterval, func(t tests.T) {
 		err := c.PDS.CheckDeploymentTargetHealth(ctx, targetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", targetID)
 	})
