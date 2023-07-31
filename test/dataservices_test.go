@@ -11,9 +11,9 @@ import (
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
@@ -126,7 +126,8 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 		dataservices.MySQL,
 		dataservices.Postgres,
 		dataservices.Redis,
-		dataservices.SqlServer,
+		// TODO(DS-5988): SQL Server backup jobs can't be registered to CP.
+		// dataservices.SqlServer,
 	}
 
 	for _, dsName := range backupEnabledServices {
@@ -152,40 +153,11 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 					var backupCredentials *pds.ModelsBackupCredentials
 					var backupTarget *pds.ModelsBackupTarget
 					var backup *pds.ModelsBackup
-					var restoreCreated = false
 
 					deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 					deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
-					restoreName := generateRandomName("restore")
 					namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
-					t.Cleanup(func() {
-						if backup != nil {
-							deleteBackupWithWorkaround(s, t, backup, namespace)
-						}
-						if backupTarget != nil {
-							s.controlPlane.MustDeleteBackupTarget(s.ctx, t, backupTarget.GetId())
-						}
-						if backupCredentials != nil {
-							s.controlPlane.MustDeleteBackupCredentials(s.ctx, t, backupCredentials.GetId())
-						}
-
-						s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID)
-						s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
-
-						if restoreCreated {
-							err := s.targetCluster.DeletePDSRestore(s.ctx, namespace, restoreName)
-							require.NoError(t, err)
-						}
-
-						// TODO(DS-5494): that's a workaround, update it after a fix (ensure that restored DS is being deleted after deployment -
-						//   	target operator reports deletion of data service CR to the control plane, it is based on the
-						//      pds/deployment-id label in the CR; so if we delete the restored data service CR first, deployment in CP
-						//      will be deleted as part of it and it breaks the overall cleanup process).
-						err := s.targetCluster.DeletePDSDeployment(s.ctx, namespace, dataservices.ToPluralName(deployment.DataServiceName), restoreName)
-						if !apierrors.IsNotFound(err) {
-							require.NoError(t, err)
-						}
-					})
+					t.Cleanup(func() { s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID) })
 					s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 					s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 					s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
@@ -202,43 +174,50 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 					backupTargetConfig := s.config.backupTarget
 					s3Creds := backupTargetConfig.credentials.S3
 					backupCredentials = s.controlPlane.MustCreateS3BackupCredentials(s.ctx, t, s3Creds, name)
+					s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), backupCredentials.GetId()) })
 
 					backupTarget = s.controlPlane.MustCreateS3BackupTarget(s.ctx, t, backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+					s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId()) })
 					s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, t, backupTarget.GetId())
 
-					// Create backup (with retry if needed).
-					for i := 1; i <= 3; i++ {
-						backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
-						needsRetry := s.crossCluster.MustEnsureBackupSuccessful(s.ctx, t, deploymentID, backup.GetClusterResourceName())
-						if needsRetry {
-							// Delete failed backup before retry.
-							backupToDelete := backup
-							backup = nil
-							deleteBackupWithWorkaround(s, t, backupToDelete, namespace)
-							// Wait a bit then repeat.
-							time.Sleep(15 * time.Second)
-						} else {
-							break
-						}
-					}
+					backup = s.controlPlane.MustCreateBackup(s.ctx, t, deploymentID, backupTarget.GetId())
+					s.controlPlane.MustWaitForBackupCreated(s.ctx, t, backup.GetId())
+
+					s.controlPlane.MustEnsureNBackupJobsSuccessFromSchedule(s.ctx, t, backup.GetProjectId(), backup.GetId(), 1)
+					backupJobs := s.controlPlane.MustListBackupJobsInProject(
+						s.ctx, s.T(), backup.GetProjectId(),
+						controlplane.WithListBackupJobsInProjectBackupID(backup.GetId()),
+					)
+					backupJobID := backupJobs[0].GetId()
 
 					// Remove the original deployment to save resources.
-					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
-					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					// TODO(DS-6032): can't delete a backup if deployment is not exist; enable after the fix.
+					// s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
+					// s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
 
-					s.crossCluster.MustCreateRestore(s.ctx, t, namespace, backup.GetClusterResourceName(), restoreName)
-					restoreCreated = true
+					restoreName := generateRandomName("restore")
+					restore := s.controlPlane.MustCreateRestore(s.ctx, t, backupJobID, restoreName, backup.GetNamespaceId(), backup.GetDeploymentTargetId())
+					t.Cleanup(func() {
+						s.controlPlane.MustDeleteBackup(s.ctx, t, backup.GetId(), false)
+						s.controlPlane.MustWaitForBackupRemoved(s.ctx, t, backup.GetId())
+						s.controlPlane.MustRemoveDeployment(s.ctx, t, restore.GetDeploymentId())
+						s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, restore.GetDeploymentId())
+					})
+
 					waitTimeout := dataservices.GetLongTimeoutFor(deployment.NodeCount)
-					s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, namespace, restoreName, waitTimeout)
+					s.crossCluster.MustEnsureRestoreSuccessful(s.ctx, t, namespace, restore.GetClusterResourceName(), waitTimeout)
+					s.crossCluster.MustWaitForStatefulSetPDSModeNormalReady(s.ctx, t, restore.GetDeploymentId())
 
-					s.crossCluster.MustWaitForStatefulSetInPDSModeNormal(s.ctx, t, namespace, restoreName)
-					s.crossCluster.MustWaitForRestoredStatefulSetReady(s.ctx, t, namespace, restoreName, deployment.NodeCount)
+					// This is a temporary change and once DS-5768 is done this sleep can be removed
+					if deployment.DataServiceName == dataservices.Couchbase {
+						time.Sleep(200 * time.Second)
+					}
 
 					// Run Read load test.
-					s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestRead, seed, crosscluster.PDSUser, deployment.NodeCount, nil)
+					s.crossCluster.MustRunReadLoadTestJob(s.ctx, t, restore.GetDeploymentId(), seed)
 
 					// Run CRUD load test.
-					s.crossCluster.MustRunGenericLoadTestJob(s.ctx, t, deployment.DataServiceName, namespace, restoreName, crosscluster.LoadTestCRUD, "", crosscluster.PDSUser, deployment.NodeCount, nil)
+					s.crossCluster.MustRunLoadTestJob(s.ctx, t, restore.GetDeploymentId())
 				})
 			}
 		}

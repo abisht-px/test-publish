@@ -25,6 +25,14 @@ func (c *ControlPlane) MustCreateBackup(ctx context.Context, t tests.T, deployme
 	return backup
 }
 
+func (c *ControlPlane) MustWaitForBackupCreated(ctx context.Context, t tests.T, backupID string) {
+	wait.For(t, wait.StandardTimeout, wait.RetryInterval, func(t tests.T) {
+		backup, resp, err := c.PDS.BackupsApi.ApiBackupsIdGet(ctx, backupID).Execute()
+		api.RequireNoError(t, resp, err)
+		require.Equalf(t, *backup.State, "created", "Check backup %s state", backupID)
+	})
+}
+
 func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID string, localOnly bool) {
 	resp, err := c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).LocalOnly(localOnly).Execute()
 	api.RequireNoError(t, resp, err)

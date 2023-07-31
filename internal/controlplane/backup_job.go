@@ -73,6 +73,6 @@ func (c *ControlPlane) MustEnsureNBackupJobsSuccessFromSchedule(ctx context.Cont
 				successfulBackupJobs++
 			}
 		}
-		require.GreaterOrEqual(t, expectedBackups, successfulBackupJobs, "Expected at least %v successful backup jobs", expectedBackups)
+		require.GreaterOrEqual(t, successfulBackupJobs, expectedBackups, "Expected at least %v successful backup jobs", expectedBackups)
 	})
 }
