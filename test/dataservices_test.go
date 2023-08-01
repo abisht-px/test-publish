@@ -99,6 +99,7 @@ func (s *PDSTestSuite) TestDataService_DeploymentWithPSA() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -157,7 +158,10 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 					deployment.NamePrefix = fmt.Sprintf("backup-%s-", deployment.ImageVersionString())
 					deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, t, &deployment)
 					namespace := s.controlPlane.MustGetNamespaceForDeployment(s.ctx, t, deploymentID)
-					t.Cleanup(func() { s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID) })
+					t.Cleanup(func() {
+						s.controlPlane.MustRemoveDeploymentIfExists(s.ctx, t, deploymentID)
+						s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
+					})
 					s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 					s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
 					s.crossCluster.MustWaitForStatefulSetReady(s.ctx, t, deploymentID)
@@ -202,6 +206,7 @@ func (s *PDSTestSuite) TestDataService_BackupRestore() {
 						s.controlPlane.MustWaitForBackupRemoved(s.ctx, t, backup.GetId())
 						s.controlPlane.MustRemoveDeployment(s.ctx, t, restore.GetDeploymentId())
 						s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, restore.GetDeploymentId())
+						s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, restore.GetDeploymentId())
 					})
 
 					waitTimeout := dataservices.GetLongTimeoutFor(deployment.NodeCount)
@@ -355,6 +360,7 @@ func (s *PDSTestSuite) updateTestImpl(t *testing.T, fromSpec, toSpec api.ShortDe
 	t.Cleanup(func() {
 		s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+		s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 	})
 
 	// Create.
@@ -412,6 +418,7 @@ func (s *PDSTestSuite) TestDataService_ScaleUp() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 
 				// Create.
@@ -462,6 +469,7 @@ func (s *PDSTestSuite) TestDataService_ScaleResources() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 
 				// Create.
@@ -512,6 +520,7 @@ func (s *PDSTestSuite) TestDataService_Recovery_FromDeletion() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -560,6 +569,7 @@ func (s *PDSTestSuite) TestDataService_Metrics() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -598,6 +608,7 @@ func (s *PDSTestSuite) TestDataService_DeletePDSUser() {
 				t.Cleanup(func() {
 					s.controlPlane.MustRemoveDeployment(s.ctx, t, deploymentID)
 					s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, t, deploymentID)
+					s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, t, deploymentID)
 				})
 				s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, t, deploymentID)
 				s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, t, deploymentID)
@@ -636,6 +647,7 @@ func (s *PDSTestSuite) TestDataService_ImpossibleResourceAllocation_Fails() {
 	s.T().Cleanup(func() {
 		s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), deploymentID)
 		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
+		s.crossCluster.MustDeleteDeploymentVolumes(s.ctx, s.T(), deploymentID)
 	})
 
 	// Wait for the standard timeout, and then make sure the deployment is unavailable.

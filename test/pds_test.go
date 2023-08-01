@@ -95,6 +95,10 @@ func (s *PDSTestSuite) TearDownSuite() {
 		s.uninstallAgent(env)
 		s.controlPlane.DeleteTestDeploymentTarget(s.ctx, s.T())
 	}
+	wait.For(s.T(), 5*time.Minute, 10*time.Second, func(t tests.T) {
+		err := s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
+		assert.NoError(t, err, "Cannot delete detached PX volumes.")
+	})
 }
 
 // mustHavePDSMetadata gets PDS API metadata and stores the PDS helm chart version in the test suite.
