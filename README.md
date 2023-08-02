@@ -25,7 +25,7 @@ For instructions how to run tests locally, see [Running tests locally](#running-
 | PDS_BACKUPTARGET_REGION    |                                            | Region of the bucket, required for S3.                                                                            |
 | PDS_S3CREDENTIALS_ENDPOINT | s3.amazonaws.com                           | Base path for the AWS S3 endpoint.                                                                                |
 | PDS_HELM_CHART_VERSION     | configured by control plane                | PDS Helm chart version. Use "0" to skip PDS chart installation.                                                   |
-| DEPLOYMENT_TARGET_TLS_ENABLED     | configured by target cluster                | Whether TLS is enabled for data service on tc, required for TLS specific tests.                                                   |
+| DATA_SERVICE_TLS_ENABLED     | configured by target cluster                | Whether TLS is enabled for data service on tc, required for TLS specific tests.                                                   |
 
 ### Secrets
 
@@ -94,7 +94,7 @@ CONTROL_PLANE_ADDRESS='<domain name or ip address>'
 TARGET_CLUSTER_KUBECONFIG=''
 
 # target cluster TLS config.
-DEPLOYMENT_TARGET_TLS_ENABLED='<data service tls enabled at target cluster: true/false>'
+DATA_SERVICE_TLS_ENABLED='<data service tls enabled at target cluster: true/false>'
 
 # OIDC config.
 SECRET_TOKEN_ISSUER_URL='<environment/px-central/token-issuer secret in AWS secret manager>'

@@ -66,13 +66,13 @@ func (s *PDSTestSuite) SetupSuite() {
 	if err == nil {
 		s.T().Log("successfully loaded .env file")
 	}
-
 	// Perform basic setup with sanity checks.
 	env := mustHaveEnvVariables(s.T())
 	s.config = env
 	s.mustHaveControlPlane(env)
 	s.mustHavePDSMetadata(env)
 	s.mustHaveTargetCluster(env)
+	s.targetCluster.PDSChartConfig.DataServiceTLSEnabled = env.dataServiceTLSEnabled
 	s.mustHaveTargetClusterNamespaces(env.pdsNamespaceName)
 	s.mustHavePrometheusClient(env)
 	if shouldInstallPDSHelmChart(env.pdsHelmChartVersion) {

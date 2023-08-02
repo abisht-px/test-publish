@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -16,7 +15,6 @@ import (
 
 func (s *PDSTestSuite) Test_ConfigureTLSIssuer_OK() {
 	errStr, enabled := s.checkTLSPreconditions()
-	log.Fatal(errStr, enabled)
 	if !enabled {
 		s.T().Skipf(errStr)
 	}
@@ -148,7 +146,7 @@ func (s *PDSTestSuite) Test_CreateDeploymentWithTLS_WhenTLSRequired_OK() {
 
 func (s *PDSTestSuite) checkTLSPreconditions() (string, bool) {
 	// Pre-condition at TC
-	if !s.config.deploymentTargetTLSEnabled {
+	if !s.config.dataServiceTLSEnabled {
 		return "DataServiceTLSEnabled not enabled on TC", false
 	}
 
