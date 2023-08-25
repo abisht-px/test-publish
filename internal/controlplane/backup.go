@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/pointer"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -38,6 +39,10 @@ func (c *ControlPlane) MustDeleteBackup(ctx context.Context, t tests.T, backupID
 	api.RequireNoError(t, resp, err)
 }
 
+func (c *ControlPlane) DeleteBackup(ctx context.Context, t tests.T, backupID string, localOnly bool) (*http.Response, error) {
+	return c.PDS.BackupsApi.ApiBackupsIdDelete(ctx, backupID).LocalOnly(localOnly).Execute()
+}
+
 func (c *ControlPlane) MustDeleteBackupJobWithDisconnectTC(ctx context.Context, t tests.T, backupJobID string) {
 	resp, _ := c.PDS.BackupJobsApi.ApiBackupJobsIdDelete(ctx, backupJobID).Execute()
 	require.Equalf(t, http.StatusUnprocessableEntity, resp.StatusCode, "Deployment target is not healthy")
@@ -46,7 +51,15 @@ func (c *ControlPlane) MustDeleteBackupJobWithDisconnectTC(ctx context.Context, 
 func (c *ControlPlane) MustDeleteBackupJob(ctx context.Context, t tests.T, backupJobID string) {
 	resp, err := c.PDS.BackupJobsApi.ApiBackupJobsIdDelete(ctx, backupJobID).Execute()
 	api.RequireNoError(t, resp, err)
+}
 
+func (c *ControlPlane) ListBackupsByDeploymentID(ctx context.Context, deploymentID string) ([]pds.ModelsBackup, error) {
+	backups, resp, err := c.PDS.BackupsApi.ApiDeploymentsIdBackupsGet(ctx, deploymentID).Execute()
+	if err != nil {
+		return nil, api.ExtractErrorDetails(resp, err)
+	}
+
+	return backups.GetData(), nil
 }
 
 func (c *ControlPlane) MustListBackupsByDeploymentID(ctx context.Context, t tests.T, deploymentID string) []pds.ModelsBackup {

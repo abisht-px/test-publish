@@ -7,8 +7,9 @@ import (
 	"github.com/portworx/pds-integration-test/internal/tests"
 	"github.com/portworx/pds-integration-test/internal/wait"
 
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
+
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 )
 
 func (c *CrossClusterHelper) MustCreateRestore(ctx context.Context, t tests.T, namespace, backupName, restoreName string) *backupsv1.Restore {

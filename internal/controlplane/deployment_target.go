@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -36,6 +37,16 @@ func (c *ControlPlane) MustWaitForDeploymentTarget(ctx context.Context, t tests.
 		err := c.PDS.CheckDeploymentTargetHealth(ctx, targetID)
 		require.NoErrorf(t, err, "Deployment target %q is not healthy.", targetID)
 	})
+	return targetID
+}
+
+func (c *ControlPlane) GetDeploymentTargetID(ctx context.Context, t tests.T, name string) (targetID string) {
+	wait.For(t, wait.ShortTimeout, wait.RetryInterval, func(t tests.T) {
+		var err error
+		targetID, err = c.PDS.GetDeploymentTargetIDByName(ctx, c.TestPDSTenantID, name)
+		require.NoErrorf(t, err, "PDS deployment target %q does not exist.", name)
+	})
+
 	return targetID
 }
 

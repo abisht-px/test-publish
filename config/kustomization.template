@@ -1,0 +1,32 @@
+resources:
+  - ./base/namespace.yml
+  - ./base/rbac.yaml
+  - ./base/iam_test.yml
+  - ./base/namespace_test.yml
+  - ./base/backup_test.yml
+  - ./base/restore_test.yml
+  - ./base/deployment_test.yml
+  - ./base/portworxcsi_test.yml
+  - ./base/targetcluster_test.yml
+  - ./base/reporting.yml
+  - ./base/capabilities.yml
+
+
+namespace: pds-integration-tests
+namePrefix: pds-
+
+images:
+  - name: pdstestimage
+    newName: "docker.io/portworx/pds-integration-test"
+    newTag: "master"
+
+configMapGenerator:
+- name: config
+  envs:
+  - environment.template
+- name: helm-repository
+  files:
+    - repositories.yml
+- name: dataservices
+  files:
+    - dataservices.yml

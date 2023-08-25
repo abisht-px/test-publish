@@ -1,5 +1,7 @@
 # PDS Integration Tests
 
+New test suites documentation can be found [here](docs/README.md)
+
 End-to-end test definitions for PDS.
 
 The test is intended to be run inside a [Jenkins pipeline](https://jenkins.pwx.dev.purestorage.com/job/PDS/job/integration-test/)

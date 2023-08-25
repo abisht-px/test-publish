@@ -2,11 +2,15 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	"k8s.io/utils/pointer"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	"github.com/portworx/pds-integration-test/internal/auth"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
@@ -14,11 +18,80 @@ import (
 	"github.com/portworx/pds-integration-test/internal/tests"
 )
 
+type InitializeOption func(context.Context, tests.T, *ControlPlane)
+
+func WithAccountName(accountName string) InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		c.mustHavePDStestAccount(ctx, t, accountName)
+	}
+}
+
+func WithTenantName(tenantName string) InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		c.mustHavePDStestTenant(ctx, t, tenantName)
+	}
+}
+
+func WithProjectName(projectName string) InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		c.mustHavePDStestProject(ctx, t, projectName)
+	}
+}
+
+func WithLoadImageVersions() InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		c.mustLoadImageVersions(ctx, t)
+	}
+}
+
+func WithCreateTemplatesAndStorageOptions(namePrefix string) InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		c.mustCreateStorageOptions(ctx, t, namePrefix)
+		c.mustCreateApplicationTemplates(ctx, t, namePrefix)
+	}
+}
+
+func WithPrometheusClient(controlPlaneAPI string, creds api.LoginCredentials) InitializeOption {
+	return func(ctx context.Context, t tests.T, c *ControlPlane) {
+		tokenSource := mustCreateTokenSource(ctx, creds)
+
+		controlPlaneAPI = strings.TrimSuffix(controlPlaneAPI, "/api")
+		c.MustSetupPrometheus(t, fmt.Sprintf("%s/prometheus", controlPlaneAPI), tokenSource)
+	}
+}
+
+func mustCreateTokenSource(ctx context.Context, creds api.LoginCredentials) oauth2.TokenSource {
+	if creds.BearerToken != "" {
+		return auth.GetTokenSourceByToken(creds.BearerToken)
+	}
+
+	tokenSource, _ := auth.GetTokenSourceByPassword(
+		ctx,
+		creds.TokenIssuerURL,
+		creds.IssuerClientID,
+		creds.IssuerClientSecret,
+		creds.Username,
+		creds.Password,
+	)
+
+	return tokenSource
+}
+
 func (c *ControlPlane) MustSetupPrometheus(t tests.T, apiURL string, tokenSource oauth2.TokenSource) {
 	require.NotEmpty(t, c.TestPDSTenantID, "Test tenant is not set up. Control plane entities must be set up before Prometheus.")
 	promAPI, err := prometheus.NewClient(apiURL, c.TestPDSTenantID, tokenSource)
 	require.NoError(t, err, "Failed to set up Prometheus client for tenant %s at URL %s.", c.TestPDSTenantID, apiURL)
 	c.Prometheus = promAPI
+}
+
+func (c *ControlPlane) MustInitializeTestDataWithOptions(
+	ctx context.Context,
+	t tests.T,
+	opts ...InitializeOption,
+) {
+	for _, o := range opts {
+		o(ctx, t, c)
+	}
 }
 
 func (c *ControlPlane) MustInitializeTestData(

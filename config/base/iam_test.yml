@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: iam-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: iam-suite
+    spec:
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/iam.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -test.failfast
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+      restartPolicy: Never

@@ -26,7 +26,7 @@ func (c CertManagerChartConfig) ToChartConfig() helminstaller.ChartConfig {
 }
 
 func (tc *TargetCluster) InstallCertManagerChart(ctx context.Context) error {
-	installer, err := tc.CertManagerHelmProvider.Installer(tc.Kubeconfig, tc.CertManagerChartConfig.ToChartConfig())
+	installer, err := tc.CertManagerChartInstaller()
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (tc *TargetCluster) InstallCertManagerChart(ctx context.Context) error {
 
 // UpgradeCertManagerChart runs helm upgrade with the configuration at tc.CertManagerChartConfig.
 func (tc *TargetCluster) UpgradeCertManagerChart(ctx context.Context) error {
-	installer, err := tc.CertManagerHelmProvider.Installer(tc.Kubeconfig, tc.CertManagerChartConfig.ToChartConfig())
+	installer, err := tc.CertManagerChartInstaller()
 	if err != nil {
 		return err
 	}
@@ -43,9 +43,21 @@ func (tc *TargetCluster) UpgradeCertManagerChart(ctx context.Context) error {
 }
 
 func (tc *TargetCluster) UninstallCertManagerChart(ctx context.Context) error {
-	installer, err := tc.CertManagerHelmProvider.Installer(tc.Kubeconfig, tc.CertManagerChartConfig.ToChartConfig())
+	installer, err := tc.CertManagerChartInstaller()
 	if err != nil {
 		return err
 	}
 	return installer.Uninstall(ctx)
+}
+
+func (tc *TargetCluster) CertManagerChartInstaller() (*helminstaller.InstallableHelm, error) {
+	if tc.Kubeconfig != "" {
+		return tc.CertManagerHelmProvider.Installer(tc.Kubeconfig, tc.CertManagerChartConfig.ToChartConfig())
+	}
+
+	return tc.CertManagerHelmProvider.InstallerFromRestCfg(
+		tc.RestConfig,
+		tc.CertManagerChartConfig.ToChartConfig(),
+		CertManagerNamespace,
+	)
 }

@@ -1,12 +1,37 @@
 run:
   modules-download-mode: vendor
   timeout: 5m
+#  tests: true
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/portworx/pds-integration-test
+    local-prefixes: github.com/portworx
 
 linters:
   enable:
-  - goimports
-  - staticcheck
+    - goimports
+    - staticcheck
+# TODO - We need to enable following configuration but in phased manner
+#  enable-all: true
+#  disable:
+#    - varnamelen
+#    - gochecknoglobals
+#    - tparallel
+#    - paralleltest
+#    - exhaustivestruct
+#    - exhaustruct
+#    - gochecknoinits
+#    - golint
+#    - gomoddirectives
+#    - gosec
+#    - funlen
+#    - lll
+#    - wsl
+#    - bodyclose
+#    - godox
+#    - revive
+#    - containedctx
+#    - nlreturn
+#    - thelper
+#    - stylecheck
+#    - scopelint

@@ -28,4 +28,3 @@ COPY --from=builder /workspace/pds-test .
 COPY --from=builder /workspace/go-junit-report .
 
 ENTRYPOINT ["/bin/sh", "-c", "/pds-test -test.v ${PDS_TEST_ARGS} | /go-junit-report -iocopy -set-exit-code -out $PDS_JUNIT_REPORT_FILEPATH"]
-

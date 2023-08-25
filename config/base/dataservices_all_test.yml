@@ -1,0 +1,218 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataservices-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: dataservices-suite
+    spec:
+      initContainers:
+      # Bloody hack to delay the startup of test containers and avoid
+      # name resource conflicts
+      - name: delay-start
+        image: busybox:1.28
+        command: ['sh', '-c', 'echo Going to sleep for random seconds! && sleep $((RANDOM % 15))']
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/dataservices.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
+            - -test.run=TestDataservicesSuite
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
+      serviceAccountName: tests-sa
+      restartPolicy: Never
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataservices-backup-restore-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: dataservices-backup-restore-suite
+    spec:
+      initContainers:
+        # Bloody hack to delay the startup of test containers and avoid
+        # name resource conflicts
+        - name: delay-start
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo Going to sleep for random seconds! && sleep $((RANDOM % 15))']
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/dataservices.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -awsAccessKey=$(AWS_ACCESS_KEY)
+            - -awsSecretKey=$(AWS_SECRET_KEY)
+            - -awsS3BucketName=$(AWS_S3_BUCKET_NAME)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
+            - -test.run=TestBackupRestoreSuite
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
+      serviceAccountName: tests-sa
+      restartPolicy: Never
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataservices-metrics-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: dataservices-metrics-suite
+    spec:
+      initContainers:
+        # Bloody hack to delay the startup of test containers and avoid
+        # name resource conflicts
+        - name: delay-start
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo Going to sleep for random seconds! && sleep $((RANDOM % 15))']
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/dataservices.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
+            - -test.run=TestMetricsSuite
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
+      serviceAccountName: tests-sa
+      restartPolicy: Never
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dataservices-scale-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: dataservices-scale-suite
+    spec:
+      initContainers:
+        # Bloody hack to delay the startup of test containers and avoid
+        # name resource conflicts
+        - name: delay-start
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo Going to sleep for random seconds! && sleep $((RANDOM % 15))']
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/dataservices.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
+            - -test.run=TestScaleSuite
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
+      serviceAccountName: tests-sa
+      restartPolicy: Never
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices

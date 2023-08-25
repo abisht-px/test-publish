@@ -3,6 +3,8 @@ package targetcluster
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/portworx/pds-integration-test/internal/helminstaller"
 )
 
@@ -47,16 +49,21 @@ func (c PDSChartConfig) ToChartConfig() helminstaller.ChartConfig {
 }
 
 func (tc *TargetCluster) InstallPDSChart(ctx context.Context) error {
-	installer, err := tc.PDSChartHelmProvider.Installer(tc.Kubeconfig, tc.PDSChartConfig.ToChartConfig())
+	installer, err := tc.PDSChartInstaller()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get Installer")
 	}
-	return installer.Install(ctx)
+
+	if err := installer.Install(ctx); err != nil {
+		return errors.Wrap(err, "install chart")
+	}
+
+	return nil
 }
 
 // UpgradePDSChart runs helm upgrade with the configuration at tc.PDSChartConfig.
 func (tc *TargetCluster) UpgradePDSChart(ctx context.Context) error {
-	installer, err := tc.PDSChartHelmProvider.Installer(tc.Kubeconfig, tc.PDSChartConfig.ToChartConfig())
+	installer, err := tc.PDSChartInstaller()
 	if err != nil {
 		return err
 	}
@@ -64,9 +71,21 @@ func (tc *TargetCluster) UpgradePDSChart(ctx context.Context) error {
 }
 
 func (tc *TargetCluster) UninstallPDSChart(ctx context.Context) error {
-	installer, err := tc.PDSChartHelmProvider.Installer(tc.Kubeconfig, tc.PDSChartConfig.ToChartConfig())
+	installer, err := tc.PDSChartInstaller()
 	if err != nil {
 		return err
 	}
 	return installer.Uninstall(ctx)
+}
+
+func (tc *TargetCluster) PDSChartInstaller() (*helminstaller.InstallableHelm, error) {
+	if tc.Kubeconfig != "" {
+		return tc.PDSChartHelmProvider.Installer(tc.Kubeconfig, tc.PDSChartConfig.ToChartConfig())
+	}
+
+	return tc.PDSChartHelmProvider.InstallerFromRestCfg(
+		tc.RestConfig,
+		tc.PDSChartConfig.ToChartConfig(),
+		PDSChartNamespace,
+	)
 }

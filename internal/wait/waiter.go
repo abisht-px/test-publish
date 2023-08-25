@@ -12,15 +12,15 @@ import (
 const (
 	ShortRetryInterval = time.Second * 1
 	RetryInterval      = time.Second * 10
-
+	LongRetryInterval  = time.Second * 15
 	// VeryLongTimeout is generally appropriate for highly resource-intensive operations,
 	// which are expected to take a very long time to reconcile.
-	VeryLongTimeout = time.Minute * 20
+	VeryLongTimeout = time.Minute * 25
 	// LongTimeout is generally appropriate for highly resource-intensive operations,
 	// which are expected to take a long time to reconcile.
-	LongTimeout = time.Minute * 10
+	LongTimeout = time.Minute * 15
 	// StandardTimeout is the normal expected waiting period for I/O-bound resources.
-	StandardTimeout = time.Minute * 5
+	StandardTimeout = time.Minute * 10
 	// ShortTimeout is intended for lightweight resource reconciliations.
 	ShortTimeout = time.Minute * 1
 	// QuickCheckTimeout is appropriate operations which aren't constrained by waiting

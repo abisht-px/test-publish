@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/rest"
+
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/portworx/pds-integration-test/internal/minihelm"
@@ -73,6 +75,25 @@ func newHelmProvider(chartName, repoName, repoURL, namespace string) (*HelmArtif
 		versions:  versions,
 		repoName:  repoName,
 		chartName: chartName,
+	}, nil
+}
+
+func (p *HelmArtifactProvider) InstallerFromRestCfg(cfg *rest.Config, chartConfig ChartConfig, namespace string) (*InstallableHelm, error) {
+	matchingVersions, err := filterMatchingVersions(chartConfig.VersionConstraints, p.versions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &InstallableHelm{
+		HelmArtifactProvider: *p,
+		chartVersion:         matchingVersions[0],
+		restGetter: NewMemoryRESTClientGetter(
+			cfg,
+			WithPersistent(true),
+			WithNamespace(namespace),
+		),
+		chartValues: chartConfig.CommaSeparatedChartVals(),
+		releaseName: chartConfig.ReleaseName,
 	}, nil
 }
 

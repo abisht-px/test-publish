@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
+
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"

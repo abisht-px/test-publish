@@ -273,7 +273,10 @@ func setGetterNamespace(settings *cli.EnvSettings, restGetter genericclioptions.
 	// HACK: Update getter's (a.k.a. client from KUBECONFIG) namespace.
 	namespace := settings.Namespace()
 	if config, err := restGetter.ToRawKubeConfigLoader().RawConfig(); err == nil {
-		config.Contexts[config.CurrentContext].Namespace = namespace
+		currCtxCfg := config.Contexts[config.CurrentContext]
+		if currCtxCfg != nil {
+			currCtxCfg.Namespace = namespace
+		}
 	}
 	return namespace
 }

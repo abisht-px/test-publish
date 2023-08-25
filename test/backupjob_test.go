@@ -3,9 +3,10 @@ package test
 import (
 	"fmt"
 
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
+
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/controlplane"

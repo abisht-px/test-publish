@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: targetcluster-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: targetcluster-suite
+    spec:
+      initContainers:
+        # Bloody hack to delay the startup of test containers and avoid
+        # name resource conflicts
+        - name: delay-start
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo Going to sleep for random seconds! && sleep $((RANDOM % 15))']
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/targetcluster.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_SECRET)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -test.failfast
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+      restartPolicy: Never
+      serviceAccountName: tests-sa
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/client-go/rest"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/hashicorp/go-multierror"
 	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
@@ -32,6 +34,8 @@ const (
 type TargetCluster struct {
 	*cluster.Cluster
 	portworx.Portworx
+
+	RestConfig              *rest.Config
 	Kubeconfig              string
 	PDSChartConfig          PDSChartConfig
 	CertManagerChartConfig  CertManagerChartConfig
@@ -99,6 +103,7 @@ func NewTargetCluster(
 	}
 
 	return &TargetCluster{
+		RestConfig:              config,
 		Cluster:                 cluster,
 		Portworx:                px,
 		Kubeconfig:              kubeconfig,

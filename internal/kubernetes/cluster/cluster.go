@@ -13,8 +13,6 @@ import (
 	volumesnapshotv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
 	openstoragev1 "github.com/libopenstorage/operator/pkg/apis/core/v1"
 	openstorage "github.com/libopenstorage/operator/pkg/client/clientset/versioned"
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
-	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -30,6 +28,9 @@ import (
 	"k8s.io/utils/pointer"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/external-dns/endpoint"
+
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+	deploymentsv1 "github.com/portworx/pds-operator-deployments/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/portforward"
 	"github.com/portworx/pds-integration-test/internal/tests"

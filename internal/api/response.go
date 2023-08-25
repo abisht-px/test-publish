@@ -11,6 +11,10 @@ func ExtractErrorDetails(resp *http.Response, err error) error {
 		return nil
 	}
 
+	if resp == nil {
+		return err
+	}
+
 	rawbody, parseErr := io.ReadAll(resp.Body)
 	if parseErr != nil {
 		return fmt.Errorf("%v (failed parsing response body: %v)", err, parseErr)

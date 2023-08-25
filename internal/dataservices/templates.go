@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"k8s.io/utils/pointer"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 )
 
 const (

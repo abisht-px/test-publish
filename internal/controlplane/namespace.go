@@ -3,8 +3,9 @@ package controlplane
 import (
 	"context"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/require"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -23,7 +24,7 @@ func (c *ControlPlane) MustWaitForNamespaceStatus(ctx context.Context, t tests.T
 		namespace *pds.ModelsNamespace
 		err       error
 	)
-	wait.For(t, wait.QuickCheckTimeout, wait.ShortRetryInterval, func(t tests.T) {
+	wait.For(t, wait.ShortTimeout, wait.ShortRetryInterval, func(t tests.T) {
 		namespace, err = c.PDS.GetNamespaceByName(ctx, c.testPDSDeploymentTargetID, name)
 		require.NoErrorf(t, err, "Getting namespace %s.", name)
 		require.NotNilf(t, namespace, "Could not find namespace %s.", name)

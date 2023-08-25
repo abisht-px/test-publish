@@ -32,3 +32,55 @@ jobs:
     - name: Push image with master tag
       if: ${{ github.ref == 'refs/heads/master' }}
       run: make docker-push IMG_TAG=master
+
+  push-suites:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build image
+        run: make docker-build-suites
+
+      - name: Push image
+        run: make docker-push-suites
+
+      - name: Build image with master tag
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: make docker-build-suites IMG_TAG=master
+
+      - name: Push image with master tag
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: make docker-push-suites IMG_TAG=master
+
+  push-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build image
+        run: make docker-build-config
+
+      - name: Push image
+        run: make docker-push-config
+
+      - name: Build image with master tag
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: make docker-build-config IMG_TAG=master
+
+      - name: Push image with master tag
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: make docker-push-config IMG_TAG=master

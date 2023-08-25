@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: namespace-suite
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: namespace-suite
+    spec:
+      containers:
+        - name: tests
+          image: pdstestimage
+          imagePullPolicy: Always
+          command:
+            - "/namespace.test"
+          args:
+            - -controlPlaneAPI=$(CONTROL_PLANE_API)
+            - -accountName=$(ACCOUNT_NAME)
+            - -tenantName=$(TENANT_NAME)
+            - -projectName=$(PROJECT_NAME)
+            - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
+            - -issuerClientID=$(ISSUER_CLIENT_ID)
+            - -issuerTokenURL=$(ISSUER_TOKEN_URL)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsToken=$(PDS_API_TOKEN)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
+            - -test.failfast
+            - -test.v
+          envFrom:
+            - configMapRef:
+                name: config
+          volumeMounts:
+            - mountPath: /config
+              name: helm-repository-volume
+      serviceAccountName: tests-sa
+      restartPolicy: Never
+      volumes:
+        - name: helm-repository-volume
+          configMap:
+            name: helm-repository

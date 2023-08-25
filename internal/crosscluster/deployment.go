@@ -34,6 +34,36 @@ func (c *CrossClusterHelper) MustWaitForDeploymentInitialized(ctx context.Contex
 	})
 }
 
+func (c *CrossClusterHelper) GetNodeInitJob(ctx context.Context, t tests.T, deploymentID string) (bool, error) {
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespace := namespaceModel.GetName()
+	nodeInitJobName := fmt.Sprintf("%s-node-init", deployment.GetClusterResourceName())
+
+	nodeInitJob, err := c.targetCluster.GetJob(ctx, namespace, nodeInitJobName)
+
+	return isJobSucceeded(nodeInitJob), err
+}
+
+func (c *CrossClusterHelper) GetClusterInitJob(ctx context.Context, t tests.T, deploymentID string) (bool, error) {
+	deployment, resp, err := c.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespaceModel, resp, err := c.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(ctx, *deployment.NamespaceId).Execute()
+	api.RequireNoError(t, resp, err)
+
+	namespace := namespaceModel.GetName()
+	clusterInitJobName := fmt.Sprintf("%s-cluster-init", deployment.GetClusterResourceName())
+
+	clusterInitJob, err := c.targetCluster.GetJob(ctx, namespace, clusterInitJobName)
+
+	return isJobSucceeded(clusterInitJob), err
+}
+
 func isJobSucceeded(job *batchv1.Job) bool {
 	return *job.Spec.Completions == job.Status.Succeeded
 }

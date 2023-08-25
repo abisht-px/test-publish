@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/stretchr/testify/require"
+
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
-	"github.com/stretchr/testify/require"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/tests"
@@ -39,6 +40,12 @@ type ProjectsIdBackupJobsGetRequestOptions func(pds.ApiApiProjectsIdBackupJobsGe
 func WithListBackupJobsInProjectBackupID(backupID string) ProjectsIdBackupJobsGetRequestOptions {
 	return func(r pds.ApiApiProjectsIdBackupJobsGetRequest) pds.ApiApiProjectsIdBackupJobsGetRequest {
 		return r.BackupId(backupID)
+	}
+}
+
+func WithListBackupJobsInDeploymentTarget(deploymentTargetID string) ProjectsIdBackupJobsGetRequestOptions {
+	return func(r pds.ApiApiProjectsIdBackupJobsGetRequest) pds.ApiApiProjectsIdBackupJobsGetRequest {
+		return r.DeploymentTargetId(deploymentTargetID)
 	}
 }
 

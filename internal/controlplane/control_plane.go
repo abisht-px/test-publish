@@ -21,6 +21,10 @@ type ControlPlane struct {
 	imageVersionSpecs          []api.PDSImageReferenceSpec
 }
 
+func (cp *ControlPlane) DeploymentTargetID() string {
+	return cp.testPDSDeploymentTargetID
+}
+
 func New(apiClient *api.PDSClient) *ControlPlane {
 	return &ControlPlane{
 		PDS: apiClient,

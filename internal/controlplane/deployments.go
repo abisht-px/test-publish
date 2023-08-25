@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
@@ -151,6 +152,10 @@ func (c *ControlPlane) MustWaitForDeploymentHealthy(ctx context.Context, t *test
 		healthState := deployment.GetHealth()
 		require.Equal(t, pdsDeploymentHealthStateHealthy, healthState, "Deployment %q is in state %q.", deploymentID, healthState)
 	})
+}
+
+func (c *ControlPlane) GetDeploymentById(ctx context.Context, t *testing.T, deploymentID string) (*pds.ModelsDeployment, *http.Response, error) {
+	return c.PDS.DeploymentsApi.ApiDeploymentsIdGet(ctx, deploymentID).Execute()
 }
 
 func (c *ControlPlane) MustWaitForDeploymentReplicas(ctx context.Context, t *testing.T, deploymentID string, expectedReplicas int32) {
@@ -327,4 +332,31 @@ func (c *ControlPlane) MustHaveDeploymentEventsForCorrectDeployment(ctx context.
 	for i := 1; i < n; i++ {
 		assert.Contains(t, *eventsResponse[i].ResourceName, *deployment.ClusterResourceName, "Resource name does not contain deployment name. expected %s in resource name, got %s", deployment.ClusterResourceName, *eventsResponse[i].ResourceName)
 	}
+}
+
+func (c *ControlPlane) ListDeploymentsInProject(ctx context.Context, projectID string) ([]pds.ModelsDeployment, error) {
+	getDeploymentsReq := c.PDS.DeploymentsApi.ApiProjectsIdDeploymentsGet(ctx, projectID)
+
+	deployments, resp, err := getDeploymentsReq.Execute()
+	if err != nil {
+		return nil, api.ExtractErrorDetails(resp, err)
+	}
+
+	return deployments.GetData(), nil
+}
+
+func (c *ControlPlane) ListDeploymentsForDeploymentTarget(
+	ctx context.Context,
+	projectID string,
+	deploymentTargetID string,
+) ([]pds.ModelsDeployment, error) {
+	getDeploymentsReq := c.PDS.DeploymentsApi.ApiProjectsIdDeploymentsGet(ctx, projectID).
+		DeploymentTargetId(deploymentTargetID)
+
+	deployments, resp, err := getDeploymentsReq.Execute()
+	if err != nil {
+		return nil, api.ExtractErrorDetails(resp, err)
+	}
+
+	return deployments.GetData(), nil
 }
