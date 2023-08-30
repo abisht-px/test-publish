@@ -1,0 +1,10 @@
+dataservices:
+  - name: Consul
+    versions:
+      - 1.15.3
+  - name: Elasticsearch
+    versions:
+      - 8.8.0
+  - name: ZooKeeper
+    versions:
+      - 3.8.1

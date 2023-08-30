@@ -1,0 +1,13 @@
+dataservices:
+  - name: Cassandra
+    versions:
+      - 4.1.2
+  - name: Couchbase
+    versions:
+      - 7.2.0
+  - name: MongoDB Enterprise
+    versions:
+      - 6.0.6
+  - name: Redis
+    versions:
+      - 7.0.9

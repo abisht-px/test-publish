@@ -1,0 +1,7 @@
+dataservices:
+  - name: Kafka
+    versions:
+      - 3.4.1
+  - name: RabbitMQ
+    versions:
+      - 3.11.16

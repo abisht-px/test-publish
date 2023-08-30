@@ -1,0 +1,37 @@
+dataservices:
+  - name: Cassandra
+    versions:
+      - 4.1.2
+  - name: Consul
+    versions:
+      - 1.15.3
+  - name: Couchbase
+    versions:
+      - 7.1.1
+  - name: Elasticsearch
+    versions:
+      - 8.8.0
+  - name: Kafka
+    versions:
+      - 3.4.1
+  - name: MongoDB Enterprise
+    versions:
+      - 6.0.6
+  - name: MySQL
+    versions:
+      - 8.0.33
+  - name: PostgreSQL
+    versions:
+      - "15.3"
+  - name: RabbitMQ
+    versions:
+      - 3.11.16
+  - name: Redis
+    versions:
+      - 7.0.9
+  - name: MS SQL Server
+    versions:
+      - 2019-CU20
+  - name: ZooKeeper
+    versions:
+      - 3.8.1

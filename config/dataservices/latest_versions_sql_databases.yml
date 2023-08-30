@@ -1,0 +1,10 @@
+dataservices:
+  - name: MySQL
+    versions:
+      - 8.0.33
+  - name: PostgreSQL
+    versions:
+      - "15.3"
+  - name: MS SQL Server
+    versions:
+      - 2019-CU20
