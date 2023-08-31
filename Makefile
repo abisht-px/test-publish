@@ -14,7 +14,10 @@ IMG = $(IMG_REPO)/pds-integration-test:$(IMG_TAG)
 SUITES_IMG = $(IMG_REPO)/pds-integration-test-suites:$(IMG_TAG)
 CONFIG_IMG = $(IMG_REPO)/pds-integration-test-config:$(IMG_TAG)
 
-.PHONY: test vendor lint docker-build docker-push fmt
+DOC_PKGS = "backup,capabilities,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster"
+DOC_FORMAT = "json"
+
+.PHONY: test vendor lint docker-build docker-push fmt doc
 
 build:
 	go test -c -o ./bin/register.test ./suites/register
@@ -36,6 +39,12 @@ fmt:
 
 test:
 	go test ./... -v
+
+doc:
+	@go run ./cmd/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
+
+doc-old:
+	@go run ./cmd/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
 
 vendor:
 	go mod tidy

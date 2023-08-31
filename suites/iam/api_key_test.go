@@ -12,6 +12,17 @@ import (
 	"github.com/portworx/pds-integration-test/internal/random"
 )
 
+// TestUserAPIKey_SanityCheck tests the sanity of user api keys.
+// Steps:
+// 1. Create User API Key by invoking PDS Create UserAPI key
+// 2. Using the token from (1) list accounts
+// 3. Disable the token by invoking PDS Patch UserAPIKey
+// 4. Using the token from (1) list accounts
+// Expected:
+// 1. User API key should be created
+// 2. List accounts should return success
+// 3. Disabling the API key should be success
+// 4. List accounts should return error
 func (s *IAMTestSuite) TestUserAPIKey_SanityCheck() {
 	// Create a user api key.
 	keyName := "test-api-key-" + random.AlphaNumericString(10)
