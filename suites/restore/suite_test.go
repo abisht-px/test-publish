@@ -24,6 +24,7 @@ var (
 	controlPlane      *controlplane.ControlPlane
 	targetCluster     *targetcluster.TargetCluster
 	crossCluster      *crosscluster.CrossClusterHelper
+	dsVersions        framework.DSVersionMatrix
 	cleanupNamespace  bool
 	skipExtendedTests bool
 )
@@ -37,6 +38,7 @@ func init() {
 	framework.ControlPlaneFlags()
 	framework.TargetClusterFlags()
 	framework.BackupCredentialFlags()
+	framework.DataserviceFlags()
 
 	flag.BoolVar(&skipExtendedTests, "skipExtendedTests", true, "Skip extended tests suites")
 }
@@ -47,6 +49,10 @@ func TestRestore(t *testing.T) {
 
 func (s *RestoreTestSuite) SetupSuite() {
 	ctx = context.Background()
+
+	dsVersionMatrix, err := framework.NewDSVersionMatrixFromFlags()
+	s.Require().NoError(err, "load dataservice versions")
+	dsVersions = dsVersionMatrix
 
 	apiClient, err := api.NewPDSClient(
 		ctx,

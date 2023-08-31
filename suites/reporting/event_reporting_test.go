@@ -11,13 +11,11 @@ import (
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 )
 
-const PostgreSQLImageTag = "15.3"
-
 func (s *ReportingTestSuite) TestEventReporting_Successful() {
 	// Create a new deployment.
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: PostgreSQLImageTag,
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 		NamePrefix:      dataservices.Postgres,
 	}
@@ -37,7 +35,7 @@ func (s *ReportingTestSuite) TestEventReporting_Update_Deployment_Successful() {
 	// Create a new deployment.
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: PostgreSQLImageTag,
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 		NamePrefix:      dataservices.Postgres,
 	}
@@ -61,7 +59,7 @@ func (s *ReportingTestSuite) TestEventReporting_Update_Deployment_Successful() {
 func (s *ReportingTestSuite) TestEventReporting_Delete_Deployment_NoEvents() {
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: PostgreSQLImageTag,
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 		NamePrefix:      dataservices.Postgres,
 	}
@@ -113,7 +111,7 @@ func (s *ReportingTestSuite) TestEventReporting_MultipleDeployments() {
 		// Create a new deployment.
 		deployment := api.ShortDeploymentSpec{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: PostgreSQLImageTag,
+			ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 			NodeCount:       1,
 			NamePrefix:      dataservices.Postgres,
 		}

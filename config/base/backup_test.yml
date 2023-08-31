@@ -34,6 +34,7 @@ spec:
             - -awsAccessKey=$(AWS_ACCESS_KEY)
             - -awsSecretKey=$(AWS_SECRET_KEY)
             - -awsS3BucketName=$(AWS_S3_BUCKET_NAME)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
             - -test.failfast
             - -test.v
           envFrom:
@@ -42,9 +43,14 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
       serviceAccountName: tests-sa
       restartPolicy: Never
       volumes:
         - name: helm-repository-volume
           configMap:
             name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices

@@ -82,6 +82,10 @@ func (ds *DSVersionMatrix) GetVersions(dataservice string) []string {
 	return nil
 }
 
+func (ds *DSVersionMatrix) GetLatestVersion(dataservice string) string {
+	return ds.GetVersions(dataservice)[0]
+}
+
 func (ds *DSVersionMatrix) HasDataservice(dataservice string) bool {
 	for _, each := range ds.Dataservices {
 		if strings.EqualFold(each.Name, dataservice) {

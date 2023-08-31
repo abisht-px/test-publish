@@ -11,7 +11,7 @@ func (s *ReportingTestSuite) TestCRDReporting_UpdateNodeCount() {
 	// Create a new deployment.
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: "14.6",
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 		NamePrefix:      dataservices.Postgres,
 	}

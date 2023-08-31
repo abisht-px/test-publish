@@ -15,9 +15,13 @@ import (
 	"github.com/portworx/pds-integration-test/suites/framework"
 )
 
+var (
+	dsVersions framework.DSVersionMatrix
+)
+
 type PortworxCSITestSuite struct {
 	ctx context.Context
-	//backupTargetCfg  framework.BackupTargetConfig
+	// backupTargetCfg  framework.BackupTargetConfig
 	controlPlane     *controlplane.ControlPlane
 	targetCluster    *targetcluster.TargetCluster
 	crossCluster     *crosscluster.CrossClusterHelper
@@ -29,7 +33,7 @@ func init() {
 	framework.AuthenticationFlags()
 	framework.ControlPlaneFlags()
 	framework.TargetClusterFlags()
-	//framework.BackupCredentialFlags()
+	framework.DataserviceFlags()
 }
 
 func TestPortworxCSITestSuite(t *testing.T) {
@@ -38,6 +42,10 @@ func TestPortworxCSITestSuite(t *testing.T) {
 
 func (s *PortworxCSITestSuite) SetupSuite() {
 	s.ctx = context.Background()
+
+	dsVersionMatrix, err := framework.NewDSVersionMatrixFromFlags()
+	s.Require().NoError(err, "load dataservice versions")
+	dsVersions = dsVersionMatrix
 
 	apiClient, err := api.NewPDSClient(
 		s.ctx,
@@ -57,7 +65,7 @@ func (s *PortworxCSITestSuite) SetupSuite() {
 	)
 	s.controlPlane = cp
 
-	//backupTargetCfg = framework.NewBackupTargetConfigFromFlags()
+	// backupTargetCfg = framework.NewBackupTargetConfigFromFlags()
 
 	token := cp.MustGetServiceAccountToken(context.Background(), s.T(), framework.ServiceAccountName)
 	framework.InitializePDSHelmChartVersion(s.T(), apiClient)

@@ -18,7 +18,7 @@ const (
 func (s *TargetClusterTestSuite) TestTargetCluster_DeletePDSChartPods() {
 	postgres := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: "14.6",
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 		NamePrefix:      "tc-delete-pds-chart-pods",
 	}
@@ -32,7 +32,7 @@ func (s *TargetClusterTestSuite) TestTargetCluster_DeletePDSChartPods() {
 
 	s.MustWaitForDeploymentHealthy(deploymentID)
 	s.MustWaitForDeploymentInitialized(deploymentID)
-	//s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), deploymentID)
+	// s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), deploymentID)
 	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerServicesReady(s.ctx, s.T(), deploymentID)
 	s.crossCluster.MustWaitForLoadBalancerHostsAccessibleIfNeeded(s.ctx, s.T(), deploymentID)

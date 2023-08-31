@@ -15,20 +15,23 @@ import (
 	"github.com/portworx/pds-integration-test/suites/framework"
 )
 
+var dsVersions framework.DSVersionMatrix
+
 type ReportingTestSuite struct {
-	ctx context.Context
-	//backupTargetCfg  framework.BackupTargetConfig
+	suite.Suite
+
+	ctx              context.Context
 	controlPlane     *controlplane.ControlPlane
 	targetCluster    *targetcluster.TargetCluster
 	crossCluster     *crosscluster.CrossClusterHelper
 	cleanupNamespace bool
-	suite.Suite
 }
 
 func init() {
 	framework.AuthenticationFlags()
 	framework.ControlPlaneFlags()
 	framework.TargetClusterFlags()
+	framework.DataserviceFlags()
 }
 
 func TestReportingTestSuite(t *testing.T) {
@@ -37,6 +40,10 @@ func TestReportingTestSuite(t *testing.T) {
 
 func (s *ReportingTestSuite) SetupSuite() {
 	s.ctx = context.Background()
+
+	dsVersionMatrix, err := framework.NewDSVersionMatrixFromFlags()
+	s.Require().NoError(err, "load dataservice versions")
+	dsVersions = dsVersionMatrix
 
 	apiClient, err := api.NewPDSClient(
 		s.ctx,

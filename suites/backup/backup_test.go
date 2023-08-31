@@ -19,7 +19,7 @@ func (s *BackupTestSuite) TestBackup_WithSchedule() {
 	// Given
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Cassandra,
-		ImageVersionTag: "4.1.2",
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Cassandra),
 		NodeCount:       1,
 	}
 	// Setup backup creds
@@ -121,7 +121,7 @@ func (s *BackupTestSuite) TestBackupData_AfterDeleteDeployment() {
 	// Given
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Cassandra,
-		ImageVersionTag: "4.1.2",
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Cassandra),
 		NodeCount:       1,
 	}
 	// Deploy DS
@@ -187,8 +187,6 @@ func (s *BackupTestSuite) TestBackupData_AfterDeleteDeployment() {
 }
 
 func getBackupPathPrefix(t *testing.T, cloudSnapID string) string {
-	t.Helper()
-
 	parts := strings.SplitN(cloudSnapID, "/", 2)
 	require.Equalf(t, 2, len(parts), "invalid cloudsnap id")
 

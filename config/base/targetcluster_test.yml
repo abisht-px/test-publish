@@ -31,6 +31,7 @@ spec:
             - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
             - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
             - -pdsToken=$(PDS_API_TOKEN)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
             - -test.failfast
             - -test.v
           envFrom:
@@ -39,9 +40,14 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: helm-repository-volume
-      restartPolicy: Never
+            - mountPath: /dataservices
+              name: dataservices-volume
       serviceAccountName: tests-sa
+      restartPolicy: Never
       volumes:
         - name: helm-repository-volume
           configMap:
             name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices

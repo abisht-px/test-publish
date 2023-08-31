@@ -12,7 +12,7 @@ func (s *DeploymentTestSuite) TestDeploymentStatuses_Available() {
 	t := s.T()
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Cassandra,
-		ImageVersionTag: "4.0.6",
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Cassandra),
 		NodeCount:       1,
 	}
 	deployment.NamePrefix = fmt.Sprintf("initial-status-change-%s-n%d", deployment.ImageVersionString(), deployment.NodeCount)

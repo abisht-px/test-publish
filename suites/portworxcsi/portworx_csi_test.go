@@ -58,7 +58,7 @@ func (s *PortworxCSITestSuite) TestPortworxCSI_Enabled() {
 			// Create a new deployment.
 			deployment := api.ShortDeploymentSpec{
 				DataServiceName:   dataservices.Postgres,
-				ImageVersionTag:   "14.6",
+				ImageVersionTag:   dsVersions.GetLatestVersion(dataservices.Postgres),
 				NodeCount:         1,
 				NamePrefix:        dataservices.Postgres,
 				StorageOptionName: *template.Name,
@@ -136,7 +136,7 @@ func (s *PortworxCSITestSuite) TestPortworxCSI_Disabled() {
 			// Create a new deployment.
 			deployment := api.ShortDeploymentSpec{
 				DataServiceName:   dataservices.Postgres,
-				ImageVersionTag:   "14.6",
+				ImageVersionTag:   dsVersions.GetLatestVersion(dataservices.Postgres),
 				NodeCount:         1,
 				NamePrefix:        dataservices.Postgres,
 				StorageOptionName: *template.Name,

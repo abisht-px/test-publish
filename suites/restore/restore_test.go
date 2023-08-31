@@ -19,15 +19,11 @@ import (
 	"github.com/portworx/pds-integration-test/internal/wait"
 )
 
-const (
-	postgresImageVersionTag = "14.8"
-)
-
 func (s *RestoreTestSuite) TestRestore_MissingPXCloudCredentials() {
 	// Given
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: postgresImageVersionTag,
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 		NodeCount:       1,
 	}
 
@@ -272,7 +268,7 @@ func (s *RestoreTestSuite) TestRestore_TargetClusterNotSupported() {
 		restoreName            = framework.NewRandomName("restore")
 		postgresDeploymentSpec = api.ShortDeploymentSpec{
 			DataServiceName: dataservices.Postgres,
-			ImageVersionTag: postgresImageVersionTag,
+			ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
 			NodeCount:       1,
 		}
 

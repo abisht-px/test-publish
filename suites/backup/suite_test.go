@@ -24,6 +24,7 @@ var (
 	controlPlane     *controlplane.ControlPlane
 	targetCluster    *targetcluster.TargetCluster
 	crossCluster     *crosscluster.CrossClusterHelper
+	dsVersions       framework.DSVersionMatrix
 	cleanupNamespace bool
 )
 
@@ -36,6 +37,7 @@ func init() {
 	framework.ControlPlaneFlags()
 	framework.TargetClusterFlags()
 	framework.BackupCredentialFlags()
+	framework.DataserviceFlags()
 }
 
 func TestBackupTestSuite(t *testing.T) {
@@ -44,6 +46,10 @@ func TestBackupTestSuite(t *testing.T) {
 
 func (s *BackupTestSuite) SetupSuite() {
 	ctx = context.Background()
+
+	dsVersionMatrix, err := framework.NewDSVersionMatrixFromFlags()
+	s.Require().NoError(err, "load dataservice versions")
+	dsVersions = dsVersionMatrix
 
 	apiClient, err := api.NewPDSClient(
 		ctx,

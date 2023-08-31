@@ -42,7 +42,7 @@ vendor:
 	go mod vendor
 
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint run --fix
 
 mdlint:
 	docker run --rm -v $$PWD:/workdir davidanson/markdownlint-cli2 "**/*.md" "#vendor"
