@@ -95,7 +95,7 @@ func (s *PDSTestSuite) TearDownSuite() {
 		s.uninstallAgent(env)
 		s.controlPlane.DeleteTestDeploymentTarget(s.ctx, s.T())
 	}
-	wait.For(s.T(), 5*time.Minute, 10*time.Second, func(t tests.T) {
+	wait.For(s.T(), 2*time.Minute, 10*time.Second, func(t tests.T) {
 		err := s.targetCluster.DeleteDetachedPXVolumes(s.ctx)
 		assert.NoError(t, err, "Cannot delete detached PX volumes.")
 	})

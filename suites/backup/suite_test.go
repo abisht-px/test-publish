@@ -10,12 +10,13 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
+	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
+
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/suites/framework"
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 )
 
 var (
