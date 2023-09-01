@@ -612,3 +612,74 @@ func (s *PDSTestSuite) TestRestore_RetryRestore_WithNewRequestBody() {
 	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), *retryRestore.DeploymentId)
 	s.controlPlane.MustWaitForDeploymentAvailable(s.ctx, s.T(), *retryRestore.DeploymentId)
 }
+
+func (s *PDSTestSuite) TestUpdateDeploymentAfterRestore() {
+	// Given.
+	deployment := api.ShortDeploymentSpec{
+		DataServiceName: dataservices.Cassandra,
+		ImageVersionTag: "4.1.2",
+		NodeCount:       1,
+	}
+
+	// Deploy DS.
+	deployment.NamePrefix = fmt.Sprintf("restore-%s-", deployment.ImageVersionString())
+	deploymentID := s.controlPlane.MustDeployDeploymentSpec(s.ctx, s.T(), &deployment)
+	s.T().Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), deploymentID)
+		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), deploymentID)
+	})
+	s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, s.T(), deploymentID)
+	s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), deploymentID)
+	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), deploymentID)
+	pdsDeployment, resp, err := s.controlPlane.PDS.DeploymentsApi.ApiDeploymentsIdGet(s.ctx, deploymentID).Execute()
+	api.RequireNoError(s.T(), resp, err)
+	namespaceModel, resp, err := s.controlPlane.PDS.NamespacesApi.ApiNamespacesIdGet(s.ctx, *pdsDeployment.NamespaceId).Execute()
+	api.RequireNoError(s.T(), resp, err)
+	namespace := namespaceModel.GetName()
+	restoreName := generateRandomName("restore")
+
+	// Setup backup creds.
+	name := generateRandomName("pds-creds")
+	backupTargetConfig := s.config.backupTarget
+	s3Creds := backupTargetConfig.credentials.S3
+	backupCredentials := s.controlPlane.MustCreateS3BackupCredentials(s.ctx, s.T(), s3Creds, name)
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupCredentials(s.ctx, s.T(), backupCredentials.GetId()) })
+
+	// Setup backup target.
+	backupTarget := s.controlPlane.MustCreateS3BackupTarget(s.ctx, s.T(), backupCredentials.GetId(), backupTargetConfig.bucket, backupTargetConfig.region)
+	s.controlPlane.MustEnsureBackupTargetCreatedInTC(s.ctx, s.T(), backupTarget.GetId())
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackupTarget(s.ctx, s.T(), backupTarget.GetId()) })
+
+	// Take Adhoc backup.
+	backup := s.controlPlane.MustCreateBackup(s.ctx, s.T(), deploymentID, backupTarget.GetId())
+	s.crossCluster.MustEnsureBackupSuccessful(s.ctx, s.T(), deploymentID, backup.GetClusterResourceName())
+	s.T().Cleanup(func() { s.controlPlane.MustDeleteBackup(s.ctx, s.T(), backup.GetId(), false) })
+
+	// Fetch backjob ID.
+	backupJobName := fmt.Sprintf("%s-adhoc", backup.GetClusterResourceName())
+	backupJobTC, err := s.targetCluster.GetPDSBackupJob(s.ctx, namespace, backupJobName)
+	s.Require().NoError(err)
+	backupJobId, err := getBackupJobID(backupJobTC)
+	s.Require().NoError(err)
+	backupJobCP := s.controlPlane.MustGetBackupJob(s.ctx, s.T(), backupJobId)
+
+	// When.
+	restore := s.controlPlane.MustCreateRestore(s.ctx, s.T(), backupJobId, restoreName, *backupJobCP.NamespaceId, *backupJobCP.DeploymentTargetId)
+	s.T().Cleanup(func() {
+		s.controlPlane.MustRemoveDeployment(s.ctx, s.T(), *restore.DeploymentId)
+		s.controlPlane.MustWaitForDeploymentRemoved(s.ctx, s.T(), *restore.DeploymentId)
+	})
+
+	s.controlPlane.MustWaitForRestoreSuccessful(s.ctx, s.T(), *restore.Id)
+	s.controlPlane.MustWaitForDeploymentHealthy(s.ctx, s.T(), *restore.DeploymentId)
+	s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), *restore.DeploymentId)
+	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), *restore.DeploymentId)
+	s.controlPlane.MustWaitForDeploymentAvailable(s.ctx, s.T(), *restore.DeploymentId)
+
+	// Then.
+	// Update the node count of deployment
+	deployment.NodeCount = 2
+	s.controlPlane.MustUpdateDeployment(s.ctx, s.T(), *restore.DeploymentId, &deployment)
+	s.controlPlane.MustWaitForDeploymentReplicas(s.ctx, s.T(), *restore.DeploymentId, int32(deployment.NodeCount))
+	s.controlPlane.MustWaitForDeploymentAvailable(s.ctx, s.T(), *restore.DeploymentId)
+}
