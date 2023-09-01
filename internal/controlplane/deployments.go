@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	corev1 "k8s.io/api/core/v1"
+
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -175,6 +177,35 @@ func (c *ControlPlane) MustWaitForDeploymentAvailable(ctx context.Context, t *te
 
 		healthState := deployment.GetDeploymentManifest().Health
 		require.Equal(t, pdsDeploymentHealthAvailable, *healthState, "Deployment %q is in state %q.", deploymentID, healthState)
+	})
+}
+
+func (c *ControlPlane) MustWaitForDeploymentPodHealthy(ctx context.Context, t *testing.T, deploymentID string) {
+	wait.For(t, wait.LongTimeout, wait.RetryInterval, func(t tests.T) {
+		deployment, resp, err := c.PDS.DeploymentsApi.ApiDeploymentsIdStatusGet(ctx, deploymentID).Execute()
+		api.RequireNoErrorf(t, resp, err, "Getting deployment %q state.", deploymentID)
+
+		resources := deployment.GetResources()
+		for _, resource := range resources {
+			if *resource.GetResource().Kind != "Pod" {
+				continue
+			}
+
+			requiredConditions := 4
+			for _, condition := range resource.GetConditions() {
+				conditionType := corev1.PodConditionType(*condition.Type)
+				if conditionType == corev1.PodScheduled ||
+					conditionType == corev1.PodInitialized ||
+					conditionType == corev1.PodReady ||
+					conditionType == corev1.ContainersReady {
+					require.Equal(t, "True", *condition.Status, "Deployment's %q pod %q status check failed ", deploymentID, *resource.GetResource().Name)
+					requiredConditions--
+				}
+			}
+
+			require.Equal(t, 0, requiredConditions, "Deployment's %q pod %q status check failed ", deploymentID, *resource.GetResource().Name)
+
+		}
 	})
 }
 

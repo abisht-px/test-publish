@@ -259,6 +259,7 @@ func (s *PDSTestSuite) TestRestoreSuccessful() {
 	s.crossCluster.MustWaitForDeploymentInitialized(s.ctx, s.T(), *restore.DeploymentId)
 	s.crossCluster.MustWaitForStatefulSetReady(s.ctx, s.T(), *restore.DeploymentId)
 	s.controlPlane.MustWaitForDeploymentAvailable(s.ctx, s.T(), *restore.DeploymentId)
+	s.controlPlane.MustWaitForDeploymentPodHealthy(s.ctx, s.T(), *restore.DeploymentId)
 }
 
 func (s *PDSTestSuite) TestRestore_TargetClusterNotSupported() {

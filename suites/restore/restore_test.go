@@ -250,6 +250,8 @@ func (s *RestoreTestSuite) TestRestoreSuccessful() {
 	crossCluster.MustWaitForDeploymentInitialized(ctx, s.T(), *restore.DeploymentId)
 	crossCluster.MustWaitForStatefulSetReady(ctx, s.T(), *restore.DeploymentId)
 	controlPlane.MustWaitForDeploymentAvailable(ctx, s.T(), *restore.DeploymentId)
+	controlPlane.MustWaitForDeploymentPodHealthy(ctx, s.T(), *restore.DeploymentId)
+
 }
 
 func (s *RestoreTestSuite) TestRestore_TargetClusterNotSupported() {
