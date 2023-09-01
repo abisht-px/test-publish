@@ -23,6 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/targetcluster.test
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/reporting.test ./suites/reporting
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/capabilities.test ./suites/capabilities
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/dataservices.test ./suites/dataservices
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/tls.test ./suites/tls
 
 # Use alpine as minimal base image to package the test binary.
 FROM dtzar/helm-kubectl:3.12.2

@@ -8,8 +8,10 @@ resources:
   - ./base/deployment_test.yml
   - ./base/portworxcsi_test.yml
   - ./base/targetcluster_test.yml
+  - ./base/tls_test.yml
   - ./base/reporting.yml
   - ./base/capabilities.yml
+
 
 
 namespace: pds-integration-tests

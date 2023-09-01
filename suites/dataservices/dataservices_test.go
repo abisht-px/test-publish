@@ -6,21 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-
-	"github.com/portworx/pds-integration-test/internal/controlplane"
-	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
+	"github.com/portworx/pds-integration-test/internal/controlplane"
 	"github.com/portworx/pds-integration-test/internal/crosscluster"
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 	"github.com/portworx/pds-integration-test/internal/kubernetes/psa"
+	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 	"github.com/portworx/pds-integration-test/internal/random"
 	"github.com/portworx/pds-integration-test/internal/wait"
 	"github.com/portworx/pds-integration-test/suites/framework"

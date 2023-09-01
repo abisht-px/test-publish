@@ -19,6 +19,8 @@ DOC_FORMAT = "json"
 
 .PHONY: test vendor lint docker-build docker-push fmt doc
 
+all: build fmt lint
+
 build:
 	go test -c -o ./bin/register.test ./suites/register
 	go test -c -o ./bin/iam.test ./suites/iam
@@ -31,6 +33,7 @@ build:
 	go test -c -o ./bin/reporting.test ./suites/reporting
 	go test -c -o ./bin/capabilities.test ./suites/capabilities
 	go test -c -o ./bin/dataservices.test ./suites/dataservices
+	go test -c -o ./bin/tls.test ./suites/tls
 
 
 fmt:
@@ -82,20 +85,21 @@ run-register:
 	-tenantName=${TENANT_NAME} \
 	-projectName=${PROJECT_NAME} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
-	-issuerClientID=4 \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsHelmChartVersion="1.19.0" \
 	-pdsToken=${PDS_API_TOKEN} \
 	-targetClusterKubeconfig=${TC_KUBECONFIG} \
-	-deploymentTargetName="usahai-aetos-13" \
+	-deploymentTargetName=${DEPLOYMENT_TARGET_NAME} \
 	-registerOnly=true \
+	-dataServicesTLSEnabled=true \
 	-test.failfast \
 	-test.v
 
 run-namespaces:
 	./bin/namespace.test -controlPlaneAPI=${CONTROL_PLANE_API} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
-	-issuerClientID=4 \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsHelmChartVersion="" \
 	-pdsToken=${PDS_API_TOKEN} \
@@ -106,7 +110,7 @@ run-namespaces:
 run-backup:
 	./bin/backup.test -controlPlaneAPI=${CONTROL_PLANE_API} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
-	-issuerClientID=4 \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsHelmChartVersion="0" \
 	-pdsToken=${PDS_API_TOKEN} \
@@ -121,7 +125,7 @@ run-backup:
 run-iam:
 	./bin/iam.test -controlPlaneAPI=${CONTROL_PLANE_API} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
-	-issuerClientID=4 \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsToken=${PDS_API_TOKEN} \
 	-test.failfast \
@@ -130,7 +134,7 @@ run-iam:
 run-deployment:
 	./bin/deployment.test -controlPlaneAPI=${CONTROL_PLANE_API} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
-	-issuerClientID=4 \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsHelmChartVersion="0" \
 	-pdsToken=${PDS_API_TOKEN} \
@@ -218,5 +222,20 @@ run-capabilities:
 	-tenantName=${TENANT_NAME} \
 	-projectName=${PROJECT_NAME} \
 	-deploymentTargetName=${DEPLOYMENT_TARGET_NAME} \
+	-test.failfast \
+	-test.v
+
+run-tls:
+	./bin/tls.test -controlPlaneAPI=${CONTROL_PLANE_API} \
+	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
+	-issuerTokenURL=${ISSUER_TOKEN_URL} \
+	-pdsHelmChartVersion="0" \
+	-pdsToken=${PDS_API_TOKEN} \
+	-targetClusterKubeconfig=${TC_KUBECONFIG} \
+	-accountName=${ACCOUNT_NAME} \
+	-deploymentTargetName=${DEPLOYMENT_TARGET_NAME} \
+	-dataServicesTLSEnabled=true \
+	-test.run="TestTLSSuite" \
 	-test.failfast \
 	-test.v

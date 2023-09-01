@@ -1,16 +1,12 @@
-package backup_test
+package tls_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
-	pds "github.com/portworx/pds-api-go-client/pds/v1alpha1"
-	backupsv1 "github.com/portworx/pds-operator-backups/api/v1"
 
 	"github.com/portworx/pds-integration-test/internal/api"
 	"github.com/portworx/pds-integration-test/internal/controlplane"
@@ -21,7 +17,6 @@ import (
 
 var (
 	ctx              context.Context
-	backupTargetCfg  framework.BackupTargetConfig
 	controlPlane     *controlplane.ControlPlane
 	targetCluster    *targetcluster.TargetCluster
 	crossCluster     *crosscluster.CrossClusterHelper
@@ -29,7 +24,7 @@ var (
 	cleanupNamespace bool
 )
 
-type BackupTestSuite struct {
+type TLSSuite struct {
 	suite.Suite
 }
 
@@ -41,11 +36,11 @@ func init() {
 	framework.DataserviceFlags()
 }
 
-func TestBackupTestSuite(t *testing.T) {
-	suite.Run(t, new(BackupTestSuite))
+func TestTLSSuite(t *testing.T) {
+	suite.Run(t, new(TLSSuite))
 }
 
-func (s *BackupTestSuite) SetupSuite() {
+func (s *TLSSuite) SetupSuite() {
 	ctx = context.Background()
 
 	dsVersionMatrix, err := framework.NewDSVersionMatrixFromFlags()
@@ -70,8 +65,6 @@ func (s *BackupTestSuite) SetupSuite() {
 	)
 	controlPlane = cp
 
-	backupTargetCfg = framework.NewBackupTargetConfigFromFlags()
-
 	token := cp.MustGetServiceAccountToken(context.Background(), s.T(), framework.ServiceAccountName)
 	framework.InitializePDSHelmChartVersion(s.T(), apiClient)
 
@@ -82,7 +75,7 @@ func (s *BackupTestSuite) SetupSuite() {
 	cp.SetTestDeploymentTarget(targetID)
 
 	if framework.TestNamespace == "" {
-		framework.TestNamespace = framework.NewRandomName("ns-backup")
+		framework.TestNamespace = framework.NewRandomName("ns-tls")
 		framework.EnsureTestNamespace(s.T(), targetCluster, framework.TestNamespace)
 		cleanupNamespace = true
 	}
@@ -92,7 +85,7 @@ func (s *BackupTestSuite) SetupSuite() {
 	crossCluster = crosscluster.NewHelper(controlPlane, targetCluster, time.Now())
 }
 
-func (s *BackupTestSuite) TearDownSuite() {
+func (s *TLSSuite) TearDownSuite() {
 	if cleanupNamespace {
 		framework.CleanupTestNamespace(s.T(), targetCluster, framework.TestNamespace)
 	}
@@ -100,23 +93,4 @@ func (s *BackupTestSuite) TearDownSuite() {
 	controlPlane.DeleteTestApplicationTemplates(context.Background(), s.T())
 	controlPlane.DeleteTestStorageOptions(context.Background(), s.T())
 
-}
-
-func deleteBackupWithWorkaround(t *testing.T, backup *pds.ModelsBackup, namespace string) {
-	// TODO(DS-5732): Once bug https://portworx.atlassian.net/browse/DS-5732 is fixed then call MustDeleteBackup
-	// 		with localOnly=false and remove the additional call of DeletePDSBackup.
-	controlPlane.MustDeleteBackup(ctx, t, backup.GetId(), true)
-
-	err := targetCluster.DeletePDSBackup(ctx, namespace, backup.GetClusterResourceName())
-	require.NoError(t, err)
-}
-
-//nolint:unused
-func getBackupJobID(backupJob *backupsv1.BackupJob) (string, error) {
-	backupJobID := string(backupJob.GetUID())
-	if backupJobID == "" {
-		return "", errors.New("backupJob id is empty")
-	}
-
-	return backupJobID, nil
 }

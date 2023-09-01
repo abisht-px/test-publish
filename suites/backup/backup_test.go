@@ -186,6 +186,7 @@ func (s *BackupTestSuite) TestBackupData_AfterDeleteDeployment() {
 	s.Require().NotNil(snapshotCr)
 }
 
+//nolint:unused
 func getBackupPathPrefix(t *testing.T, cloudSnapID string) string {
 	parts := strings.SplitN(cloudSnapID, "/", 2)
 	require.Equalf(t, 2, len(parts), "invalid cloudsnap id")

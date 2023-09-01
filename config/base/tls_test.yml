@@ -1,19 +1,19 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: register-suite
+  name: tls-suite
 spec:
-  backoffLimit: 0
+  backoffLimit: 1
   template:
     metadata:
-      name: register-suite
+      name: tls-suite
     spec:
       containers:
         - name: tests
           image: pdstestimage
           imagePullPolicy: Always
           command:
-            - "/register.test"
+            - "/tls.test"
           args:
             - -controlPlaneAPI=$(CONTROL_PLANE_API)
             - -accountName=$(ACCOUNT_NAME)
@@ -22,11 +22,11 @@ spec:
             - -issuerClientSecret=$(ISSUER_CLIENT_SECRET)
             - -issuerClientID=$(ISSUER_CLIENT_ID)
             - -issuerTokenURL=$(ISSUER_TOKEN_URL)
-            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -pdsHelmChartVersion=$(TEST_SUITES_PDS_HELM_CHART_VERSION)
             - -pdsToken=$(PDS_API_TOKEN)
-            - -pdsHelmChartVersion=$(REGISTER_SUITE_PDS_HELM_CHART_VERSION)
+            - -deploymentTargetName=$(DEPLOYMENT_TARGET_NAME)
+            - -dsVersionMatrixFile=$(DATASERVICE_VERSION_FILE)
             - -dataServicesTLSEnabled=$(DATASERVICE_TLS_ENABLED)
-            - -registerOnly=true
             - -test.failfast
             - -test.v
           envFrom:
@@ -35,9 +35,14 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: helm-repository-volume
+            - mountPath: /dataservices
+              name: dataservices-volume
       serviceAccountName: tests-sa
       restartPolicy: Never
       volumes:
         - name: helm-repository-volume
           configMap:
             name: helm-repository
+        - name: dataservices-volume
+          configMap:
+            name: dataservices
