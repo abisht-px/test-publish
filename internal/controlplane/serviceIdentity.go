@@ -29,11 +29,7 @@ func (c *ControlPlane) CreateServiceIdentity(ctx context.Context, accountID, nam
 }
 
 func (c *ControlPlane) GetServiceIdentity(ctx context.Context, t tests.T, serviceIdentityID string) (*pds.ModelsServiceIdentity, *http.Response, error) {
-
-	serviceIdentity, resp, err := c.PDS.ServiceIdentityApi.ApiServiceIdentityIdGet(ctx, serviceIdentityID).Execute()
-	api.RequireNoError(t, resp, err)
-	require.NotEmpty(t, serviceIdentity)
-	return serviceIdentity, resp, err
+	return c.PDS.ServiceIdentityApi.ApiServiceIdentityIdGet(ctx, serviceIdentityID).Execute()
 }
 
 func (c *ControlPlane) MustUpdateServiceIdentity(ctx context.Context, t tests.T, serviceIdentityID string, requestBody *pds.RequestsServiceIdentityRequest) {

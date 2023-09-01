@@ -128,6 +128,8 @@ run-iam:
 	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
 	-pdsToken=${PDS_API_TOKEN} \
+	-authUserName=${PDS_AUTH_USER_NAME} \
+	-authPassword=${PDS_AUTH_USER_PASSWORD} \
 	-test.failfast \
 	-test.v
 

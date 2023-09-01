@@ -5,6 +5,7 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/portworx/pds-integration-test/internal/api"
@@ -15,6 +16,7 @@ import (
 var (
 	authUserName string
 	authUserPwd  string
+	testUserID   string
 )
 
 type IAMTestSuite struct {
@@ -37,7 +39,7 @@ func TestIAMTestSuite(t *testing.T) {
 
 func (s *IAMTestSuite) SetupSuite() {
 	s.ctx = context.Background()
-
+	s.initializeTestAuthUserID()
 	apiClient, err := api.NewPDSClient(
 		s.ctx,
 		framework.PDSControlPlaneAPI,
@@ -53,6 +55,28 @@ func (s *IAMTestSuite) SetupSuite() {
 		controlplane.WithProjectName(framework.PDSProjectName),
 	)
 	s.ControlPlane = cp
+}
+
+func (s *IAMTestSuite) initializeTestAuthUserID() {
+	authUserClient, err := s.getTestAuthUserPDSClient()
+	require.NoError(s.T(), err, "initialize new PDS client for test-auth-user")
+	authUserResponse, response, err := authUserClient.WhoAmIApi.ApiWhoamiGet(context.Background()).Execute()
+	api.RequireNoError(s.T(), response, err)
+	user, userOk := authUserResponse.GetUserOk()
+	s.Require().True(userOk)
+	s.Require().NotNil(user.GetId())
+	testUserID = *user.Id
+}
+
+func (s *IAMTestSuite) getTestAuthUserPDSClient() (*api.PDSClient, error) {
+	authUserCredentials := api.LoginCredentials{
+		Username:           authUserName,
+		Password:           authUserPwd,
+		IssuerClientSecret: framework.IssuerClientSecret,
+		IssuerClientID:     framework.IssuerClientID,
+		TokenIssuerURL:     framework.IssuerTokenURL,
+	}
+	return api.NewPDSClient(s.ctx, framework.PDSControlPlaneAPI, authUserCredentials)
 }
 
 func (s *IAMTestSuite) TearDownSuite() {}

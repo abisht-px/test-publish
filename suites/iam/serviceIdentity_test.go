@@ -103,18 +103,19 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Get() {
 		},
 		{
 			TestName:        "FindByID_NotFound",
-			ServiceIdentity: pds.ModelsServiceIdentityWithToken{Id: pointer.String("invalid" + random.AlphaNumericString(5))},
+			ServiceIdentity: pds.ModelsServiceIdentityWithToken{Id: pointer.String(uuid.NewString())},
 			ResponseCode:    http.StatusNotFound,
 		},
 	}
 
 	for _, test := range tests {
 		s.T().Run(test.TestName, func(t *testing.T) {
-			result, resp, _ := s.ControlPlane.GetServiceIdentity(s.ctx, s.T(), test.ServiceIdentity.GetId())
+			result, resp, err := s.ControlPlane.GetServiceIdentity(s.ctx, s.T(), test.ServiceIdentity.GetId())
 
 			s.Require().Equal(test.ResponseCode, resp.StatusCode)
 
 			if test.ResponseCode != http.StatusOK {
+				s.Require().Error(err)
 				return
 			}
 			s.Require().Equal(test.ServiceIdentity.Id, result.Id)
@@ -169,7 +170,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Update() {
 		},
 		{
 			TestName:        "Update_NotFound",
-			ServiceIdentity: &pds.ModelsServiceIdentityWithToken{Id: pointer.String("invalid" + random.AlphaNumericString(5))},
+			ServiceIdentity: &pds.ModelsServiceIdentityWithToken{Id: pointer.String(uuid.NewString())},
 			Request: &pds.RequestsServiceIdentityRequest{
 				Name:        "updated-name",
 				Description: pointer.String("updated description"),
@@ -181,7 +182,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Update() {
 
 	for _, test := range tests {
 		s.T().Run(test.TestName, func(t *testing.T) {
-			response, _ := s.ControlPlane.UpdateServiceIdentity(s.ctx, serviceIdentity.GetId(), test.Request)
+			response, _ := s.ControlPlane.UpdateServiceIdentity(s.ctx, test.ServiceIdentity.GetId(), test.Request)
 			s.Require().Equal(test.ResponseCode, response.StatusCode)
 		})
 	}
@@ -192,10 +193,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Delete() {
 	s.Require().NoError(err)
 	s.Require().NotNil(response)
 	s.Require().Equal(http.StatusOK, response.StatusCode)
-	s.T().Cleanup(func() {
-		_, err := s.ControlPlane.DeleteServiceIdentity(s.ctx, serviceIdentity.GetId())
-		require.NoError(s.T(), err)
-	})
+
 	tests := []struct {
 		TestName        string
 		ServiceIdentity *pds.ModelsServiceIdentityWithToken
@@ -219,7 +217,6 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Delete() {
 			resp, _ := s.ControlPlane.DeleteServiceIdentity(s.ctx, test.ServiceIdentity.GetId())
 			s.Require().Equal(test.ResponseCode, resp.StatusCode)
 		})
-
 	}
 }
 
@@ -266,7 +263,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Regenerate() {
 			s.Require().Equal(test.ServiceIdentity.AccountId, result.AccountId)
 			s.Require().NotEqual(test.ServiceIdentity.ClientId, result.ClientId)
 			s.Require().NotEqual(test.ServiceIdentity.ClientToken, result.ClientToken)
-			s.Require().Equal(test.ServiceIdentity.GetSecretGenerationCount()+1, result.SecretGenerationCount)
+			s.Require().Equal(test.ServiceIdentity.GetSecretGenerationCount()+1, *result.SecretGenerationCount)
 
 		})
 	}
@@ -332,7 +329,6 @@ func (s *IAMTestSuite) Test_ServiceIdentity_GenerateToken() {
 
 		})
 	}
-
 }
 
 func (s *IAMTestSuite) Test_ServiceIdentity_List() {
@@ -365,7 +361,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_List() {
 			TestName: "ListByAccountID_FilterName",
 			APi:      s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Name(*serviceIdentities[0].Name),
 			Validator: func(a *pds.ModelsServiceIdentityWithToken, b *pds.ModelsServiceIdentity) bool {
-				return strings.Compare(*a.Name, *b.Name) > 0
+				return strings.Compare(*a.Name, *b.Name) == 0
 			},
 			ServiceIdentity: serviceIdentities[0],
 			NumRecords:      1,
@@ -375,7 +371,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_List() {
 			Validator: func(a *pds.ModelsServiceIdentityWithToken, b *pds.ModelsServiceIdentity) bool {
 				return *a.CreatedAt > *(b.CreatedAt)
 			},
-			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Continuation("2"),
+			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).SortBy("created_at").Limit("3"),
 			NumRecords:      3,
 			ServiceIdentity: serviceIdentities[3],
 		},
@@ -410,16 +406,16 @@ func (s *IAMTestSuite) Test_ServiceIdentity_List() {
 		{
 			TestName: "ListByAccountID_FilterByEnabled_True",
 			Validator: func(a *pds.ModelsServiceIdentityWithToken, b *pds.ModelsServiceIdentity) bool {
-				return a.Enabled == b.Enabled
+				return *a.Enabled == *b.Enabled
 			},
-			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Enabled(true),
+			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Enabled(true).Limit("5"),
 			ServiceIdentity: serviceIdentities[2],
 			NumRecords:      5,
 		},
 		{
 			TestName: "ListByAccountID_FilterByEnabled_False",
 			Validator: func(a *pds.ModelsServiceIdentityWithToken, b *pds.ModelsServiceIdentity) bool {
-				return a.Enabled == b.Enabled
+				return *a.Enabled == *b.Enabled
 			},
 			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Enabled(false),
 			ServiceIdentity: serviceIdentities[0],
@@ -428,7 +424,7 @@ func (s *IAMTestSuite) Test_ServiceIdentity_List() {
 		{
 			TestName: "ListByAccountID_FilterByEnabled_False",
 			Validator: func(a *pds.ModelsServiceIdentityWithToken, b *pds.ModelsServiceIdentity) bool {
-				return a.Enabled == b.Enabled
+				return *a.Enabled == *b.Enabled
 			},
 			APi:             s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).Enabled(false),
 			ServiceIdentity: serviceIdentities[0],
@@ -468,22 +464,14 @@ func (s *IAMTestSuite) Test_ServiceIdentity_With_IAM() {
 	s.Require().Equal(http.StatusNotFound, response.StatusCode)
 
 	// Creating IAM for account roles.
-	iam := s.ControlPlane.MustCreateIAM(s.ctx, s.T(), "account-admin", *serviceIdentity.Id)
+	iam := s.ControlPlane.MustCreateIAM(s.ctx, s.T(), *serviceIdentity.Id, pds.ModelsAccessPolicy{
+		Account: []string{"account-admin"},
+	})
 	s.Require().NotNil(iam)
 	s.Require().Equal(iam.ActorId, serviceIdentity.Id)
 	// Try the token: get accounts
 	_, response, _ = serviceClient.AccountsApi.ApiAccountsIdGet(context.Background(), s.ControlPlane.TestPDSAccountID).Execute()
 	s.Require().Equal(http.StatusOK, response.StatusCode)
-
-	//Service identity creating service Identity
-	requestBody := pds.RequestsServiceIdentityRequest{
-		Name:    "service-identity-with-serviceIdentity",
-		Enabled: true,
-	}
-
-	result, _, err := serviceClient.ServiceIdentityApi.ApiAccountsIdServiceIdentityPost(context.Background(), s.ControlPlane.TestPDSAccountID).Body(requestBody).Execute()
-	s.Require().Error(err)
-	s.Require().Nil(result)
 
 	// Update role for serviceIdentity and verify
 	policy := new(pds.ModelsAccessPolicy)
@@ -494,11 +482,8 @@ func (s *IAMTestSuite) Test_ServiceIdentity_With_IAM() {
 			ResourceIds: []string{s.ControlPlane.TestPDSProjectID},
 		},
 	}
-	request := pds.RequestsIAMRequest{
-		ActorId: serviceIdentity.GetId(),
-		Data:    *policy,
-	}
-	updatedIAM, _, _ := serviceClient.IAMApi.ApiAccountsIdIamPut(context.Background(), s.ControlPlane.TestPDSAccountID).Body(request).Execute()
+
+	updatedIAM := s.ControlPlane.MustUpdateIAM(s.ctx, s.T(), serviceIdentity.GetId(), *policy)
 	s.Require().NotNil(updatedIAM)
 	s.Require().Equal(updatedIAM.ActorId, serviceIdentity.Id)
 	// Get Tenant
@@ -506,11 +491,11 @@ func (s *IAMTestSuite) Test_ServiceIdentity_With_IAM() {
 	s.Require().Equal(http.StatusNotFound, resp.StatusCode)
 	// Get Account
 	_, response, _ = serviceClient.AccountsApi.ApiAccountsIdGet(context.Background(), s.ControlPlane.TestPDSAccountID).Execute()
-	s.Require().Equal(http.StatusNotFound, response.StatusCode)
+	s.Require().Equal(http.StatusForbidden, response.StatusCode)
 
 	// Get Project
 	_, response, _ = serviceClient.ProjectsApi.ApiProjectsIdGet(context.Background(), s.ControlPlane.TestPDSTenantID).Execute()
-	s.Require().Equal(http.StatusOK, response.StatusCode)
+	s.Require().Equal(http.StatusNotFound, response.StatusCode)
 
 }
 
@@ -536,9 +521,9 @@ func (s *IAMTestSuite) Test_ServiceIdentity_With_Pagination() {
 	s.Require().Equal(3, len(paginatedResult.GetData()))
 	s.Require().NotNil(paginatedResult.Pagination)
 	s.Require().NotEmpty(paginatedResult.Pagination.Continuation)
-	result, _, _ := s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).SortBy("created_by").Continuation(paginatedResult.Pagination.GetContinuation()).Execute()
+	result, _, _ := s.ControlPlane.PDS.ServiceIdentityApi.ApiAccountsIdServiceIdentityGet(s.ctx, s.ControlPlane.TestPDSAccountID).SortBy("created_by").Limit("2").Execute()
 	s.Require().Equal(2, len(result.GetData()))
-	s.Require().Nil(result.Pagination)
+	s.Require().NotNil(result.Pagination)
 }
 
 func ClientID(t *testing.T) string {

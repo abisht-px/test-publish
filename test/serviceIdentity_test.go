@@ -489,7 +489,9 @@ func (s *PDSTestSuite) Test_ServiceIdentity_With_IAM() {
 	s.Require().Equal(http.StatusNotFound, response.StatusCode)
 
 	// Creating IAM for account roles.
-	iam := s.controlPlane.MustCreateIAM(s.ctx, s.T(), "account-admin", *serviceIdentity.Id)
+	iam := s.controlPlane.MustCreateIAM(s.ctx, s.T(), *serviceIdentity.Id, pds.ModelsAccessPolicy{
+		Account: []string{"account-admin"},
+	})
 	s.Require().NotNil(iam)
 	s.Require().Equal(iam.ActorId, serviceIdentity.Id)
 	// Try the token: get accounts
