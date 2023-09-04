@@ -2,6 +2,7 @@ resources:
   - ./base/namespace.yml
   - ./base/rbac.yaml
   - ./base/iam_test.yml
+  - ./base/copilot_test.yml
   - ./base/namespace_test.yml
   - ./base/backup_test.yml
   - ./base/restore_test.yml
@@ -11,8 +12,6 @@ resources:
   - ./base/tls_test.yml
   - ./base/reporting.yml
   - ./base/capabilities.yml
-
-
 
 namespace: pds-integration-tests
 namePrefix: pds-

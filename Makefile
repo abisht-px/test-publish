@@ -34,6 +34,8 @@ build:
 	go test -c -o ./bin/capabilities.test ./suites/capabilities
 	go test -c -o ./bin/dataservices.test ./suites/dataservices
 	go test -c -o ./bin/tls.test ./suites/tls
+	go test -c -o ./bin/copilot.test ./suites/copilot
+
 
 
 fmt:
@@ -239,5 +241,15 @@ run-tls:
 	-deploymentTargetName=${DEPLOYMENT_TARGET_NAME} \
 	-dataServicesTLSEnabled=true \
 	-test.run="TestTLSSuite" \
+	-test.failfast \
+	-test.v
+
+run-copilot:
+	./bin/copilot.test -controlPlaneAPI=${CONTROL_PLANE_API} \
+	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
+	-issuerTokenURL=${ISSUER_TOKEN_URL} \
+	-pdsToken=${PDS_API_TOKEN} \
+	-test.run="TestCopilotTestSuite" \
 	-test.failfast \
 	-test.v
