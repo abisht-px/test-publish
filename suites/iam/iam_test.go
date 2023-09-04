@@ -17,6 +17,10 @@ var (
 )
 
 func (s *IAMTestSuite) TestIAM() {
+	if !s.shouldRunForIAM() {
+		s.T().Skip("skipping iam tests, iam auth user is required to proceed")
+	}
+
 	account, err := s.ControlPlane.PDS.GetAccount(framework.PDSAccountName)
 	s.Require().NoError(err)
 	s.Require().NotNil(account)
@@ -419,4 +423,12 @@ func (s *IAMTestSuite) testIAM_VerifyAuth(tenantID, projectID string) {
 	s.Require().Nil(iam)
 	s.Require().Error(err)
 	s.Require().Equal(response.StatusCode, http.StatusNotFound)
+}
+
+func (s *IAMTestSuite) shouldRunForIAM() bool {
+	if authUserName != "" && authUserPwd != "" {
+		s.initializeTestAuthUserID()
+		return true
+	}
+	return false
 }

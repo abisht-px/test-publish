@@ -39,7 +39,6 @@ func TestIAMTestSuite(t *testing.T) {
 
 func (s *IAMTestSuite) SetupSuite() {
 	s.ctx = context.Background()
-	s.initializeTestAuthUserID()
 	apiClient, err := api.NewPDSClient(
 		s.ctx,
 		framework.PDSControlPlaneAPI,
