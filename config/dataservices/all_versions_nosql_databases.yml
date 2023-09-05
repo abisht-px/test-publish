@@ -1,10 +1,4 @@
 dataservices:
-  - name: Cassandra
-    versions:
-      - 4.1.2
-      - 4.0.10
-      - 3.11.15
-      - 3.0.29
   - name: Couchbase
     versions:
       - 7.1.1

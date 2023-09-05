@@ -1,0 +1,4 @@
+dataservices:
+  - name: Cassandra
+    versions:
+      - 4.1.2
