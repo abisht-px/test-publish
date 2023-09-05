@@ -130,7 +130,7 @@ func CollectTestDocsFromDir(dir string) []TestCase {
 }
 
 func isTestCase(name string) bool {
-	return strings.HasPrefix(name, "Test")
+	return strings.HasPrefix(strings.ToLower(name), "test")
 }
 
 func getTestSuiteName(fn *ast.FuncDecl) string {
