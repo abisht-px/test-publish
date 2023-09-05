@@ -36,7 +36,8 @@ build:
 	go test -c -o ./bin/tls.test ./suites/tls
 	go test -c -o ./bin/copilot.test ./suites/copilot
 
-
+build-%:
+	go test -c -o ./bin/$(*).test ./suites/$(*)
 
 fmt:
 	go build -o $(GOIMPORTS_BIN) golang.org/x/tools/cmd/goimports

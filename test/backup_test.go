@@ -37,7 +37,7 @@ func (s *PDSTestSuite) TestBackup_WithSchedule() {
 	// Setup backup policy
 	backupPolicyName1 := fmt.Sprintf("integration-test-%s", random.AlphaNumericString(random.NameSuffixLength))
 	backupPolicyName2 := fmt.Sprintf("integration-test-%s", random.AlphaNumericString(random.NameSuffixLength))
-	schedule1 := "*/1 * * * *"
+	schedule1 := "*/5 * * * *"
 	schedule2 := "*/2 * * * *"
 	var retention int32 = 10
 	backupPolicy1 := s.controlPlane.MustCreateBackupPolicy(s.ctx, s.T(), &backupPolicyName1, &schedule1, &retention)

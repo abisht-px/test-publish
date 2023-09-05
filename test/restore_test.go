@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	postgresImageVersionTag = "14.8"
+	postgresImageVersionTag  = "14.8"
+	cassandraImageVersionTag = "4.1.2"
 )
 
 var (
@@ -33,8 +34,8 @@ func (s *PDSTestSuite) TestRestore_MissingPXCloudCredentials() {
 
 	// Given
 	deployment := api.ShortDeploymentSpec{
-		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: postgresImageVersionTag,
+		DataServiceName: dataservices.Cassandra,
+		ImageVersionTag: cassandraImageVersionTag,
 		NodeCount:       1,
 	}
 

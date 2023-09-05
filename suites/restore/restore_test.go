@@ -22,8 +22,8 @@ import (
 func (s *RestoreTestSuite) TestRestore_MissingPXCloudCredentials() {
 	// Given
 	deployment := api.ShortDeploymentSpec{
-		DataServiceName: dataservices.Postgres,
-		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Postgres),
+		DataServiceName: dataservices.Cassandra,
+		ImageVersionTag: dsVersions.GetLatestVersion(dataservices.Cassandra),
 		NodeCount:       1,
 	}
 
