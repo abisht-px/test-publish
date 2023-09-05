@@ -5,6 +5,7 @@ resources:
   - ./base/copilot_test.yml
   - ./base/namespace_test.yml
   - ./base/backup_test.yml
+  - ./base/backupjob_test.yml
   - ./base/restore_test.yml
   - ./base/deployment_test.yml
   - ./base/portworxcsi_test.yml

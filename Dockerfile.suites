@@ -16,6 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/register.test ./su
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/iam.test ./suites/iam
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/namespace.test ./suites/namespace
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/backup.test ./suites/backup
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/backupjob.test ./suites/backupjob
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/restore.test ./suites/restore
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/deployment.test ./suites/deployment
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o ./bin/portworxcsi.test ./suites/portworxcsi

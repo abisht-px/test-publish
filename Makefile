@@ -14,7 +14,7 @@ IMG = $(IMG_REPO)/pds-integration-test:$(IMG_TAG)
 SUITES_IMG = $(IMG_REPO)/pds-integration-test-suites:$(IMG_TAG)
 CONFIG_IMG = $(IMG_REPO)/pds-integration-test-config:$(IMG_TAG)
 
-DOC_PKGS = "backup,capabilities,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster"
+DOC_PKGS = "backup,backupjob,capabilities,copilot,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster,tls"
 DOC_FORMAT = "json"
 
 .PHONY: test vendor lint docker-build docker-push fmt doc
@@ -26,6 +26,7 @@ build:
 	go test -c -o ./bin/iam.test ./suites/iam
 	go test -c -o ./bin/namespace.test ./suites/namespace
 	go test -c -o ./bin/backup.test ./suites/backup
+	go test -c -o ./bin/backupjob.test ./suites/backupjob
 	go test -c -o ./bin/restore.test ./suites/restore
 	go test -c -o ./bin/deployment.test ./suites/deployment
 	go test -c -o ./bin/portworxcsi.test ./suites/portworxcsi
@@ -112,6 +113,21 @@ run-namespaces:
 
 run-backup:
 	./bin/backup.test -controlPlaneAPI=${CONTROL_PLANE_API} \
+	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
+	-issuerClientID=${ISSUER_CLIENT_ID} \
+	-issuerTokenURL=${ISSUER_TOKEN_URL} \
+	-pdsHelmChartVersion="0" \
+	-pdsToken=${PDS_API_TOKEN} \
+	-targetClusterKubeconfig=${TC_KUBECONFIG} \
+	-awsAccessKey=${AWS_ACCESS_KEY} \
+	-awsSecretKey=${AWS_SECRET_KEY} \
+	-awsS3BucketName=${AWS_S3_BUCKET_NAME} \
+	-deploymentTargetName=${DEPLOYMENT_TARGET_NAME} \
+	-test.failfast \
+	-test.v
+
+run-backupjob:
+	./bin/backupjob.test -controlPlaneAPI=${CONTROL_PLANE_API} \
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
 	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
