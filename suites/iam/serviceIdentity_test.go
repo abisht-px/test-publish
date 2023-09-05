@@ -193,10 +193,6 @@ func (s *IAMTestSuite) Test_ServiceIdentity_Delete() {
 	s.Require().NoError(err)
 	s.Require().NotNil(response)
 	s.Require().Equal(http.StatusOK, response.StatusCode)
-	s.T().Cleanup(func() {
-		_, err := s.ControlPlane.DeleteServiceIdentity(s.ctx, serviceIdentity.GetId())
-		require.NoError(s.T(), err)
-	})
 
 	tests := []struct {
 		TestName        string
