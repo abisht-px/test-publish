@@ -15,6 +15,19 @@ const (
 	pdsDeploymentHealthStateHealthy = "Healthy"
 )
 
+// TestTargetCluster_DeletePDSChartPods tests the target cluster nodes.
+// Steps:
+// 1. Deploy Data Service from PDS by select appropriate resource, application and storage templates.
+// 2. Run the workload generation script using DNS endpoints to load the data service and Verify Metrics related to the data servive page
+// 3. Delete the pods in pds namespace
+// 4. Verify all the pods in pds namespace comeup and Verify the exisiting dataservice are intact
+// 5. Create new Deployments and validate if it goes fine
+// Expected:
+// 1. Data service successfully deployed and Data service is in Healthy state.
+// 2. Able to connect to endpoints, run traffic and get metrics.
+// 3. Delete the pods in pds namespace should be successful.
+// 4. all the pods in pds namespace should comeup and deployment loadtest succeeded.
+// 5. new deployments also successfully deployed and Data service is in Healthy state.
 func (s *TargetClusterTestSuite) TestTargetCluster_DeletePDSChartPods() {
 	postgres := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
