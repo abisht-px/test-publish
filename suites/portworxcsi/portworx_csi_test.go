@@ -14,6 +14,16 @@ import (
 	"github.com/portworx/pds-integration-test/internal/kubernetes/targetcluster"
 )
 
+// TestPortworxCSI_Enabled tests the successful data service deployment with CSI enabled
+// Steps:
+// 1. Create Storage Options Template with auto-detect Provisioner/ Portworx Intree Provisioner/ CSI provisioner
+// 2. Deploy Data service with the above created template/s
+// 3. Validate the Provisioner type in Storage Class
+// 4. Validate the Provisioner type in PVC
+// Expected:
+// 1. Templates should be created successfully. Template should not be visible to the user in deployment window for Portworx Intree Provisioner template
+// 2. Storage Class and PVC should have CSI provisioner
+// 3. Data Service should be deployed successfully
 func (s *PortworxCSITestSuite) TestPortworxCSI_Enabled() {
 	s.targetCluster.MustSetStorageClusterCSIEnabled(s.ctx, s.T(), true)
 	_, err := s.targetCluster.GetPortworxCSIDriver(s.ctx)
@@ -89,6 +99,16 @@ func (s *PortworxCSITestSuite) TestPortworxCSI_Enabled() {
 	}
 }
 
+// TestPortworxCSI_Disabled tests the successful data service deployment with CSI disabled
+// Steps:
+// 1. Create Storage Options Template with auto-detect Provisioner/ Portworx Intree Provisioner/ CSI provisioner
+// 2. Deploy Data service with the above created template/s
+// 3. Validate the Provisioner type in Storage Class
+// 4. Validate the Provisioner type in PVC
+// Expected:
+// 1. Templates should be created successfully. Template should not be visible to the user in deployment window for Portworx CSI Provisioner template
+// 2. Storage Class and PVC should have the intree provisioner for Portworx InTree Provisioner template
+// 3. Data Service should be deployed successfully with intree provisioner for auto-detect template
 func (s *PortworxCSITestSuite) TestPortworxCSI_Disabled() {
 	s.T().Cleanup(func() {
 		s.targetCluster.MustSetStorageClusterCSIEnabled(context.Background(), s.T(), true)

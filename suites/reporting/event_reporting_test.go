@@ -11,6 +11,14 @@ import (
 	"github.com/portworx/pds-integration-test/internal/dataservices"
 )
 
+// TestEventReporting_Successful tests successful event reporting after deploying a data service
+// Steps:
+// 1. Create a data service deployment and get the deployment ID
+// 2. Wait for deployment to be initialized and healthy
+// 3. Call GET to get the events
+// Expected:
+// 1. Deployment must be created successfully
+// 2. Events should get reported successfully without any errors
 func (s *ReportingTestSuite) TestEventReporting_Successful() {
 	// Create a new deployment.
 	deployment := api.ShortDeploymentSpec{
@@ -31,6 +39,16 @@ func (s *ReportingTestSuite) TestEventReporting_Successful() {
 	s.controlPlane.MustHaveNoDuplicateDeploymentEvents(context.Background(), s.T(), deploymentID)
 }
 
+// TestEventReporting_Update_Deployment_Successful tests successful event reporting after updating a data service
+// Steps:
+// 1. Create a data service deployment with 1 node and get the deployment ID
+// 2. Wait for deployment to be initialized and healthy
+// 3. Update the deployment to 2 nodes
+// 4. Wait for deployment to be initialized and healthy
+// 5. Call GET to get the events
+// Expected:
+// 1. Deployment must be created and updated successfully
+// 2. Events should get reported successfully without any errors
 func (s *ReportingTestSuite) TestEventReporting_Update_Deployment_Successful() {
 	// Create a new deployment.
 	deployment := api.ShortDeploymentSpec{
@@ -56,6 +74,16 @@ func (s *ReportingTestSuite) TestEventReporting_Update_Deployment_Successful() {
 	s.controlPlane.MustHaveNoDuplicateDeploymentEvents(context.Background(), s.T(), deploymentID)
 }
 
+// TestEventReporting_Delete_Deployment_NoEvents tests expected error on calling get events on a deleted deployment
+// Steps:
+// 1. Create a data service deployment and get the deployment ID
+// 2. Wait for the deployment to be initialized and healthy
+// 3. Delete the deployment
+// 4. Wait for deployment to be deleted
+// 5. Call GET to get the events
+// Expected:
+// 1. Deployment must be created and deleted successfully
+// 2. Calling get deployment fails with errors
 func (s *ReportingTestSuite) TestEventReporting_Delete_Deployment_NoEvents() {
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName: dataservices.Postgres,
@@ -73,6 +101,16 @@ func (s *ReportingTestSuite) TestEventReporting_Delete_Deployment_NoEvents() {
 	s.controlPlane.MustGetErrorOnDeploymentEventsGet(context.Background(), s.T(), deploymentID)
 }
 
+// TestEventReporting_Failed_Deployment_No_Duplicate_Events tests duplicate events must not be reported on create
+// Steps:
+// 1. Create a data service deployment with 3 nodes with impossible resource allocation template and get the deployment ID
+// 2. Wait for failed scheduling event to be reported
+// 3. Wait for 10 minutes for the failed scheduling event to be reported again
+// 4. Check if each event is reported once
+// Expected:
+// 1. Deployment must fail
+// 2. Events should get reported successfully without any errors
+// 3. Events should be reported once
 func (s *ReportingTestSuite) TestEventReporting_Failed_Deployment_No_Duplicate_Events() {
 	deployment := api.ShortDeploymentSpec{
 		DataServiceName:              dataservices.Cassandra,
@@ -102,6 +140,16 @@ func (s *ReportingTestSuite) TestEventReporting_Failed_Deployment_No_Duplicate_E
 	s.controlPlane.MustHaveNoDuplicateDeploymentEvents(context.Background(), s.T(), deploymentID)
 }
 
+// TestEventReporting_MultipleDeployments tests successful event reporting for multiple deployments
+// Steps:
+// 1. Create 2 data service deployments get the deployment IDs
+// 2. Wait for deployments to be initialized and healthy
+// 3. Call GET to get the events
+// 4. Check if events are reported for the correct deployment
+// Expected:
+// 1. Deployments must get created successfully
+// 2. Events should get reported successfully without errors
+// 3. Events should not get mixed up
 func (s *ReportingTestSuite) TestEventReporting_MultipleDeployments() {
 	var wg sync.WaitGroup
 	var deploymentIDS []string

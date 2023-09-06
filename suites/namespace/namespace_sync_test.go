@@ -10,6 +10,15 @@ import (
 	"github.com/portworx/pds-integration-test/internal/random"
 )
 
+// TestNamespaceSync_OK tests the successful creation and status of the namespace.
+// Steps:
+// 1. Add a randomised namespace name
+// 2. Assign Metadata with a proper label
+// 3. Create a namespace
+// 4. Check for the namespace status
+// Expected:
+// 1. Creation of namespace should be success
+// 2. Namespace status should be available
 func (s *NamespaceTestSuite) TestNamespaceSync_OK() {
 	// Given.
 	namespaceName := "integration-test-" + random.AlphaNumericString(10)
@@ -31,6 +40,15 @@ func (s *NamespaceTestSuite) TestNamespaceSync_OK() {
 	s.controlPlane.MustWaitForNamespaceStatus(s.ctx, s.T(), namespaceName, "available")
 }
 
+// TestNamespaceSync_MissingLabel tests the not found status of the namespace.
+// Steps:
+// 1. Add a randomised namespace name
+// 2. Assign Metadata with wrong/empty label
+// 3. Create a namespace with these values
+// 4. Check for the namespace status
+// Expected:
+// 1. Creation of namespace should not happen
+// 2. Namespace status - not expected to be found in control plane
 func (s *NamespaceTestSuite) TestNamespaceSync_MissingLabel() {
 	testcases := []struct {
 		name   string
@@ -79,6 +97,19 @@ func (s *NamespaceTestSuite) TestNamespaceSync_MissingLabel() {
 	}
 }
 
+// TestNamespaceSync_TerminatingNamespace tests the terminating status of the namespace.
+// Steps:
+// 1. Add a randomised namespace name
+// 2. Assign Metadata with a proper label and a Finalizer
+// 3. Create a namespace with these values
+// 4. Check for the namespace status
+// 5. Put namespace into Terminating state
+// 6. Check for the namespace status again
+// Expected:
+// 1. Creation of namespace should be success
+// 2. Namespace status should be available
+// 3. Namespace is deleted
+// 4. Namespace status should change to unavailable
 func (s *NamespaceTestSuite) TestNamespaceSync_TerminatingNamespace() {
 	// Given.
 	namespace := &corev1.Namespace{
@@ -109,6 +140,19 @@ func (s *NamespaceTestSuite) TestNamespaceSync_TerminatingNamespace() {
 	s.controlPlane.MustWaitForNamespaceStatus(s.ctx, s.T(), namespace.Name, "unavailable")
 }
 
+// TestNamespaceSync_DeleteLabel tests the label association with status of the namespace.
+// Steps:
+// 1. Add a randomised namespace name
+// 2. Assign Metadata with a proper label
+// 3. Create a namespace with these values
+// 4. Check for the namespace status
+// 5. Set the labels as nil
+// 6. Check for the namespace status again
+// Expected:
+// 1. Creation of namespace should be success
+// 2. Namespace status should be available
+// 3. Label is deleted
+// 4. Namespace status should change to unavailable
 func (s *NamespaceTestSuite) TestNamespaceSync_DeleteLabel() {
 	// Given.
 	namespace := &corev1.Namespace{
@@ -134,6 +178,19 @@ func (s *NamespaceTestSuite) TestNamespaceSync_DeleteLabel() {
 	s.controlPlane.MustWaitForNamespaceStatus(s.ctx, s.T(), namespace.Name, "unavailable")
 }
 
+// TestNamespaceSync_DeleteNamespace tests the deletion of namespace.
+// Steps:
+// 1. Add a randomised namespace name
+// 2. Assign Metadata with a proper label
+// 3. Create a namespace with these values
+// 4. Check for the namespace status
+// 5. Delete the namespace
+// 6. Check for the namespace status again
+// Expected:
+// 1. Creation of namespace should be success
+// 2. Namespace status should be available
+// 3. Namespace is deleted
+// 4. Namespace status should change to unavailable
 func (s *NamespaceTestSuite) TestNamespaceSync_DeleteNamespace() {
 	// Given.
 	namespace := &corev1.Namespace{

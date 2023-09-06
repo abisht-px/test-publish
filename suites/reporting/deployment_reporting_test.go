@@ -19,6 +19,15 @@ const (
 	pdsDeploymentHealthStateHealthy = "Healthy"
 )
 
+// TestDeploymentReporting_DeleteCR tests successful deletion of deployment from control plane
+// Steps:
+// 1. Deploy any data service
+// 2. Wait until it is healthy
+// 3. Observe until it is ready
+// 4. Delete the CR from the target cluster
+// 5. Call GET on the deployment
+// Expected:
+// 1. Deployment is removed from the Target cluster and also from the Control plane
 func (s *ReportingTestSuite) TestDeploymentReporting_DeleteCR() {
 
 	// Use deployment of each kind
@@ -78,6 +87,16 @@ func (s *ReportingTestSuite) TestDeploymentReporting_DeleteCR() {
 	}
 }
 
+// TestDeploymentReporting_DeletetionFromCP tests successful deletion of deployment from control plane
+// Steps:
+// 1. Deploy any data service
+// 2. Wait until it is healthy
+// 3. Observe until it is ready
+// 4. Call GET on the deployment
+// 5. Delete the deployment
+// 6. Wait for the deployment to be removed
+// Expected:
+// 1. Deployment is removed from the Target cluster and also from the Control plane
 func (s *ReportingTestSuite) TestDeploymentReporting_DeletetionFromCP() {
 	deployments := []api.ShortDeploymentSpec{
 		{
