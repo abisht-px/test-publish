@@ -22,7 +22,7 @@ var (
 )
 
 type TestCase struct {
-	Name        string `json:"name"`
+	Title       string `json:"title"`
 	Description string `json:"description"`
 	Steps       string `json:"steps"`
 	Expected    string `json:"expected"`
@@ -34,10 +34,10 @@ func init() {
 	flag.StringVar(&format, "format", "json", "[pretty|json] PrettyPrint or Json Format")
 }
 
-func parseCommentsToTestCase(name string, comments *ast.CommentGroup) TestCase {
+func parseCommentsToTestCase(title string, comments *ast.CommentGroup) TestCase {
 	if comments == nil {
 		return TestCase{
-			Name: name,
+			Title: title,
 		}
 	}
 
@@ -75,7 +75,7 @@ func parseCommentsToTestCase(name string, comments *ast.CommentGroup) TestCase {
 	}
 
 	return TestCase{
-		Name:        name,
+		Title:       title,
 		Description: description.Text(),
 		Steps:       steps.Text(),
 		Expected:    expected.Text(),
