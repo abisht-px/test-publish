@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Cases struct {
@@ -22,26 +21,23 @@ type Cases struct {
 
 func main() {
 
-	// Load the .env file
-	if err := godotenv.Load("../../.env"); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Define command-line flags
+	testrailusername := flag.String("testrailusername", "", "User to authenticate api requests to testrail")
+	testrailapikey := flag.String("testrailapikey", "", "Api key to authenticate api requests to testrail")
+	testdatapath := flag.String("testdatapath", "", "Path to the testdata file generated from doc tool")
+	httpposturl := flag.String("httpposturl", "https://portworx.testrail.net/index.php?/api/v2/add_case/9074", "Http Post URL for sending post request to testrail")
 
-	httpposturl := "https://portworx.testrail.net/index.php?/api/v2/add_case/9074"
-	fmt.Println("HTTP JSON POST URL:", httpposturl)
+	// Parse the command-line arguments
+	flag.Parse()
 
 	// Read the file content
-	testdata := os.Getenv("TESTDATA_PATH")
-	jsonData, err := os.ReadFile(testdata)
+	jsonData, err := os.ReadFile(*testdatapath)
 	if err != nil {
-		fmt.Println("Error reading JSON file:", err)
-		return
+		log.Fatal("Error reading JSON file:", err)
 	}
 
-	testrailuser := os.Getenv("TESTRAIL_USER")
-	testrailapiKey := os.Getenv("TESTRAIL_API_KEY")
 	// Add basic authentication header
-	auth := testrailuser + ":" + testrailapiKey
+	auth := *testrailusername + ":" + *testrailapikey
 	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 	// Parse the JSON data into the slice
 	var cases []Cases
@@ -56,7 +52,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		request, err := http.NewRequest("POST", httpposturl, bytes.NewBuffer(jsonData))
+		request, err := http.NewRequest("POST", *httpposturl, bytes.NewBuffer(jsonData))
 		if err != nil {
 			fmt.Println("Error in sending POST request:", err)
 			return
