@@ -22,4 +22,4 @@ jobs:
 
       - name: Publish Test doc
         run: |-
-          go run main.go -testrailusername ${TESTRAIL_USER} -testrailapikey ${TESTRAIL_API_KEY}
+          go run ./cmd/doc-publish/main.go -testrailusername ${TESTRAIL_USER} -testrailapikey ${TESTRAIL_API_KEY}
