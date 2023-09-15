@@ -8,9 +8,6 @@ on:
 jobs:
   publish-docs:
     runs-on: ubuntu-latest
-    env:
-      TESTRAIL_USER: ${{ secrets.TESTRAIL_USER }}
-      TESTRAIL_API_KEY: ${{ secrets.TESTRAIL_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -22,5 +19,8 @@ jobs:
           cache: true
 
       - name: Publish Test doc
+        env:
+          TESTRAIL_USER: ${{ secrets.TESTRAIL_USER }}
+          TESTRAIL_API_KEY: ${{ secrets.TESTRAIL_API_KEY }}      
         run: |-
           make doc-publish
