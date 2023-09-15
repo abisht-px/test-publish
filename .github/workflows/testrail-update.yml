@@ -23,4 +23,4 @@ jobs:
 
       - name: Publish Test doc
         run: |-
-          make doc-publish --testrailusername ${TESTRAIL_USER} --testrailapikey ${TESTRAIL_API_KEY}
+          make doc-publish --testrailusername=${TESTRAIL_USER} --testrailapikey=${TESTRAIL_API_KEY}
