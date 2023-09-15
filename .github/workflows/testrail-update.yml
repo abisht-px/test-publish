@@ -1,11 +1,9 @@
 name: Update testrail
 
 on:
-  #pull_request:
-  workflow_dispatch:
-  # push:
-  #   branches:
-  #   - master
+  push:
+    branches:
+    - main
 
 jobs:
   publish-docs:
