@@ -1,7 +1,8 @@
 name: Update testrail
 
 on:
-  pull_request:
+  #pull_request:
+  workflow_dispatch:
   # push:
   #   branches:
   #   - master
@@ -24,4 +25,5 @@ jobs:
 
       - name: Publish Test doc
         run: |-
-          go run main.go -testrailusername ${TESTRAIL_USER} -testrailapikey ${TESTRAIL_API_KEY}
+          # go run main.go -testrailusername ${TESTRAIL_USER} -testrailapikey ${TESTRAIL_API_KEY}
+          make doc-publish --testrailusername ${TESTRAIL_USER} --testrailapikey ${TESTRAIL_API_KEY}
