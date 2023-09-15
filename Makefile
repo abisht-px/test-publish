@@ -13,15 +13,19 @@ IMG_REPO = docker.io/portworx
 IMG = $(IMG_REPO)/pds-integration-test:$(IMG_TAG)
 SUITES_IMG = $(IMG_REPO)/pds-integration-test-suites:$(IMG_TAG)
 CONFIG_IMG = $(IMG_REPO)/pds-integration-test-config:$(IMG_TAG)
+TOOLS_IMG = $(IMG_REPO)/pds-integration-test-tools:$(IMG_TAG)
 
 DOC_PKGS = "backup,backupjob,capabilities,copilot,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster,tls"
 DOC_FORMAT = "json"
 
-HTTP_POST_URL = "https://dfdf.testraildvdf.net/index.php?/api/v2/add_case/9074"
+HTTP_POST_URL = "https://portworx.testrail.net/index.php?/api/v2/add_case/9074"
 
 .PHONY: test vendor lint docker-build docker-push fmt doc
 
 all: build fmt lint
+
+build-testreport:
+	go build -o ./bin/testreport ./cmd/report
 
 build:
 	go test -c -o ./bin/register.test ./suites/register
@@ -50,13 +54,13 @@ test:
 	go test ./... -v
 
 doc:
-	@go run ./cmd/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
+	@go run ./cmd/tools/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
 
 doc-publish:
-	@go run ./cmd/doc-publish --testrailusername=${TESTRAIL_USER} --testrailapikey=${TESTRAIL_API_KEY} --httpposturl=${HTTP_POST_URL}
+	@go run ./cmd/tools/doc-publish --testrailusername=${TESTRAIL_USER} --testrailapikey=${TESTRAIL_API_KEY} --httpposturl=${HTTP_POST_URL}
 
 doc-old:
-	@go run ./cmd/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
+	@go run ./cmd/tools/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
 
 vendor:
 	go mod tidy
@@ -68,7 +72,9 @@ lint:
 mdlint:
 	docker run --rm -v $$PWD:/workdir davidanson/markdownlint-cli2 "**/*.md" "#vendor"
 
-docker: docker-build docker-build-suites docker-build-config docker-push docker-push-suites docker-push-config
+docker: docker-build-all docker-push-all
+docker-build-all: docker-build docker-build-suites docker-build-config docker-build-tools
+docker-push-all: docker-push docker-push-suites docker-push-config docker-push-tools
 
 docker-build:
 	docker build . -t ${IMG}
@@ -79,6 +85,9 @@ docker-build-suites:
 docker-build-config:
 	docker build ./config/. -t ${CONFIG_IMG}
 
+docker-build-tools:
+	docker build -f ./cmd/tools/Dockerfile -t ${TOOLS_IMG} .
+
 docker-push:
 	docker push ${IMG}
 
@@ -87,6 +96,9 @@ docker-push-suites:
 
 docker-push-config:
 	docker push ${CONFIG_IMG}
+
+docker-push-tools:
+	docker push ${TOOLS_IMG}
 
 run-register:
 	./bin/register.test -controlPlaneAPI=${CONTROL_PLANE_API} \
@@ -151,9 +163,11 @@ run-iam:
 	-issuerClientSecret=${ISSUER_CLIENT_SECRET} \
 	-issuerClientID=${ISSUER_CLIENT_ID} \
 	-issuerTokenURL=${ISSUER_TOKEN_URL} \
+	-accountName="${ACCOUNT_NAME}" \
 	-pdsToken=${PDS_API_TOKEN} \
 	-authUserName=${PDS_AUTH_USER_NAME} \
 	-authPassword=${PDS_AUTH_USER_PASSWORD} \
+	-additionalAccounts="${ADDITIONAL_PDS_ACCOUNTS}" \
 	-test.failfast \
 	-test.v
 
