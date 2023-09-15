@@ -51,7 +51,7 @@ doc:
 	@go run ./cmd/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
 
 doc-publish:
-	@go run ./cmd/doc-publish --testrailusername=${TESTRAIL_API_KEY} --testrailapikey=${TESTRAIL_API_KEY}
+	@go run ./cmd/doc-publish --testrailusername="${TESTRAIL_API_KEY}" --testrailapikey="${TESTRAIL_API_KEY}"
 
 doc-old:
 	@go run ./cmd/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
