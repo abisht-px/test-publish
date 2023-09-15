@@ -51,7 +51,6 @@ doc:
 	@go run ./cmd/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
 
 doc-publish:
-    @echo "Executing Command with GitHub Secret: ${TESTRAIL_USER} ${TESTRAIL_API_KEY}"
 	@go run ./cmd/doc-publish --testrailusername=${TESTRAIL_USER} --testrailapikey=${TESTRAIL_API_KEY}
 
 doc-old:
