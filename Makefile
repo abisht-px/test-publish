@@ -17,7 +17,7 @@ CONFIG_IMG = $(IMG_REPO)/pds-integration-test-config:$(IMG_TAG)
 DOC_PKGS = "backup,backupjob,capabilities,copilot,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster,tls"
 DOC_FORMAT = "json"
 
-HTTP_POST_URL = "https://portworx.testrail.net/index.php?/api/v2/add_case/9074"
+HTTP_POST_URL = "https://dfdf.testraildvdf.net/index.php?/api/v2/add_case/9074"
 
 .PHONY: test vendor lint docker-build docker-push fmt doc
 
