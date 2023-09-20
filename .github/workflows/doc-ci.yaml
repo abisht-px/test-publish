@@ -22,7 +22,7 @@ jobs:
       - name: Generate Doc
         run: |-
           mkdir -p artifacts
-          make doc > artifacts/suites.json
+          make doc publish=false > artifacts/suites.json
           cat artifacts/suites.json | jq -r '. | length'
           cat artifacts/suites.json | jq -r '.'
 
