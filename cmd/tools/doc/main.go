@@ -177,7 +177,7 @@ func main() {
 		testCases = append(testCases, CollectTestDocsFromDir(dirPath)...)
 	}
 
-	if publish == true {
+	if publish {
 		// Add basic authentication header
 		auth := testrailUserName + ":" + testrailAPIKey
 		authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
