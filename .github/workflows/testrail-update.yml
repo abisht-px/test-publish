@@ -21,7 +21,6 @@ jobs:
       - name: Publish Test doc
         env:
           testrailusername: ${{ secrets.TESTRAIL_USER }}
-          testrailapikey: ${{ secrets.TESTRAIL_API_KEY }}
-          PUBLISH: "true"      
+          testrailapikey: ${{ secrets.TESTRAIL_API_KEY }} 
         run: |-
           make doc publish=true
