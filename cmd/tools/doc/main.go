@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
+
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"path"
 	"strings"
 
@@ -16,9 +21,13 @@ import (
 )
 
 var (
-	baseDir string
-	pkgs    string
-	format  string
+	baseDir          string
+	pkgs             string
+	format           string
+	testrailusername string
+	testrailapikey   string
+	httpposturl      string
+	publish          bool
 )
 
 type TestCase struct {
@@ -32,6 +41,10 @@ func init() {
 	flag.StringVar(&baseDir, "baseDir", "", "Base directory path")
 	flag.StringVar(&pkgs, "pkgs", "", "Pacakges as comma separated values")
 	flag.StringVar(&format, "format", "json", "[pretty|json] PrettyPrint or Json Format")
+	flag.StringVar(&testrailusername, "testrailusername", "", "User to authenticate api requests to testrail")
+	flag.StringVar(&testrailapikey, "testrailapikey", "", "Api key to authenticate api requests to testrail")
+	flag.StringVar(&httpposturl, "httpposturl", "https://portworx.testrail.net/index.php?/api/v2/add_case/9074", "Http Post URL for sending post request to testrail")
+	flag.BoolVar(&publish, "publish", false, "Publish test cases to testrail")
 }
 
 func parseCommentsToTestCase(title string, comments *ast.CommentGroup) TestCase {
@@ -154,6 +167,7 @@ func getTestSuiteName(fn *ast.FuncDecl) string {
 }
 
 func main() {
+
 	flag.Parse()
 
 	testCases := []TestCase{}
@@ -163,22 +177,58 @@ func main() {
 		testCases = append(testCases, CollectTestDocsFromDir(dirPath)...)
 	}
 
-	switch strings.ToLower(format) {
-	case "json":
-		byteData, err := json.Marshal(testCases)
-		if err != nil {
-			log.Fatalf("marshal json data, err: %s", err.Error())
+	if publish == true {
+		// Add basic authentication header
+		auth := testrailusername + ":" + testrailapikey
+		authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+
+		for i := range testCases {
+			jsonData, err := json.Marshal(testCases[i])
+			if err != nil {
+				log.Fatal("Error slicing data into JSON:", err)
+			}
+			request, err := http.NewRequest("POST", httpposturl, bytes.NewBuffer(jsonData))
+			if err != nil {
+				fmt.Println("Error in sending POST request:", err)
+				return
+			}
+			request.Header.Set("Authorization", authHeader)
+			request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+			client := &http.Client{}
+			response, error := client.Do(request)
+			if error != nil {
+				panic(error)
+			}
+			defer response.Body.Close()
+
+			fmt.Println("response Status:", response.Status)
+			fmt.Println("response Headers:", response.Header)
+			body, _ := io.ReadAll(response.Body)
+			fmt.Println("response Body:", string(body))
 		}
 
-		fmt.Println(string(byteData))
-	case "yaml":
-		byteData, err := yaml.Marshal(testCases)
-		if err != nil {
-			log.Fatalf("marshal json data, err: %s", err.Error())
-		}
+	} else {
+		switch strings.ToLower(format) {
+		case "json":
+			byteData, err := json.Marshal(testCases)
+			if err != nil {
+				log.Fatalf("marshal json data, err: %s", err.Error())
+			}
 
-		fmt.Println(string(byteData))
-	default:
-		fmt.Println(testCases)
+			fmt.Println(string(byteData))
+		case "yaml":
+			byteData, err := yaml.Marshal(testCases)
+			if err != nil {
+				log.Fatalf("marshal json data, err: %s", err.Error())
+			}
+
+			fmt.Println(string(byteData))
+		default:
+			fmt.Println(testCases)
+
+		}
 	}
 }
+
+// }
