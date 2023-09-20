@@ -1,4 +1,4 @@
-name: Update testrail
+name: Update Testrail
 
 on:
   push:
@@ -20,7 +20,8 @@ jobs:
 
       - name: Publish Test doc
         env:
-          TESTRAIL_USER: ${{ secrets.TESTRAIL_USER }}
-          TESTRAIL_API_KEY: ${{ secrets.TESTRAIL_API_KEY }}      
+          testrailusername: ${{ secrets.TESTRAIL_USER }}
+          testrailapikey: ${{ secrets.TESTRAIL_API_KEY }}
+          PUBLISH: "true"      
         run: |-
-          make doc-publish
+          make doc
