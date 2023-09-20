@@ -1,0 +1,42 @@
+# PRERELEASE defines semver prerelease tag based on the state of the current git tree.
+# For a clean tree this is simply short commit hash of HEAD, e.g., "4be01eb".
+# Dirty tree has "-dirty" suffix added, e.g., "4be01eb-dirty".
+
+DOC_PKGS = "backup,backupjob,capabilities,copilot,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster,tls"
+DOC_FORMAT = "json"
+
+HTTP_POST_URL = "https://portworx.testrail.net/index.php?/api/v2/add_case/9074"
+
+.PHONY: test vendor lint docker-build docker-push fmt doc
+
+all: build fmt lint
+
+build-testreport:
+	go build -o ./bin/testreport ./cmd/report
+
+
+# Define the default target
+all: check_flag
+
+# Check if the flag is set
+ifeq ($(default),)
+    NO_FLAG := true
+else
+    NO_FLAG := false
+endif
+
+# Target for when the flag is found
+go_publish:
+  @go run ./cmd/tools/doc --publish=true --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT) --testrailusername=${TESTRAIL_USER} --testrailapikey=${TESTRAIL_API_KEY} --httpposturl=${HTTP_POST_URL}
+
+# Target for when the flag is not found
+go:
+  @go run ./cmd/tools/doc --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT)
+
+# Decide which target to run based on the flag presence
+check_flag:
+ifeq ($(NO_FLAG),true)
+    @$(MAKE) flag_not_found
+else
+    @$(MAKE) flag_found
+endif

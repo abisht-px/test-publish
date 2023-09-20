@@ -24,9 +24,9 @@ var (
 	baseDir          string
 	pkgs             string
 	format           string
-	testrailusername string
-	testrailapikey   string
-	httpposturl      string
+	testrailUserName string
+	testrailAPIKey   string
+	testrailURL      string
 	publish          bool
 )
 
@@ -41,10 +41,10 @@ func init() {
 	flag.StringVar(&baseDir, "baseDir", "", "Base directory path")
 	flag.StringVar(&pkgs, "pkgs", "", "Pacakges as comma separated values")
 	flag.StringVar(&format, "format", "json", "[pretty|json] PrettyPrint or Json Format")
-	flag.StringVar(&testrailusername, "testrailusername", "", "User to authenticate api requests to testrail")
-	flag.StringVar(&testrailapikey, "testrailapikey", "", "Api key to authenticate api requests to testrail")
-	flag.StringVar(&httpposturl, "httpposturl", "https://portworx.testrail.net/index.php?/api/v2/add_case/9074", "Http Post URL for sending post request to testrail")
-	flag.BoolVar(&publish, "publish", false, "Publish test cases to testrail")
+	flag.StringVar(&testrailUserName, "testrailUserName", "", "User to authenticate api requests to testrail")
+	flag.StringVar(&testrailAPIKey, "testrailAPIKey", "", "Api key to authenticate api requests to testrail")
+	flag.StringVar(&testrailURL, "testrailURL", "https://portworx.testrail.net/index.php?/api/v2/add_case/9074", "Http Post URL for sending post request to testrail")
+	flag.BoolVar(&publish, "publish", false, "Publish test cases to testrail (Mandatory: publish='true|false')")
 }
 
 func parseCommentsToTestCase(title string, comments *ast.CommentGroup) TestCase {
@@ -179,7 +179,7 @@ func main() {
 
 	if publish == true {
 		// Add basic authentication header
-		auth := testrailusername + ":" + testrailapikey
+		auth := testrailUserName + ":" + testrailAPIKey
 		authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 
 		for i := range testCases {
@@ -187,10 +187,9 @@ func main() {
 			if err != nil {
 				log.Fatal("Error slicing data into JSON:", err)
 			}
-			request, err := http.NewRequest("POST", httpposturl, bytes.NewBuffer(jsonData))
+			request, err := http.NewRequest("POST", testrailURL, bytes.NewBuffer(jsonData))
 			if err != nil {
-				fmt.Println("Error in sending POST request:", err)
-				return
+				log.Fatal("Error in sending POST request:", err)
 			}
 			request.Header.Set("Authorization", authHeader)
 			request.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -198,37 +197,35 @@ func main() {
 			client := &http.Client{}
 			response, error := client.Do(request)
 			if error != nil {
-				panic(error)
+				log.Fatal("Error in fetching response:", err)
 			}
 			defer response.Body.Close()
 
-			fmt.Println("response Status:", response.Status)
-			fmt.Println("response Headers:", response.Header)
+			log.Printf("response Status: %s", response.Status)
+			log.Printf("response Headers: %s", response.Header)
 			body, _ := io.ReadAll(response.Body)
-			fmt.Println("response Body:", string(body))
+			log.Printf("response Body: %s", string(body))
 		}
 
-	} else {
-		switch strings.ToLower(format) {
-		case "json":
-			byteData, err := json.Marshal(testCases)
-			if err != nil {
-				log.Fatalf("marshal json data, err: %s", err.Error())
-			}
+	}
 
-			fmt.Println(string(byteData))
-		case "yaml":
-			byteData, err := yaml.Marshal(testCases)
-			if err != nil {
-				log.Fatalf("marshal json data, err: %s", err.Error())
-			}
-
-			fmt.Println(string(byteData))
-		default:
-			fmt.Println(testCases)
-
+	switch strings.ToLower(format) {
+	case "json":
+		byteData, err := json.Marshal(testCases)
+		if err != nil {
+			log.Fatalf("marshal json data, err: %s", err.Error())
 		}
+
+		fmt.Println(string(byteData))
+	case "yaml":
+		byteData, err := yaml.Marshal(testCases)
+		if err != nil {
+			log.Fatalf("marshal json data, err: %s", err.Error())
+		}
+
+		fmt.Println(string(byteData))
+	default:
+		fmt.Println(testCases)
+
 	}
 }
-
-// }

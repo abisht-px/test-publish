@@ -54,7 +54,7 @@ test:
 	go test ./... -v
 
 doc:
-	@go run ./cmd/tools/doc --publish=$(publish) --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT) --testrailusername=$(testrailusername) --testrailapikey=$(testrailapikey) --httpposturl=${HTTP_POST_URL}
+	@go run ./cmd/tools/doc --publish=$(publish) --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT) --testrailUserName=$(testrailUserName) --testrailAPIKey=$(testrailAPIKey) --testrailURL=${HTTP_POST_URL}
 
 doc-old:
 	@go run ./cmd/tools/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
