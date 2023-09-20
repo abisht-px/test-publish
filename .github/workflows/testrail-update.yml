@@ -24,4 +24,4 @@ jobs:
           testrailapikey: ${{ secrets.TESTRAIL_API_KEY }}
           PUBLISH: "true"      
         run: |-
-          make doc
+          make doc publish=true
