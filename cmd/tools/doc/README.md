@@ -1,6 +1,10 @@
 # Test Documentation Tool
 
-A simple tool to generate test documentation from comments in test files. It produces a JSON data
+A simple tool to generate test documentation from comments in test files. It produces a JSON data and prints it when publish flag is marked as 'false'. 
+
+## Publish Test Documents
+
+It can also publish the test doc to testrail when publish flag is marked as 'true'. User and Api key secrets can be retrieved from AWS secrets manager object 'testrail-api-secret'.
 
 Expected format of comments -
 
@@ -24,7 +28,7 @@ Output Format -
 ```json
 [
   {
-    "name": "",
+    "title": "",
     "description": "",
     "steps": "",
     "expected": ""
@@ -35,5 +39,7 @@ Output Format -
 ## Usage
 
 ```shell
-make doc
+make doc publish=false
+make doc publish=true testrailusername='' testrailapikey=''
+
 ```
