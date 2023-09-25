@@ -18,7 +18,9 @@ TOOLS_IMG = $(IMG_REPO)/pds-integration-test-tools:$(IMG_TAG)
 DOC_PKGS = "backup,backupjob,capabilities,copilot,dataservices,deployment,iam,namespace,portworxcsi,reporting,restore,targetcluster,tls"
 DOC_FORMAT = "json"
 
-HTTP_POST_URL = "https://portworx.testrail.net/index.php?/api/v2/add_case/9074"
+# Default testrail values for section and project id
+sectionID = 9074
+projectID = 1
 
 .PHONY: test vendor lint docker-build docker-push fmt doc
 
@@ -54,7 +56,7 @@ test:
 	go test ./... -v
 
 doc:
-	@go run ./cmd/tools/doc --publish=$(publish) --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT) --testrailUserName=$(testrailUserName) --testrailAPIKey=$(testrailAPIKey) --testrailURL=${HTTP_POST_URL}
+	@go run ./cmd/tools/doc --publish=$(publish) --baseDir="./suites" --pkgs=$(DOC_PKGS) --format=$(DOC_FORMAT) --testrailUserName=$(testrailUserName) --testrailAPIKey=$(testrailAPIKey) --sectionID=$(sectionID) --projectID=$(projectID)
 
 doc-old:
 	@go run ./cmd/tools/doc --baseDir="." --pkgs="test" --format=$(DOC_FORMAT)
